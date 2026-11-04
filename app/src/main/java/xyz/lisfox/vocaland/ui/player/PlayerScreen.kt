@@ -333,10 +333,10 @@ private fun TrackRow(
     ) {
         Text(
             text = (index + 1).toString(),
-            modifier = Modifier.size(22.dp),
+            modifier = Modifier.width(28.dp),
             style = MaterialTheme.typography.labelMedium,
             color = if (selected) scheme.onPrimaryContainer else scheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
+            textAlign = TextAlign.End,
         )
         NetworkImage(
             url = track.cover,

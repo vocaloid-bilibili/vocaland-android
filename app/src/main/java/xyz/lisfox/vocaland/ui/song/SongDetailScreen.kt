@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -594,8 +595,10 @@ private fun RankingHistoryCard(
                 ) {
                     Text(
                         text = "#${item.rank}",
+                        modifier = Modifier.width(48.dp),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary,
+                        textAlign = TextAlign.Center,
                     )
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
