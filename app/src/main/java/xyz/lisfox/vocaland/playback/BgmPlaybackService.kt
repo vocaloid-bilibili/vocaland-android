@@ -14,7 +14,6 @@ import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.os.Build
 import android.os.IBinder
-import android.widget.RemoteViews
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
@@ -179,10 +178,15 @@ class BgmPlaybackService : Service() {
 
     private fun buildNotification(state: BgmPlayerState): Notification {
         val track = state.currentTrack
+        val text = when {
+            state.loadingTrack -> "正在加载…"
+            state.error != null -> state.error
+            else -> track?.artist?.takeIf { it.isNotBlank() } ?: "暂无曲目"
+        }
         return Notification.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_music)
             .setContentTitle(track?.title ?: DEFAULT_TITLE)
-            .setContentText(notificationText(state))
+            .setContentText(text)
             .setContentIntent(contentIntent())
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -219,50 +223,7 @@ class BgmPlaybackService : Service() {
                     .setMediaSession(session.sessionToken)
                     .setShowActionsInCompactView(0, 1, 2),
             )
-            .setCustomBigContentView(buildExpandedContent(state))
             .build()
-    }
-
-    private fun buildExpandedContent(state: BgmPlayerState): RemoteViews {
-        val track = state.currentTrack
-        val toggleLabel = if (state.playing) "暂停" else "播放"
-        return RemoteViews(packageName, R.layout.notification_bgm_expanded).apply {
-            setTextViewText(
-                R.id.bgm_notification_title,
-                track?.title ?: DEFAULT_TITLE,
-            )
-            setTextViewText(
-                R.id.bgm_notification_artist,
-                notificationText(state),
-            )
-            setImageViewResource(
-                R.id.bgm_notification_toggle,
-                if (state.playing) {
-                    android.R.drawable.ic_media_pause
-                } else {
-                    android.R.drawable.ic_media_play
-                },
-            )
-            setContentDescription(R.id.bgm_notification_toggle, toggleLabel)
-            setOnClickPendingIntent(
-                R.id.bgm_notification_previous,
-                serviceIntent(ACTION_PREVIOUS, 1),
-            )
-            setOnClickPendingIntent(
-                R.id.bgm_notification_toggle,
-                serviceIntent(ACTION_TOGGLE, 2),
-            )
-            setOnClickPendingIntent(
-                R.id.bgm_notification_next,
-                serviceIntent(ACTION_NEXT, 3),
-            )
-        }
-    }
-
-    private fun notificationText(state: BgmPlayerState): String = when {
-        state.loadingTrack -> "正在加载…"
-        state.error != null -> state.error
-        else -> state.currentTrack?.artist?.takeIf { it.isNotBlank() } ?: "暂无曲目"
     }
 
     private fun createNotificationChannel() {
