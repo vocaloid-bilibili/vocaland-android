@@ -2,6 +2,7 @@ package xyz.lisfox.vocaland.ui.ranking
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -10,29 +11,37 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -85,23 +94,21 @@ fun RankingScreen(
                 onLatest = viewModel::goToLatestIssue,
             )
         }
-        if (state.board.supportsNewPart) {
-            item {
-                PartSelector(
-                    selected = state.part,
-                    onSelect = viewModel::selectPart,
-                )
-            }
-        }
         item {
-            OrderSelector(
-                selected = state.order,
-                onSelect = viewModel::selectOrder,
+            FilterBar(
+                state = state,
+                onSelectPart = viewModel::selectPart,
+                onSelectOrder = viewModel::selectOrder,
             )
         }
         if (state.loading) {
             item {
                 LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+        }
+        state.issueNotice?.let { notice ->
+            item {
+                IssueNotice(notice)
             }
         }
 
@@ -195,12 +202,13 @@ private fun IssueSelector(
     val issue = state.data?.issue ?: state.issue
     val latest = state.latestIssue ?: state.data?.latestIssue
 
-    Column(
+    Surface(
         modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(
@@ -215,18 +223,27 @@ private fun IssueSelector(
             ) {
                 Text(
                     text = if (issue == null) "最新一期" else "第 $issue 期",
-                    style = MaterialTheme.typography.titleMedium,
-                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.titleLarge,
                 )
-                Text(
-                    text = when {
-                        latest == null -> "正在获取期号"
-                        issue == latest -> "已是最新一期"
-                        else -> "最新第 $latest 期"
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                val hint = when {
+                    latest == null -> "正在获取期号"
+                    issue == latest -> "已是最新一期"
+                    else -> "最新第 $latest 期"
+                }
+                if (issue != null && latest != null && issue < latest) {
+                    Text(
+                        text = "$hint · 回到最新",
+                        modifier = Modifier.clickable(onClick = onLatest),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                } else {
+                    Text(
+                        text = hint,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             IconButton(
                 onClick = onNext,
@@ -235,44 +252,109 @@ private fun IssueSelector(
                 Icon(Icons.Filled.ChevronRight, contentDescription = "下一期")
             }
         }
-        if (issue != null && latest != null && issue < latest) {
-            TextButton(onClick = onLatest) {
-                Text("回到最新一期")
+    }
+}
+
+@Composable
+private fun FilterBar(
+    state: RankingUiState,
+    onSelectPart: (String) -> Unit,
+    onSelectOrder: (RankingOrder) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (state.board.supportsNewPart) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = state.part == "main",
+                    onClick = { onSelectPart("main") },
+                    label = { Text("主榜") },
+                )
+                FilterChip(
+                    selected = state.part == "new",
+                    onClick = { onSelectPart("new") },
+                    label = { Text("新曲") },
+                )
+            }
+        } else {
+            Text(
+                text = "主榜",
+                modifier = Modifier.padding(start = 4.dp),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+        SortMenu(
+            selected = state.order,
+            onSelect = onSelectOrder,
+        )
+    }
+}
+
+@Composable
+private fun SortMenu(
+    selected: RankingOrder,
+    onSelect: (RankingOrder) -> Unit,
+) {
+    val expanded = remember { mutableStateOf(false) }
+
+    Box {
+        OutlinedButton(
+            onClick = { expanded.value = true },
+            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+        ) {
+            Text(
+                text = "排序：${selected.label}",
+                style = MaterialTheme.typography.labelMedium,
+            )
+            Icon(
+                imageVector = Icons.Filled.ArrowDropDown,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        DropdownMenu(
+            expanded = expanded.value,
+            onDismissRequest = { expanded.value = false },
+        ) {
+            RankingOrder.entries.forEach { order ->
+                DropdownMenuItem(
+                    text = { Text(order.label) },
+                    onClick = {
+                        expanded.value = false
+                        onSelect(order)
+                    },
+                )
             }
         }
     }
 }
 
 @Composable
-private fun PartSelector(
-    selected: String,
-    onSelect: (String) -> Unit,
-) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        FilterChip(
-            selected = selected == "main",
-            onClick = { onSelect("main") },
-            label = { Text("主榜") },
-        )
-        FilterChip(
-            selected = selected == "new",
-            onClick = { onSelect("new") },
-            label = { Text("新曲") },
-        )
-    }
-}
-
-@Composable
-private fun OrderSelector(
-    selected: RankingOrder,
-    onSelect: (RankingOrder) -> Unit,
-) {
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(RankingOrder.entries, key = { it.key }) { order ->
-            FilterChip(
-                selected = order == selected,
-                onClick = { onSelect(order) },
-                label = { Text(order.label) },
+private fun IssueNotice(text: String) {
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Info,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = text,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.bodySmall,
             )
         }
     }

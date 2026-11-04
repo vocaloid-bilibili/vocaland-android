@@ -249,7 +249,7 @@ fun SearchScreen(
                             }
                         }
                     }
-                    if (state.totalPages > 1) {
+                    if (state.target != null && state.totalPages > 1) {
                         item {
                             SearchPagination(
                                 page = state.page,

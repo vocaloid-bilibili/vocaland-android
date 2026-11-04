@@ -24,6 +24,7 @@ data class RankingUiState(
     val data: RankingPage? = null,
     val loading: Boolean = true,
     val error: String? = null,
+    val issueNotice: String? = null,
 )
 
 class RankingViewModel(
@@ -50,6 +51,7 @@ class RankingViewModel(
                 page = 1,
                 data = null,
                 error = null,
+                issueNotice = null,
             )
         }
         load()
@@ -61,7 +63,7 @@ class RankingViewModel(
         if (part == "new" && !current.board.supportsNewPart) return
 
         _state.update {
-            it.copy(part = part, page = 1, data = null, error = null)
+            it.copy(part = part, page = 1, data = null, error = null, issueNotice = null)
         }
         load()
     }
@@ -70,7 +72,7 @@ class RankingViewModel(
         if (_state.value.order == order) return
 
         _state.update {
-            it.copy(order = order, page = 1, data = null, error = null)
+            it.copy(order = order, page = 1, data = null, error = null, issueNotice = null)
         }
         load()
     }
@@ -96,7 +98,13 @@ class RankingViewModel(
         if (currentIssue <= 1) return
 
         _state.update {
-            it.copy(issue = currentIssue - 1, page = 1, data = null, error = null)
+            it.copy(
+                issue = currentIssue - 1,
+                page = 1,
+                data = null,
+                error = null,
+                issueNotice = null,
+            )
         }
         load()
     }
@@ -107,7 +115,13 @@ class RankingViewModel(
         if (currentIssue >= latest) return
 
         _state.update {
-            it.copy(issue = currentIssue + 1, page = 1, data = null, error = null)
+            it.copy(
+                issue = currentIssue + 1,
+                page = 1,
+                data = null,
+                error = null,
+                issueNotice = null,
+            )
         }
         load()
     }
@@ -117,7 +131,13 @@ class RankingViewModel(
         if (currentIssue() == latest) return
 
         _state.update {
-            it.copy(issue = latest, page = 1, data = null, error = null)
+            it.copy(
+                issue = latest,
+                page = 1,
+                data = null,
+                error = null,
+                issueNotice = null,
+            )
         }
         load()
     }
@@ -142,6 +162,19 @@ class RankingViewModel(
                 issue = snapshot.issue,
                 page = snapshot.page,
             ).onSuccess { pageData ->
+                val requestedIssue = snapshot.issue
+                val knownLatest = pageData.latestIssue ?: _state.value.latestIssue
+                val issueNotice = when {
+                    requestedIssue == null || requestedIssue == pageData.issue -> null
+                    requestedIssue > pageData.issue ->
+                        "该期尚未发布，已切换到第 ${pageData.issue} 期"
+
+                    pageData.issue == knownLatest ->
+                        "当前未登录或权限不足，仅可查看最新一期，已停留在第 ${pageData.issue} 期"
+
+                    else ->
+                        "该期不在当前账号可查看范围内，已切换到第 ${pageData.issue} 期"
+                }
                 _state.update {
                     it.copy(
                         data = pageData,
@@ -150,6 +183,7 @@ class RankingViewModel(
                         page = pageData.page,
                         loading = false,
                         error = null,
+                        issueNotice = issueNotice,
                     )
                 }
             }.onFailure { error ->
