@@ -27,14 +27,14 @@ import xyz.lisfox.vocaland.data.player.BgmPlayerState
 class BgmPlaybackService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
-    private lateinit var controller: BgmPlayerController
+    private lateinit var playerController: BgmPlayerController
     private lateinit var session: MediaSession
     private var metadataKey: String? = null
     private var notificationKey: String? = null
 
     override fun onCreate() {
         super.onCreate()
-        controller = (application as VocaLandApplication).container.bgmPlayerController
+        playerController = (application as VocaLandApplication).container.bgmPlayerController
         createNotificationChannel()
         session = MediaSession(this, MEDIA_SESSION_TAG).apply {
             setFlags(
@@ -44,23 +44,23 @@ class BgmPlaybackService : Service() {
             setSessionActivity(contentIntent())
             setCallback(
                 object : MediaSession.Callback() {
-                    override fun onPlay() = controller.play()
+                    override fun onPlay() = playerController.play()
 
-                    override fun onPause() = controller.pause()
+                    override fun onPause() = playerController.pause()
 
-                    override fun onStop() = controller.pause()
+                    override fun onStop() = playerController.pause()
 
-                    override fun onSkipToNext() = controller.next()
+                    override fun onSkipToNext() = playerController.next()
 
-                    override fun onSkipToPrevious() = controller.previous()
+                    override fun onSkipToPrevious() = playerController.previous()
 
-                    override fun onSeekTo(pos: Long) = controller.seekTo(pos)
+                    override fun onSeekTo(pos: Long) = playerController.seekTo(pos)
                 },
             )
             isActive = true
         }
 
-        val initial = controller.state.value
+        val initial = playerController.state.value
         updateSession(initial)
         ServiceCompat.startForeground(
             this,
@@ -70,7 +70,7 @@ class BgmPlaybackService : Service() {
         )
 
         scope.launch {
-            controller.state.collect { state ->
+            playerController.state.collect { state ->
                 updateSession(state)
                 updateNotification(state)
             }
@@ -79,9 +79,9 @@ class BgmPlaybackService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ACTION_PREVIOUS -> controller.previous()
-            ACTION_TOGGLE -> controller.toggle()
-            ACTION_NEXT -> controller.next()
+            ACTION_PREVIOUS -> playerController.previous()
+            ACTION_TOGGLE -> playerController.toggle()
+            ACTION_NEXT -> playerController.next()
         }
         return START_NOT_STICKY
     }
