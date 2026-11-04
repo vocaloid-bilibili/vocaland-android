@@ -9,6 +9,7 @@ import android.app.Service
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
+import android.graphics.BitmapFactory
 import android.media.MediaMetadata
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
@@ -35,6 +36,9 @@ class BgmPlaybackService : Service() {
     private lateinit var session: MediaSession
     private var metadataKey: String? = null
     private var notificationKey: String? = null
+    private val largeIcon by lazy {
+        BitmapFactory.decodeResource(resources, R.drawable.app_icon)
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -184,7 +188,8 @@ class BgmPlaybackService : Service() {
             else -> track?.artist?.takeIf { it.isNotBlank() } ?: "暂无曲目"
         }
         return Notification.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_stat_music)
+            .setSmallIcon(R.drawable.ic_stat_vocaland)
+            .setLargeIcon(largeIcon)
             .setContentTitle(track?.title ?: DEFAULT_TITLE)
             .setContentText(text)
             .setContentIntent(contentIntent())
