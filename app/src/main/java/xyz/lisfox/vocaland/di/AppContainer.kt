@@ -9,11 +9,14 @@ import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import xyz.lisfox.vocaland.data.preferences.ThemePreferences
 import xyz.lisfox.vocaland.data.remote.AppJson
+import xyz.lisfox.vocaland.data.player.BgmPlayerController
 import xyz.lisfox.vocaland.data.remote.AuthApi
 import xyz.lisfox.vocaland.data.remote.CommunityApi
+import xyz.lisfox.vocaland.data.remote.PlayUrlApi
 import xyz.lisfox.vocaland.data.remote.VocaLandApi
 import xyz.lisfox.vocaland.data.repository.ArtistDetailRepository
 import xyz.lisfox.vocaland.data.repository.AuthRepository
+import xyz.lisfox.vocaland.data.repository.BgmRepository
 import xyz.lisfox.vocaland.data.repository.HomeRepository
 import xyz.lisfox.vocaland.data.repository.PlaylistRepository
 import xyz.lisfox.vocaland.data.repository.RankingRepository
@@ -55,10 +58,19 @@ class AppContainer(context: Context) {
         }
         .build()
 
+    private val playUrlClient = OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .readTimeout(20, TimeUnit.SECONDS)
+        .build()
+
     val v3Api: VocaLandApi = retrofit(V3_BASE_URL).create(VocaLandApi::class.java)
     val v2Api: CommunityApi = retrofit(V2_BASE_URL).create(CommunityApi::class.java)
+    val playUrlApi: PlayUrlApi = retrofit(PLAYURL_BASE_URL, playUrlClient)
+        .create(PlayUrlApi::class.java)
 
     val authRepository = AuthRepository(authApi, session)
+    val bgmRepository = BgmRepository(v3Api, playUrlApi)
+    val bgmPlayerController = BgmPlayerController(bgmRepository)
     val homeRepository = HomeRepository(v3Api, v2Api)
     val rankingRepository = RankingRepository(v3Api)
     val searchRepository = SearchRepository(v3Api)
@@ -69,9 +81,12 @@ class AppContainer(context: Context) {
     val userRepository = UserRepository(v3Api, v2Api)
     val themePreferences = ThemePreferences(appContext)
 
-    private fun retrofit(baseUrl: String): Retrofit = Retrofit.Builder()
+    private fun retrofit(
+        baseUrl: String,
+        client: OkHttpClient = apiClient,
+    ): Retrofit = Retrofit.Builder()
         .baseUrl(baseUrl)
-        .client(apiClient)
+        .client(client)
         .addConverterFactory(AppJson.asConverterFactory(JSON_MEDIA_TYPE))
         .build()
 
@@ -82,6 +97,7 @@ class AppContainer(context: Context) {
         const val AUTH_BASE_URL = "https://auth.vocabili.top/api/auth/"
         const val V2_BASE_URL = "https://api.vocabili.top/v2/"
         const val V3_BASE_URL = "https://api.vocabili.top/v3/"
+        const val PLAYURL_BASE_URL = "https://proxy.vocaloid.world:3013/"
         val JSON_MEDIA_TYPE = "application/json".toMediaType()
     }
 }

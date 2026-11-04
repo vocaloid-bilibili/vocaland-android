@@ -10,15 +10,24 @@ import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -26,16 +35,18 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -54,6 +65,7 @@ import xyz.lisfox.vocaland.ui.login.LoginScreen
 import xyz.lisfox.vocaland.ui.navigation.Routes
 import xyz.lisfox.vocaland.ui.navigation.TOP_LEVEL_DESTINATIONS
 import xyz.lisfox.vocaland.ui.placeholder.FeatureScreen
+import xyz.lisfox.vocaland.ui.player.PlayerScreen
 import xyz.lisfox.vocaland.ui.playlist.PlaylistDetailScreen
 import xyz.lisfox.vocaland.ui.playlist.PlaylistScreen
 import xyz.lisfox.vocaland.ui.profile.ProfileScreen
@@ -101,29 +113,18 @@ fun VocaLandApp(
                             shrinkTowards = Alignment.Bottom,
                         ),
                 ) {
-                    NavigationBar {
-                        TOP_LEVEL_DESTINATIONS.forEach { destination ->
-                            NavigationBarItem(
-                                selected = currentRoute == destination.route,
-                                onClick = {
-                                    navController.navigate(destination.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
-                                },
-                                icon = {
-                                    Icon(
-                                        imageVector = destination.icon,
-                                        contentDescription = destination.label,
-                                    )
-                                },
-                                label = { Text(destination.label) },
-                            )
-                        }
-                    }
+                    CompactBottomBar(
+                        currentRoute = currentRoute,
+                        onSelect = { route ->
+                            navController.navigate(route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        },
+                    )
                 }
             },
         ) { innerPadding ->
@@ -220,6 +221,14 @@ fun VocaLandApp(
                                     launchSingleTop = true
                                 }
                             },
+                            modifier = contentModifier,
+                        )
+                    }
+                }
+                composable(Routes.PLAYER) {
+                    PageScaffold(title = "播放器") { contentModifier ->
+                        PlayerScreen(
+                            controller = container.bgmPlayerController,
                             modifier = contentModifier,
                         )
                     }
@@ -514,6 +523,83 @@ fun VocaLandApp(
     }
 }
 
+@Composable
+private fun CompactBottomBar(
+    currentRoute: String?,
+    onSelect: (String) -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    Surface(
+        color = scheme.surfaceContainer,
+        tonalElevation = 3.dp,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding(),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(62.dp)
+                    .selectableGroup(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TOP_LEVEL_DESTINATIONS.forEach { destination ->
+                    val selected = currentRoute == destination.route
+                    val isPlayer = destination.route == Routes.PLAYER
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .selectable(
+                                selected = selected,
+                                role = Role.Tab,
+                                onClick = { onSelect(destination.route) },
+                            )
+                            .padding(vertical = 4.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        if (isPlayer) {
+                            Box(
+                                modifier = Modifier
+                                    .size(34.dp)
+                                    .clip(CircleShape)
+                                    .background(
+                                        if (selected) scheme.primary else scheme.primaryContainer,
+                                    ),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    imageVector = destination.icon,
+                                    contentDescription = destination.label,
+                                    modifier = Modifier.size(22.dp),
+                                    tint = if (selected) scheme.onPrimary else scheme.onPrimaryContainer,
+                                )
+                            }
+                            Spacer(Modifier.height(2.dp))
+                        } else {
+                            Icon(
+                                imageVector = destination.icon,
+                                contentDescription = destination.label,
+                                modifier = Modifier.size(23.dp),
+                                tint = if (selected) scheme.primary else scheme.onSurfaceVariant,
+                            )
+                            Spacer(Modifier.height(2.dp))
+                        }
+                        Text(
+                            text = destination.label,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (selected) scheme.primary else scheme.onSurfaceVariant,
+                            maxLines = 1,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PageScaffold(
@@ -527,6 +613,7 @@ private fun PageScaffold(
             .background(MaterialTheme.colorScheme.background),
     ) {
         CenterAlignedTopAppBar(
+            modifier = Modifier.height(52.dp),
             colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                 containerColor = MaterialTheme.colorScheme.surface,
             ),

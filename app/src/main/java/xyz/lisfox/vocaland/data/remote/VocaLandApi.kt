@@ -1,10 +1,13 @@
 package xyz.lisfox.vocaland.data.remote
 
+import retrofit2.http.Body
 import retrofit2.http.GET
+import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
 import xyz.lisfox.vocaland.data.model.ArtistDetailDto
 import xyz.lisfox.vocaland.data.model.ArtistStatsSummaryDto
+import xyz.lisfox.vocaland.data.model.BgmVideoDto
 import xyz.lisfox.vocaland.data.model.ComprehensiveSearchResponse
 import xyz.lisfox.vocaland.data.model.DataEnvelope
 import xyz.lisfox.vocaland.data.model.EdCampaignDto
@@ -23,6 +26,7 @@ import xyz.lisfox.vocaland.data.model.PlaylistDetailDto
 import xyz.lisfox.vocaland.data.model.PublicPlaylistListResponse
 import xyz.lisfox.vocaland.data.model.TrendingCampaignDto
 import xyz.lisfox.vocaland.data.model.UserLitStatsDto
+import xyz.lisfox.vocaland.data.model.VideoBatchRequest
 
 interface VocaLandApi {
     @GET("hero/slides")
@@ -156,4 +160,10 @@ interface VocaLandApi {
 
     @GET("playlist/{id}")
     suspend fun playlistDetail(@Path("id") id: Int): DataEnvelope<PlaylistDetailDto>
+
+    @GET("bgm-playlist")
+    suspend fun bgmPlaylist(): DataEnvelope<List<String>>
+
+    @POST("video/batch")
+    suspend fun videosByBvids(@Body request: VideoBatchRequest): ListEnvelope<BgmVideoDto?>
 }
