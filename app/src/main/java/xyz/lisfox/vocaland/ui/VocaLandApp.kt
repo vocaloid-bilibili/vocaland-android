@@ -432,6 +432,12 @@ fun VocaLandApp(
                                         launchSingleTop = true
                                     }
                                 },
+                                onPlayPlaylist = { tracks ->
+                                    container.bgmPlayerController.replaceQueue(tracks)
+                                    navController.navigate(Routes.PLAYER) {
+                                        launchSingleTop = true
+                                    }
+                                },
                                 modifier = contentModifier,
                             )
                         }

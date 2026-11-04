@@ -81,6 +81,28 @@ class BgmPlayerController(
         ensureLoaded()
     }
 
+    fun replaceQueue(tracks: List<BgmTrack>) {
+        if (tracks.isEmpty()) return
+        loadJob?.cancel()
+        loaded = true
+        prepareJob?.cancel()
+        progressJob?.cancel()
+        releasePlayer()
+        _state.update {
+            it.copy(
+                tracks = tracks,
+                currentIndex = 0,
+                loadingPlaylist = false,
+                loadingTrack = false,
+                playing = false,
+                positionMs = 0,
+                durationMs = tracks.first().durationSeconds * 1000L,
+                error = null,
+            )
+        }
+        playAt(0)
+    }
+
     fun playAt(index: Int) {
         val tracks = _state.value.tracks
         if (index !in tracks.indices) return
