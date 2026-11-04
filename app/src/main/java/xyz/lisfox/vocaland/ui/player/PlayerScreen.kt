@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import xyz.lisfox.vocaland.data.model.BgmTrack
 import xyz.lisfox.vocaland.data.player.BgmPlayerController
+import xyz.lisfox.vocaland.data.player.PlayMode
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
@@ -98,6 +100,7 @@ fun PlayerScreen(
                         positionMs = state.positionMs,
                         durationMs = state.durationMs,
                         hasTrack = state.currentTrack != null,
+                        playMode = state.playMode,
                     )
                 }
 
@@ -197,6 +200,7 @@ private fun PlayerControls(
     positionMs: Long,
     durationMs: Long,
     hasTrack: Boolean,
+    playMode: PlayMode,
 ) {
     val duration = durationMs.coerceAtLeast(1L)
     var dragging by remember { mutableStateOf(false) }
@@ -286,6 +290,23 @@ private fun PlayerControls(
                     imageVector = Icons.Filled.SkipNext,
                     contentDescription = "下一首",
                     modifier = Modifier.size(34.dp),
+                )
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(
+                8.dp,
+                Alignment.CenterHorizontally,
+            ),
+        ) {
+            PlayMode.entries.forEach { mode ->
+                FilterChip(
+                    selected = playMode == mode,
+                    onClick = { controller.setPlayMode(mode) },
+                    label = { Text(mode.label) },
                 )
             }
         }
