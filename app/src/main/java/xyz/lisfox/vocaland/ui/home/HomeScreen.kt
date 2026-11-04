@@ -32,6 +32,7 @@ import xyz.lisfox.vocaland.data.model.SongListItemDto
 import xyz.lisfox.vocaland.data.repository.HomeRepository
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
+import xyz.lisfox.vocaland.ui.playlist.PlaylistPreviewSection
 import xyz.lisfox.vocaland.util.targetLabel
 
 @Composable
@@ -40,6 +41,8 @@ fun HomeScreen(
     onOpenFeature: (String) -> Unit,
     onOpenSong: (Int) -> Unit,
     onOpenUser: (Int) -> Unit,
+    onOpenPlaylist: (Int) -> Unit,
+    onOpenPlaylists: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: HomeViewModel = viewModel(
@@ -80,6 +83,8 @@ fun HomeScreen(
                     onOpenFeature = onOpenFeature,
                     onOpenSong = onOpenSong,
                     onOpenUser = onOpenUser,
+                    onOpenPlaylist = onOpenPlaylist,
+                    onOpenPlaylists = onOpenPlaylists,
                 )
             }
         }
@@ -100,6 +105,8 @@ private fun HomeContentList(
     onOpenFeature: (String) -> Unit,
     onOpenSong: (Int) -> Unit,
     onOpenUser: (Int) -> Unit,
+    onOpenPlaylist: (Int) -> Unit,
+    onOpenPlaylists: () -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
@@ -168,6 +175,14 @@ private fun HomeContentList(
 
         item {
             StatsCard(stats = content.stats)
+        }
+
+        item {
+            PlaylistPreviewSection(
+                playlists = content.playlists,
+                onOpenPlaylist = onOpenPlaylist,
+                onOpenAll = onOpenPlaylists,
+            )
         }
 
         item {

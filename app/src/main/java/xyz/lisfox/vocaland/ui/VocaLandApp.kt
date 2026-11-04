@@ -54,6 +54,8 @@ import xyz.lisfox.vocaland.ui.login.LoginScreen
 import xyz.lisfox.vocaland.ui.navigation.Routes
 import xyz.lisfox.vocaland.ui.navigation.TOP_LEVEL_DESTINATIONS
 import xyz.lisfox.vocaland.ui.placeholder.FeatureScreen
+import xyz.lisfox.vocaland.ui.playlist.PlaylistDetailScreen
+import xyz.lisfox.vocaland.ui.playlist.PlaylistScreen
 import xyz.lisfox.vocaland.ui.profile.ProfileScreen
 import xyz.lisfox.vocaland.ui.ranking.RankingScreen
 import xyz.lisfox.vocaland.ui.search.SearchScreen
@@ -192,6 +194,16 @@ fun VocaLandApp(
                             },
                             onOpenUser = { id ->
                                 navController.navigate(Routes.user(id)) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            onOpenPlaylist = { id ->
+                                navController.navigate(Routes.playlist(id)) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            onOpenPlaylists = {
+                                navController.navigate(Routes.PLAYLISTS) {
                                     launchSingleTop = true
                                 }
                             },
@@ -357,6 +369,57 @@ fun VocaLandApp(
                                 userId = userId,
                                 onOpenSong = { id ->
                                     navController.navigate(Routes.song(id)) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                modifier = contentModifier,
+                            )
+                        }
+                    }
+                }
+                composable(Routes.PLAYLISTS) {
+                    PageScaffold(
+                        title = "歌单广场",
+                        onBack = { navController.popBackStack() },
+                    ) { contentModifier ->
+                        PlaylistScreen(
+                            repository = container.playlistRepository,
+                            onOpenPlaylist = { id ->
+                                navController.navigate(Routes.playlist(id)) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            modifier = contentModifier,
+                        )
+                    }
+                }
+                composable(
+                    route = Routes.PLAYLIST,
+                    arguments = listOf(
+                        navArgument("playlistId") { type = NavType.IntType },
+                    ),
+                ) { entry ->
+                    val playlistId = entry.arguments?.getInt("playlistId") ?: 0
+                    PageScaffold(
+                        title = "歌单",
+                        onBack = { navController.popBackStack() },
+                    ) { contentModifier ->
+                        if (playlistId <= 0) {
+                            FeatureScreen(
+                                title = "无效的歌单",
+                                modifier = contentModifier,
+                            )
+                        } else {
+                            PlaylistDetailScreen(
+                                repository = container.playlistRepository,
+                                playlistId = playlistId,
+                                onOpenSong = { id ->
+                                    navController.navigate(Routes.song(id)) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                onOpenUser = { id ->
+                                    navController.navigate(Routes.user(id)) {
                                         launchSingleTop = true
                                     }
                                 },

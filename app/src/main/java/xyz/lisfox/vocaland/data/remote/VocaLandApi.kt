@@ -19,6 +19,8 @@ import xyz.lisfox.vocaland.data.model.SongListResponse
 import xyz.lisfox.vocaland.data.model.SongRankingStatsDto
 import xyz.lisfox.vocaland.data.model.SongWithVideosListResponse
 import xyz.lisfox.vocaland.data.model.TagItemDto
+import xyz.lisfox.vocaland.data.model.PlaylistDetailDto
+import xyz.lisfox.vocaland.data.model.PublicPlaylistListResponse
 import xyz.lisfox.vocaland.data.model.TrendingCampaignDto
 import xyz.lisfox.vocaland.data.model.UserLitStatsDto
 
@@ -143,4 +145,15 @@ interface VocaLandApi {
 
     @GET("lit/users/{id}")
     suspend fun userLitStats(@Path("id") id: Int): UserLitStatsDto
+
+    @GET("playlist/public")
+    suspend fun publicPlaylists(
+        @Query("page") page: Int = 1,
+        @Query("per_page") perPage: Int = 24,
+        @Query("sort") sort: String = "hot",
+        @Query("keyword") keyword: String? = null,
+    ): PublicPlaylistListResponse
+
+    @GET("playlist/{id}")
+    suspend fun playlistDetail(@Path("id") id: Int): DataEnvelope<PlaylistDetailDto>
 }

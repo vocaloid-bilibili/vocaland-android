@@ -15,6 +15,7 @@ import xyz.lisfox.vocaland.data.remote.VocaLandApi
 import xyz.lisfox.vocaland.data.repository.ArtistDetailRepository
 import xyz.lisfox.vocaland.data.repository.AuthRepository
 import xyz.lisfox.vocaland.data.repository.HomeRepository
+import xyz.lisfox.vocaland.data.repository.PlaylistRepository
 import xyz.lisfox.vocaland.data.repository.RankingRepository
 import xyz.lisfox.vocaland.data.repository.SearchRepository
 import xyz.lisfox.vocaland.data.repository.SongDetailRepository
@@ -64,6 +65,7 @@ class AppContainer(context: Context) {
     val songDetailRepository = SongDetailRepository(v3Api, v2Api)
     val artistDetailRepository = ArtistDetailRepository(v3Api)
     val tagDetailRepository = TagDetailRepository(v3Api)
+    val playlistRepository = PlaylistRepository(v3Api)
     val userRepository = UserRepository(v3Api, v2Api)
     val themePreferences = ThemePreferences(appContext)
 

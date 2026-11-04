@@ -5,8 +5,8 @@ import kotlinx.coroutines.coroutineScope
 import xyz.lisfox.vocaland.data.model.EdCampaignDto
 import xyz.lisfox.vocaland.data.model.HomeContent
 import xyz.lisfox.vocaland.data.model.SongListItemDto
-import xyz.lisfox.vocaland.data.model.TOP_STATS
 import xyz.lisfox.vocaland.data.model.TrendingCampaignDto
+import xyz.lisfox.vocaland.data.model.TOP_STATS
 import xyz.lisfox.vocaland.data.model.VotingEntryUi
 import xyz.lisfox.vocaland.data.remote.CommunityApi
 import xyz.lisfox.vocaland.data.remote.VocaLandApi
@@ -37,6 +37,9 @@ class HomeRepository(
         }
         val ratingsDeferred = async { runCatching { v2.recentRatings().data } }
         val commentsDeferred = async { runCatching { v2.recentComments().data } }
+        val playlistsDeferred = async {
+            runCatching { v3.publicPlaylists(page = 1, perPage = 6).data }
+        }
         val edDeferred = async { runCatching { v3.edCampaigns().data } }
         val trendingDeferred = async { runCatching { v3.trendingCampaigns().data } }
 
@@ -48,6 +51,7 @@ class HomeRepository(
         val onThisDay = onThisDayDeferred.await()
         val ratings = ratingsDeferred.await()
         val comments = commentsDeferred.await()
+        val playlists = playlistsDeferred.await()
         val ed = edDeferred.await()
         val trending = trendingDeferred.await()
 
@@ -60,6 +64,7 @@ class HomeRepository(
             if (onThisDay.isFailure) add("历史上的今天")
             if (ratings.isFailure) add("最近评分")
             if (comments.isFailure) add("最近评论")
+            if (playlists.isFailure) add("歌单推荐")
         }
 
         val voting = buildVotingEntries(
@@ -75,6 +80,7 @@ class HomeRepository(
             milestones = milestones.getOrDefault(emptyList()),
             ratings = ratings.getOrDefault(emptyList()),
             comments = comments.getOrDefault(emptyList()),
+            playlists = playlists.getOrDefault(emptyList()),
             latestSongs = latest.getOrDefault(emptyList()),
             topStat = topStat.key,
             topSongs = topSongs.getOrDefault(emptyList()),

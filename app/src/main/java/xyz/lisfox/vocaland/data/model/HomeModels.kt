@@ -8,6 +8,7 @@ data class HomeContent(
     val milestones: List<MilestoneDto> = emptyList(),
     val ratings: List<RatingDto> = emptyList(),
     val comments: List<CommentDto> = emptyList(),
+    val playlists: List<PublicPlaylistDto> = emptyList(),
     val latestSongs: List<SongBriefDto> = emptyList(),
     val topStat: String = TOP_STATS.first().key,
     val topSongs: List<SongListItemDto> = emptyList(),
