@@ -38,7 +38,9 @@ class HomeRepository(
         val ratingsDeferred = async { runCatching { v2.recentRatings().data } }
         val commentsDeferred = async { runCatching { v2.recentComments().data } }
         val playlistsDeferred = async {
-            runCatching { v3.publicPlaylists(page = 1, perPage = 6).data }
+            runCatching {
+                v3.publicPlaylists(page = 1, perPage = 10, sort = "new").data
+            }
         }
         val edDeferred = async { runCatching { v3.edCampaigns().data } }
         val trendingDeferred = async { runCatching { v3.trendingCampaigns().data } }

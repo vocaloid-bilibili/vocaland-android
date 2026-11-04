@@ -49,7 +49,7 @@ fun PlaylistPreviewSection(
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         SectionHeader(
-            title = "精选歌单",
+            title = "最新歌单",
             action = {
                 TextButton(onClick = onOpenAll) {
                     Text("歌单广场")
