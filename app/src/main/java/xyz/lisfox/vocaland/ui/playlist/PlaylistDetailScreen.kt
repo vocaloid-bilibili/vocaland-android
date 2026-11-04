@@ -187,7 +187,7 @@ private fun OwnerRow(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             NetworkImage(
-                url = owner.avatar,
+                url = ownerAvatarUrl(owner.avatar),
                 contentDescription = owner.nickname,
                 modifier = Modifier
                     .size(32.dp)
@@ -207,6 +207,16 @@ private fun OwnerRow(
                 )
             }
         }
+    }
+}
+
+private fun ownerAvatarUrl(avatar: String?): String? {
+    val value = avatar?.trim().orEmpty()
+    if (value.isEmpty()) return null
+    return if (value.startsWith("http://") || value.startsWith("https://")) {
+        value
+    } else {
+        "https://api.vocabili.top/v2/static/avatars/$value"
     }
 }
 
