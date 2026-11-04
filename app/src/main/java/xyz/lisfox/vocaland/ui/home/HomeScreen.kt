@@ -39,6 +39,7 @@ fun HomeScreen(
     repository: HomeRepository,
     onOpenFeature: (String) -> Unit,
     onOpenSong: (Int) -> Unit,
+    onOpenUser: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: HomeViewModel = viewModel(
@@ -78,6 +79,7 @@ fun HomeScreen(
                     onSelectStat = viewModel::selectStat,
                     onOpenFeature = onOpenFeature,
                     onOpenSong = onOpenSong,
+                    onOpenUser = onOpenUser,
                 )
             }
         }
@@ -97,6 +99,7 @@ private fun HomeContentList(
     onSelectStat: (String) -> Unit,
     onOpenFeature: (String) -> Unit,
     onOpenSong: (Int) -> Unit,
+    onOpenUser: (Int) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
@@ -211,6 +214,7 @@ private fun HomeContentList(
             RatingsSection(
                 ratings = content.ratings,
                 onOpen = { onOpenFeature("评分：${it.targetName ?: targetLabel(it.targetKey)}") },
+                onOpenUser = onOpenUser,
             )
         }
 
@@ -225,6 +229,7 @@ private fun HomeContentList(
             CommentsSection(
                 comments = content.comments,
                 onOpen = { onOpenFeature("评论：${targetLabel(it.targetKey)}") },
+                onOpenUser = onOpenUser,
             )
         }
 

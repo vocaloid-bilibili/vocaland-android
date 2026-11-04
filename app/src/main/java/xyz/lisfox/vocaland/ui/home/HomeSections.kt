@@ -317,6 +317,7 @@ private fun MilestoneCard(
 fun RatingsSection(
     ratings: List<RatingDto>,
     onOpen: (RatingDto) -> Unit,
+    onOpenUser: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -328,7 +329,11 @@ fun RatingsSection(
         } else {
             LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 items(ratings, key = { it.id }) { item ->
-                    RatingCard(item = item, onClick = { onOpen(item) })
+                    RatingCard(
+                        item = item,
+                        onClick = { onOpen(item) },
+                        onOpenUser = onOpenUser,
+                    )
                 }
             }
         }
@@ -339,6 +344,7 @@ fun RatingsSection(
 private fun RatingCard(
     item: RatingDto,
     onClick: () -> Unit,
+    onOpenUser: (Int) -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
     val masked = item.isAnonymous && !item.isRevealed
@@ -407,7 +413,10 @@ private fun RatingCard(
                         contentDescription = item.user.nickname,
                         modifier = Modifier
                             .size(22.dp)
-                            .clip(CircleShape),
+                            .clip(CircleShape)
+                            .clickable(enabled = item.user.id > 0) {
+                                onOpenUser(item.user.id)
+                            },
                     )
                 }
                 Spacer(Modifier.width(6.dp))
@@ -434,6 +443,7 @@ private fun RatingCard(
 fun CommentsSection(
     comments: List<CommentDto>,
     onOpen: (CommentDto) -> Unit,
+    onOpenUser: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -445,7 +455,11 @@ fun CommentsSection(
         } else {
             Column {
                 comments.forEach { comment ->
-                    CommentRow(comment = comment, onClick = { onOpen(comment) })
+                    CommentRow(
+                        comment = comment,
+                        onClick = { onOpen(comment) },
+                        onOpenUser = onOpenUser,
+                    )
                 }
             }
         }
@@ -456,6 +470,7 @@ fun CommentsSection(
 private fun CommentRow(
     comment: CommentDto,
     onClick: () -> Unit,
+    onOpenUser: (Int) -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
     Row(
@@ -469,7 +484,10 @@ private fun CommentRow(
             contentDescription = comment.user.nickname,
             modifier = Modifier
                 .size(32.dp)
-                .clip(CircleShape),
+                .clip(CircleShape)
+                .clickable(enabled = comment.user.id > 0) {
+                    onOpenUser(comment.user.id)
+                },
         )
         Spacer(Modifier.width(10.dp))
         Column(modifier = Modifier.weight(1f)) {

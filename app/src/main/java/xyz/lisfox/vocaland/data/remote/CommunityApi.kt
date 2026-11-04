@@ -1,6 +1,8 @@
 package xyz.lisfox.vocaland.data.remote
 
+import kotlinx.serialization.json.JsonElement
 import retrofit2.http.GET
+import retrofit2.http.Path
 import retrofit2.http.Query
 import xyz.lisfox.vocaland.data.model.CommentDto
 import xyz.lisfox.vocaland.data.model.CommentListResponse
@@ -34,4 +36,14 @@ interface CommunityApi {
 
     @GET("comments/recent")
     suspend fun recentComments(@Query("limit") limit: Int = 8): DataEnvelope<List<CommentDto>>
+
+    @GET("user/{id}")
+    suspend fun publicUser(@Path("id") id: Int): JsonElement
+
+    @GET("ratings/users/{id}")
+    suspend fun userRatings(
+        @Path("id") id: Int,
+        @Query("page") page: Int = 1,
+        @Query("page_size") pageSize: Int = 20,
+    ): RatingListResponse
 }

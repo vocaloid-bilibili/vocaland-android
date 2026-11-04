@@ -19,6 +19,7 @@ object Routes {
     const val SONG = "song/{songId}"
     const val ARTIST = "artist/{kind}/{artistId}"
     const val TAG = "tag/{tagId}"
+    const val USER = "user/{userId}"
 
     fun feature(title: String): String = "feature/${Uri.encode(title)}"
 
@@ -27,6 +28,8 @@ object Routes {
     fun artist(kind: ArtistKind, id: Int): String = "artist/${kind.apiType}/$id"
 
     fun tag(id: Int): String = "tag/$id"
+
+    fun user(id: Int): String = "user/$id"
 }
 
 data class TopLevelDestination(

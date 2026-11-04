@@ -20,6 +20,7 @@ import xyz.lisfox.vocaland.data.model.SongRankingStatsDto
 import xyz.lisfox.vocaland.data.model.SongWithVideosListResponse
 import xyz.lisfox.vocaland.data.model.TagItemDto
 import xyz.lisfox.vocaland.data.model.TrendingCampaignDto
+import xyz.lisfox.vocaland.data.model.UserLitStatsDto
 
 interface VocaLandApi {
     @GET("hero/slides")
@@ -139,4 +140,7 @@ interface VocaLandApi {
 
     @GET("tag/{id}")
     suspend fun tagDetail(@Path("id") id: Int): TagItemDto
+
+    @GET("lit/users/{id}")
+    suspend fun userLitStats(@Path("id") id: Int): UserLitStatsDto
 }

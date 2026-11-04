@@ -60,6 +60,7 @@ import xyz.lisfox.vocaland.ui.search.SearchScreen
 import xyz.lisfox.vocaland.ui.song.SongDetailScreen
 import xyz.lisfox.vocaland.ui.tag.TagDetailScreen
 import xyz.lisfox.vocaland.ui.theme.VocaLandTheme
+import xyz.lisfox.vocaland.ui.user.UserScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -186,6 +187,11 @@ fun VocaLandApp(
                             },
                             onOpenSong = { id ->
                                 navController.navigate(Routes.song(id)) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            onOpenUser = { id ->
+                                navController.navigate(Routes.user(id)) {
                                     launchSingleTop = true
                                 }
                             },
@@ -318,7 +324,42 @@ fun VocaLandApp(
                                         launchSingleTop = true
                                     }
                                 },
+                                onOpenUser = { id ->
+                                    navController.navigate(Routes.user(id)) {
+                                        launchSingleTop = true
+                                    }
+                                },
                                 onLogin = { navController.navigate(Routes.LOGIN) },
+                                modifier = contentModifier,
+                            )
+                        }
+                    }
+                }
+                composable(
+                    route = Routes.USER,
+                    arguments = listOf(
+                        navArgument("userId") { type = NavType.IntType },
+                    ),
+                ) { entry ->
+                    val userId = entry.arguments?.getInt("userId") ?: 0
+                    PageScaffold(
+                        title = "用户",
+                        onBack = { navController.popBackStack() },
+                    ) { contentModifier ->
+                        if (userId <= 0) {
+                            FeatureScreen(
+                                title = "无效的用户",
+                                modifier = contentModifier,
+                            )
+                        } else {
+                            UserScreen(
+                                repository = container.userRepository,
+                                userId = userId,
+                                onOpenSong = { id ->
+                                    navController.navigate(Routes.song(id)) {
+                                        launchSingleTop = true
+                                    }
+                                },
                                 modifier = contentModifier,
                             )
                         }

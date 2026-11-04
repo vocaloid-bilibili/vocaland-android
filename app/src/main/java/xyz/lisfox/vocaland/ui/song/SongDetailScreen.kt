@@ -84,6 +84,7 @@ fun SongDetailScreen(
     songId: Int,
     onOpenArtist: (ArtistKind, Int) -> Unit,
     onOpenTag: (Int) -> Unit,
+    onOpenUser: (Int) -> Unit,
     onLogin: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -118,6 +119,7 @@ fun SongDetailScreen(
                     song = song,
                     onOpenArtist = onOpenArtist,
                     onOpenTag = onOpenTag,
+                    onOpenUser = onOpenUser,
                     onLogin = onLogin,
                     onSelectRankingBoard = viewModel::selectRankingBoard,
                     onRetryRanking = viewModel::retryRanking,
@@ -140,6 +142,7 @@ private fun SongDetailContent(
     song: SongDto,
     onOpenArtist: (ArtistKind, Int) -> Unit,
     onOpenTag: (Int) -> Unit,
+    onOpenUser: (Int) -> Unit,
     onLogin: () -> Unit,
     onSelectRankingBoard: (RankingBoard) -> Unit,
     onRetryRanking: () -> Unit,
@@ -257,6 +260,7 @@ private fun SongDetailContent(
                 onRetry = onRetryRatings,
                 onPrevious = onPreviousRatings,
                 onNext = onNextRatings,
+                onOpenUser = onOpenUser,
             )
         }
 
@@ -267,6 +271,7 @@ private fun SongDetailContent(
                 onRetry = onRetryComments,
                 onPrevious = onPreviousComments,
                 onNext = onNextComments,
+                onOpenUser = onOpenUser,
             )
         }
     }
@@ -630,6 +635,7 @@ private fun SongRatingsSection(
     onRetry: () -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
+    onOpenUser: (Int) -> Unit,
 ) {
     val summary = state.ratingSummary
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
@@ -663,7 +669,7 @@ private fun SongRatingsSection(
             else -> {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     state.ratings.forEach { rating ->
-                        RatingCard(rating)
+                        RatingCard(rating, onOpenUser)
                     }
                 }
             }
@@ -722,12 +728,13 @@ private fun RatingSummaryCard(summary: RatingSummaryDto) {
 }
 
 @Composable
-private fun RatingCard(rating: RatingDto) {
+private fun RatingCard(rating: RatingDto, onOpenUser: (Int) -> Unit) {
     val name = if (rating.isAnonymous && !rating.isRevealed) {
         "匿名用户"
     } else {
         rating.user.nickname.ifBlank { "用户 #${rating.user.id}" }
     }
+    val canOpenUser = rating.user.id > 0 && !(rating.isAnonymous && !rating.isRevealed)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -745,7 +752,10 @@ private fun RatingCard(rating: RatingDto) {
                 contentDescription = name,
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(CircleShape),
+                    .clip(CircleShape)
+                    .clickable(enabled = canOpenUser) {
+                        onOpenUser(rating.user.id)
+                    },
             )
 
             Column(
@@ -789,6 +799,7 @@ private fun SongCommentsSection(
     onRetry: () -> Unit,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
+    onOpenUser: (Int) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         SectionHeader(
@@ -823,7 +834,7 @@ private fun SongCommentsSection(
                 else -> {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         state.comments.forEach { comment ->
-                            CommentCard(comment)
+                            CommentCard(comment, onOpenUser)
                         }
                     }
                 }
@@ -845,8 +856,9 @@ private fun SongCommentsSection(
 }
 
 @Composable
-private fun CommentCard(comment: CommentDto) {
+private fun CommentCard(comment: CommentDto, onOpenUser: (Int) -> Unit) {
     val name = comment.user.nickname.ifBlank { "用户 #${comment.user.id}" }
+    val canOpenUser = comment.user.id > 0
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -864,7 +876,10 @@ private fun CommentCard(comment: CommentDto) {
                 contentDescription = name,
                 modifier = Modifier
                     .size(40.dp)
-                    .clip(CircleShape),
+                    .clip(CircleShape)
+                    .clickable(enabled = canOpenUser) {
+                        onOpenUser(comment.user.id)
+                    },
             )
 
             Column(
