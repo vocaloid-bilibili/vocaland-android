@@ -91,6 +91,15 @@ fun VocaLandApp(
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = backStackEntry?.destination?.route
         val isLogin = currentRoute == Routes.LOGIN
+        val navigateToTopLevel: (String) -> Unit = { route ->
+            navController.navigate(route) {
+                popUpTo(navController.graph.findStartDestination().id) {
+                    saveState = true
+                }
+                launchSingleTop = true
+                restoreState = true
+            }
+        }
 
         Scaffold(
             modifier = modifier.fillMaxSize(),
@@ -114,15 +123,7 @@ fun VocaLandApp(
                 ) {
                     CompactBottomBar(
                         currentRoute = currentRoute,
-                        onSelect = { route ->
-                            navController.navigate(route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
+                        onSelect = navigateToTopLevel,
                     )
                 }
             },
@@ -433,9 +434,7 @@ fun VocaLandApp(
                                 },
                                 onPlayPlaylist = { tracks ->
                                     container.bgmPlayerController.replaceQueue(tracks)
-                                    navController.navigate(Routes.PLAYER) {
-                                        launchSingleTop = true
-                                    }
+                                    navigateToTopLevel(Routes.PLAYER)
                                 },
                                 modifier = contentModifier,
                             )
@@ -646,6 +645,7 @@ private fun PageScaffold(
                         Text(
                             text = title,
                             modifier = Modifier.fillMaxWidth(),
+                            style = MaterialTheme.typography.titleLarge,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             textAlign = TextAlign.Center,
