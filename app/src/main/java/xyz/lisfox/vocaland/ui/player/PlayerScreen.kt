@@ -307,6 +307,7 @@ private fun PlayerControls(
                     selected = playMode == mode,
                     onClick = { controller.setPlayMode(mode) },
                     label = { Text(mode.label) },
+                    border = null,
                 )
             }
         }
