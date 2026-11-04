@@ -306,6 +306,7 @@ fun VocaLandApp(
                         } else {
                             SongDetailScreen(
                                 repository = container.songDetailRepository,
+                                session = container.session,
                                 songId = songId,
                                 onOpenArtist = { kind, id ->
                                     navController.navigate(Routes.artist(kind, id)) {
@@ -317,6 +318,7 @@ fun VocaLandApp(
                                         launchSingleTop = true
                                     }
                                 },
+                                onLogin = { navController.navigate(Routes.LOGIN) },
                                 modifier = contentModifier,
                             )
                         }

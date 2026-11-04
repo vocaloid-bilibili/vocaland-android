@@ -32,6 +32,8 @@ import xyz.lisfox.vocaland.data.model.ArtistStatsSummaryDto
 import xyz.lisfox.vocaland.data.repository.ArtistDetailRepository
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
+import xyz.lisfox.vocaland.ui.components.MetricGrid
+import xyz.lisfox.vocaland.ui.components.MetricItem
 import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.PagerRow
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
@@ -199,45 +201,19 @@ private fun StatsGrid(stats: ArtistStatsSummaryDto) {
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
     ) {
-        Column(
+        MetricGrid(
+            items = listOf(
+                MetricItem("播放", formatNumber(stats.view)),
+                MetricItem("收藏", formatNumber(stats.favorite)),
+                MetricItem("投币", formatNumber(stats.coin)),
+                MetricItem("点赞", formatNumber(stats.like)),
+                MetricItem("弹幕", formatNumber(stats.danmaku)),
+                MetricItem("评论", formatNumber(stats.reply)),
+                MetricItem("分享", formatNumber(stats.share)),
+                MetricItem("作品", formatNumber(stats.songCount.toLong())),
+            ),
             modifier = Modifier.padding(vertical = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                StatCell("播放", stats.view, Modifier.weight(1f))
-                StatCell("收藏", stats.favorite, Modifier.weight(1f))
-                StatCell("投币", stats.coin, Modifier.weight(1f))
-                StatCell("点赞", stats.like, Modifier.weight(1f))
-            }
-            Row(modifier = Modifier.fillMaxWidth()) {
-                StatCell("弹幕", stats.danmaku, Modifier.weight(1f))
-                StatCell("评论", stats.reply, Modifier.weight(1f))
-                StatCell("分享", stats.share, Modifier.weight(1f))
-                StatCell("作品", stats.songCount.toLong(), Modifier.weight(1f))
-            }
-        }
-    }
-}
-
-@Composable
-private fun StatCell(
-    label: String,
-    value: Long,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(2.dp),
-    ) {
-        Text(
-            text = formatNumber(value),
-            style = MaterialTheme.typography.titleSmall,
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            columns = 4,
         )
     }
 }

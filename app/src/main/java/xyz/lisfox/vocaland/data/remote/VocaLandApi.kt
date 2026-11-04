@@ -16,6 +16,7 @@ import xyz.lisfox.vocaland.data.model.SiteStatsDto
 import xyz.lisfox.vocaland.data.model.SongBriefDto
 import xyz.lisfox.vocaland.data.model.SongDto
 import xyz.lisfox.vocaland.data.model.SongListResponse
+import xyz.lisfox.vocaland.data.model.SongRankingStatsDto
 import xyz.lisfox.vocaland.data.model.SongWithVideosListResponse
 import xyz.lisfox.vocaland.data.model.TagItemDto
 import xyz.lisfox.vocaland.data.model.TrendingCampaignDto
@@ -99,6 +100,20 @@ interface VocaLandApi {
         @Path("type") type: String,
         @Path("id") id: Int,
     ): DataEnvelope<ArtistStatsSummaryDto>
+
+    @GET("song/ranking")
+    suspend fun songRanking(
+        @Query("id") id: Int,
+        @Query("board") board: String,
+        @Query("page") page: Int = 1,
+        @Query("page_size") pageSize: Int = 20,
+    ): RankingListResponse
+
+    @GET("song/ranking-stats")
+    suspend fun songRankingStats(
+        @Query("id") id: Int,
+        @Query("board") board: String,
+    ): DataEnvelope<SongRankingStatsDto?>
 
     @GET("song/by_artist")
     suspend fun songsByArtist(

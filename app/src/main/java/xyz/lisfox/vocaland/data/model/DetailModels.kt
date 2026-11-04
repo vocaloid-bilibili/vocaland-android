@@ -44,6 +44,44 @@ data class TagItemDto(
     val picture: String? = null,
 )
 
+@Serializable
+data class RatingSummaryDto(
+    val targetKey: String = "",
+    val total: Int = 0,
+    val avgScore: Double? = null,
+    val scoreCounts: List<Int> = emptyList(),
+)
+
+@Serializable
+data class RatingListResponse(
+    val data: List<RatingDto> = emptyList(),
+    val total: Int = 0,
+)
+
+@Serializable
+data class CommentListResponse(
+    val data: List<CommentDto> = emptyList(),
+    val total: Int = 0,
+)
+
+@Serializable
+data class SongRankingStatsDto(
+    val totalCount: Int = 0,
+    val top20Count: Int = 0,
+    val top1Count: Int = 0,
+    val bestRank: Int = 0,
+    val bestRankIssue: Int? = null,
+    val avgRank: Double? = null,
+    val recentCount: Int = 0,
+    val bestPoint: Long = 0,
+    val bestPointIssue: Int? = null,
+    val firstIssue: Int = 0,
+    val firstIssueRank: Int? = null,
+    val latestRank: Int? = null,
+    val latestIssue: Int? = null,
+    val prevRank: Int? = null,
+)
+
 data class SongPage(
     val songs: List<SongDto> = emptyList(),
     val total: Int = 0,

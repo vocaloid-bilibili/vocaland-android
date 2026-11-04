@@ -60,7 +60,7 @@ class AppContainer(context: Context) {
     val homeRepository = HomeRepository(v3Api, v2Api)
     val rankingRepository = RankingRepository(v3Api)
     val searchRepository = SearchRepository(v3Api)
-    val songDetailRepository = SongDetailRepository(v3Api)
+    val songDetailRepository = SongDetailRepository(v3Api, v2Api)
     val artistDetailRepository = ArtistDetailRepository(v3Api)
     val tagDetailRepository = TagDetailRepository(v3Api)
     val themePreferences = ThemePreferences(appContext)

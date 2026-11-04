@@ -200,12 +200,25 @@ data class CommentUserDto(
 )
 
 @Serializable
+data class ReplyToDto(
+    val id: Int = 0,
+    val username: String = "",
+    val nickname: String = "",
+)
+
+@Serializable
 data class CommentDto(
     val id: Int = 0,
     val content: String = "",
     val targetKey: String = "",
     val user: CommentUserDto = CommentUserDto(),
+    val parentId: Int? = null,
+    val replyTo: ReplyToDto? = null,
+    val isDeleted: Boolean = false,
+    val isAuthor: Boolean = false,
     val likeCount: Int = 0,
+    val isLiked: Boolean = false,
+    val replyCount: Int = 0,
     val createdAt: String = "",
 )
 
