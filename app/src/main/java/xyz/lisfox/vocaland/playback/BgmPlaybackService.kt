@@ -1,18 +1,22 @@
 package xyz.lisfox.vocaland.playback
 
+import android.Manifest
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
 import android.media.MediaMetadata
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
+import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -153,6 +157,15 @@ class BgmPlaybackService : Service() {
     }
 
     private fun updateNotification(state: BgmPlayerState) {
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS,
+            ) != PackageManager.PERMISSION_GRANTED
+        ) {
+            return
+        }
         val track = state.currentTrack
         val key = "${track?.bvid}|${state.playing}|${state.loadingTrack}|${state.error}"
         if (key == notificationKey) return
