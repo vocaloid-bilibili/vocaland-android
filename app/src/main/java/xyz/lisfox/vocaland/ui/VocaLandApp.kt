@@ -45,7 +45,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import xyz.lisfox.vocaland.data.model.ArtistKind
 import xyz.lisfox.vocaland.di.AppContainer
+import xyz.lisfox.vocaland.ui.artist.ArtistDetailScreen
 import xyz.lisfox.vocaland.ui.components.BrandTitle
 import xyz.lisfox.vocaland.ui.home.HomeScreen
 import xyz.lisfox.vocaland.ui.login.LoginScreen
@@ -55,6 +57,8 @@ import xyz.lisfox.vocaland.ui.placeholder.FeatureScreen
 import xyz.lisfox.vocaland.ui.profile.ProfileScreen
 import xyz.lisfox.vocaland.ui.ranking.RankingScreen
 import xyz.lisfox.vocaland.ui.search.SearchScreen
+import xyz.lisfox.vocaland.ui.song.SongDetailScreen
+import xyz.lisfox.vocaland.ui.tag.TagDetailScreen
 import xyz.lisfox.vocaland.ui.theme.VocaLandTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -180,6 +184,11 @@ fun VocaLandApp(
                             onOpenFeature = { title ->
                                 navController.navigate(Routes.feature(title))
                             },
+                            onOpenSong = { id ->
+                                navController.navigate(Routes.song(id)) {
+                                    launchSingleTop = true
+                                }
+                            },
                             modifier = contentModifier,
                         )
                     }
@@ -188,8 +197,10 @@ fun VocaLandApp(
                     PageScaffold(title = "排行榜") { contentModifier ->
                         RankingScreen(
                             repository = container.rankingRepository,
-                            onOpenFeature = { title ->
-                                navController.navigate(Routes.feature(title))
+                            onOpenSong = { id ->
+                                navController.navigate(Routes.song(id)) {
+                                    launchSingleTop = true
+                                }
                             },
                             modifier = contentModifier,
                         )
@@ -199,8 +210,20 @@ fun VocaLandApp(
                     PageScaffold(title = "搜索") { contentModifier ->
                         SearchScreen(
                             repository = container.searchRepository,
-                            onOpenFeature = { title ->
-                                navController.navigate(Routes.feature(title))
+                            onOpenSong = { id ->
+                                navController.navigate(Routes.song(id)) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            onOpenArtist = { kind, id ->
+                                navController.navigate(Routes.artist(kind, id)) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            onOpenTag = { id ->
+                                navController.navigate(Routes.tag(id)) {
+                                    launchSingleTop = true
+                                }
                             },
                             modifier = contentModifier,
                         )
@@ -262,6 +285,105 @@ fun VocaLandApp(
                             },
                             modifier = contentModifier,
                         )
+                    }
+                }
+                composable(
+                    route = Routes.SONG,
+                    arguments = listOf(
+                        navArgument("songId") { type = NavType.IntType },
+                    ),
+                ) { entry ->
+                    val songId = entry.arguments?.getInt("songId") ?: 0
+                    PageScaffold(
+                        title = "歌曲",
+                        onBack = { navController.popBackStack() },
+                    ) { contentModifier ->
+                        if (songId <= 0) {
+                            FeatureScreen(
+                                title = "无效的歌曲",
+                                modifier = contentModifier,
+                            )
+                        } else {
+                            SongDetailScreen(
+                                repository = container.songDetailRepository,
+                                songId = songId,
+                                onOpenArtist = { kind, id ->
+                                    navController.navigate(Routes.artist(kind, id)) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                onOpenTag = { id ->
+                                    navController.navigate(Routes.tag(id)) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                modifier = contentModifier,
+                            )
+                        }
+                    }
+                }
+                composable(
+                    route = Routes.ARTIST,
+                    arguments = listOf(
+                        navArgument("kind") { type = NavType.StringType },
+                        navArgument("artistId") { type = NavType.IntType },
+                    ),
+                ) { entry ->
+                    val kindParam = entry.arguments?.getString("kind").orEmpty()
+                    val artistId = entry.arguments?.getInt("artistId") ?: 0
+                    val kind = ArtistKind.fromApiType(kindParam)
+                    PageScaffold(
+                        title = kind?.label ?: "艺人",
+                        onBack = { navController.popBackStack() },
+                    ) { contentModifier ->
+                        if (kind == null || artistId <= 0) {
+                            FeatureScreen(
+                                title = "无效的艺人",
+                                modifier = contentModifier,
+                            )
+                        } else {
+                            ArtistDetailScreen(
+                                repository = container.artistDetailRepository,
+                                kind = kind,
+                                artistId = artistId,
+                                onOpenSong = { id ->
+                                    navController.navigate(Routes.song(id)) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                modifier = contentModifier,
+                            )
+                        }
+                    }
+                }
+                composable(
+                    route = Routes.TAG,
+                    arguments = listOf(
+                        navArgument("tagId") { type = NavType.IntType },
+                    ),
+                ) { entry ->
+                    val tagId = entry.arguments?.getInt("tagId") ?: 0
+                    PageScaffold(
+                        title = "标签",
+                        onBack = { navController.popBackStack() },
+                    ) { contentModifier ->
+                        if (tagId <= 0) {
+                            FeatureScreen(
+                                title = "无效的标签",
+                                modifier = contentModifier,
+                            )
+                        } else {
+                            TagDetailScreen(
+                                repository = container.tagDetailRepository,
+                                tagId = tagId,
+                                onOpenSong = { id ->
+                                    navController.navigate(Routes.song(id)) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                modifier = contentModifier,
+                            )
+                        }
                     }
                 }
                 composable(

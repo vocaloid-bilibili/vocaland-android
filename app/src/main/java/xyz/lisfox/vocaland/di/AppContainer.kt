@@ -12,10 +12,13 @@ import xyz.lisfox.vocaland.data.remote.AppJson
 import xyz.lisfox.vocaland.data.remote.AuthApi
 import xyz.lisfox.vocaland.data.remote.CommunityApi
 import xyz.lisfox.vocaland.data.remote.VocaLandApi
+import xyz.lisfox.vocaland.data.repository.ArtistDetailRepository
 import xyz.lisfox.vocaland.data.repository.AuthRepository
 import xyz.lisfox.vocaland.data.repository.HomeRepository
 import xyz.lisfox.vocaland.data.repository.RankingRepository
 import xyz.lisfox.vocaland.data.repository.SearchRepository
+import xyz.lisfox.vocaland.data.repository.SongDetailRepository
+import xyz.lisfox.vocaland.data.repository.TagDetailRepository
 import xyz.lisfox.vocaland.data.session.AuthInterceptor
 import xyz.lisfox.vocaland.data.session.AuthSession
 import xyz.lisfox.vocaland.data.session.TokenAuthenticator
@@ -57,6 +60,9 @@ class AppContainer(context: Context) {
     val homeRepository = HomeRepository(v3Api, v2Api)
     val rankingRepository = RankingRepository(v3Api)
     val searchRepository = SearchRepository(v3Api)
+    val songDetailRepository = SongDetailRepository(v3Api)
+    val artistDetailRepository = ArtistDetailRepository(v3Api)
+    val tagDetailRepository = TagDetailRepository(v3Api)
     val themePreferences = ThemePreferences(appContext)
 
     private fun retrofit(baseUrl: String): Retrofit = Retrofit.Builder()

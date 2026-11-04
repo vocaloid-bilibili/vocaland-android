@@ -65,7 +65,7 @@ import kotlin.math.roundToLong
 @Composable
 fun RankingScreen(
     repository: RankingRepository,
-    onOpenFeature: (String) -> Unit,
+    onOpenSong: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: RankingViewModel = viewModel(
@@ -151,7 +151,7 @@ fun RankingScreen(
                 RankingRow(
                     item = item,
                     order = currentData.order,
-                    onClick = { onOpenFeature("歌曲：${songDisplayName(item.song)}") },
+                    onClick = { onOpenSong(item.song.id) },
                 )
             }
             if (currentData.items.isNotEmpty()) {

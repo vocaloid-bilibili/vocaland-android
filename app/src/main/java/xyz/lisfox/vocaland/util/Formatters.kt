@@ -39,6 +39,10 @@ fun SearchEntityDto.coverUrl(): String? =
 
 fun SongDto.artistLine(): String = artistLine(producers, vocalists)
 
+fun SongDto.coverUrl(): String? =
+    thumbnail?.trim()?.takeIf { it.isNotEmpty() }
+        ?: videos.firstOrNull()?.thumbnail?.trim()?.takeIf { it.isNotEmpty() }
+
 fun SongBriefDto.artistLine(): String = artistLine(producers, vocalists)
 
 fun artistLine(

@@ -47,7 +47,7 @@ fun TopSongsSection(
     loading: Boolean,
     error: String?,
     onSelectStat: (String) -> Unit,
-    onOpenSong: (Int, String) -> Unit,
+    onOpenSong: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -81,7 +81,7 @@ fun TopSongsSection(
                             thumbnail = item.video?.thumbnail,
                             value = statValue(item, selectedStat),
                             unit = unit,
-                            onClick = { onOpenSong(item.song.id, songDisplayName(item.song)) },
+                            onClick = { onOpenSong(item.song.id) },
                         )
                         if (index != items.lastIndex) {
                             HorizontalDivider(
@@ -101,7 +101,7 @@ fun OnThisDaySection(
     month: Int,
     day: Int,
     items: List<SongListItemDto>,
-    onOpenSong: (Int, String) -> Unit,
+    onOpenSong: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -120,7 +120,7 @@ fun OnThisDaySection(
                         thumbnail = item.video?.thumbnail,
                         value = item.snapshot?.view,
                         unit = "播放",
-                        onClick = { onOpenSong(item.song.id, songDisplayName(item.song)) },
+                        onClick = { onOpenSong(item.song.id) },
                     )
                     if (index != items.take(10).lastIndex) {
                         HorizontalDivider(
@@ -137,7 +137,7 @@ fun OnThisDaySection(
 @Composable
 fun LatestSongsSection(
     songs: List<SongBriefDto>,
-    onOpenSong: (Int, String) -> Unit,
+    onOpenSong: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -157,7 +157,7 @@ fun LatestSongsSection(
                     rowSongs.forEach { song ->
                         LatestSongCard(
                             song = song,
-                            onClick = { onOpenSong(song.id, songDisplayName(song)) },
+                            onClick = { onOpenSong(song.id) },
                             modifier = Modifier.weight(1f),
                         )
                     }

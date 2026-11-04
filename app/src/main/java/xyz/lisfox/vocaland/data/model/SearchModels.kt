@@ -13,6 +13,7 @@ data class SearchEntityDto(
     val abbreviation: String? = null,
     val description: String? = null,
     val associationCount: Int = 0,
+    val uid: String? = null,
     val score: Double = 0.0,
     val producers: List<SongProducerDto> = emptyList(),
     val vocalists: List<SongVocalistDto> = emptyList(),

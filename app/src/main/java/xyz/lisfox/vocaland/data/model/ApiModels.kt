@@ -39,6 +39,8 @@ data class ArtistBriefDto(
     val id: Int = 0,
     val name: String = "",
     val picture: String? = null,
+    val uid: String? = null,
+    val vocadbId: Int? = null,
 )
 
 @Serializable
@@ -79,6 +81,10 @@ data class VideoDto(
     val duration: Int? = null,
     val copyright: Int? = null,
     val disabled: Boolean = false,
+    val songId: Int = 0,
+    val page: Int? = null,
+    val uploader: ArtistBriefDto? = null,
+    val latestSnapshot: SnapshotDto? = null,
 )
 
 @Serializable

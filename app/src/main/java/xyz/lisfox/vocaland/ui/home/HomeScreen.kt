@@ -32,13 +32,13 @@ import xyz.lisfox.vocaland.data.model.SongListItemDto
 import xyz.lisfox.vocaland.data.repository.HomeRepository
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
-import xyz.lisfox.vocaland.util.songDisplayName
 import xyz.lisfox.vocaland.util.targetLabel
 
 @Composable
 fun HomeScreen(
     repository: HomeRepository,
     onOpenFeature: (String) -> Unit,
+    onOpenSong: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: HomeViewModel = viewModel(
@@ -77,6 +77,7 @@ fun HomeScreen(
                     onRefresh = viewModel::refresh,
                     onSelectStat = viewModel::selectStat,
                     onOpenFeature = onOpenFeature,
+                    onOpenSong = onOpenSong,
                 )
             }
         }
@@ -95,6 +96,7 @@ private fun HomeContentList(
     onRefresh: () -> Unit,
     onSelectStat: (String) -> Unit,
     onOpenFeature: (String) -> Unit,
+    onOpenSong: (Int) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
@@ -177,7 +179,10 @@ private fun HomeContentList(
         item {
             MilestonesSection(
                 milestones = content.milestones,
-                onOpen = { onOpenFeature("歌曲：${songDisplayName(it.song)}") },
+                onOpen = {
+                    val songId = it.song.id.takeIf { id -> id > 0 } ?: it.songId
+                    if (songId > 0) onOpenSong(songId)
+                },
                 onOpenAll = { onOpenFeature("成就殿堂") },
             )
         }
@@ -189,7 +194,7 @@ private fun HomeContentList(
                 loading = topSongsLoading,
                 error = topSongsError,
                 onSelectStat = onSelectStat,
-                onOpenSong = { _, name -> onOpenFeature("歌曲：$name") },
+                onOpenSong = onOpenSong,
             )
         }
 
@@ -198,7 +203,7 @@ private fun HomeContentList(
                 month = content.todayMonth,
                 day = content.todayDay,
                 items = content.onThisDay,
-                onOpenSong = { _, name -> onOpenFeature("歌曲：$name") },
+                onOpenSong = onOpenSong,
             )
         }
 
@@ -212,7 +217,7 @@ private fun HomeContentList(
         item {
             LatestSongsSection(
                 songs = content.latestSongs,
-                onOpenSong = { _, name -> onOpenFeature("歌曲：$name") },
+                onOpenSong = onOpenSong,
             )
         }
 

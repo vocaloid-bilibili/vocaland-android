@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.graphics.vector.ImageVector
+import xyz.lisfox.vocaland.data.model.ArtistKind
 
 object Routes {
     const val HOME = "home"
@@ -15,8 +16,17 @@ object Routes {
     const val PROFILE = "profile"
     const val LOGIN = "login"
     const val FEATURE = "feature/{title}"
+    const val SONG = "song/{songId}"
+    const val ARTIST = "artist/{kind}/{artistId}"
+    const val TAG = "tag/{tagId}"
 
     fun feature(title: String): String = "feature/${Uri.encode(title)}"
+
+    fun song(id: Int): String = "song/$id"
+
+    fun artist(kind: ArtistKind, id: Int): String = "artist/${kind.apiType}/$id"
+
+    fun tag(id: Int): String = "tag/$id"
 }
 
 data class TopLevelDestination(

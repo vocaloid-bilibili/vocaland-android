@@ -3,6 +3,8 @@ package xyz.lisfox.vocaland.data.remote
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
+import xyz.lisfox.vocaland.data.model.ArtistDetailDto
+import xyz.lisfox.vocaland.data.model.ArtistStatsSummaryDto
 import xyz.lisfox.vocaland.data.model.ComprehensiveSearchResponse
 import xyz.lisfox.vocaland.data.model.DataEnvelope
 import xyz.lisfox.vocaland.data.model.EdCampaignDto
@@ -12,7 +14,10 @@ import xyz.lisfox.vocaland.data.model.RankingListResponse
 import xyz.lisfox.vocaland.data.model.SearchListResponse
 import xyz.lisfox.vocaland.data.model.SiteStatsDto
 import xyz.lisfox.vocaland.data.model.SongBriefDto
+import xyz.lisfox.vocaland.data.model.SongDto
 import xyz.lisfox.vocaland.data.model.SongListResponse
+import xyz.lisfox.vocaland.data.model.SongWithVideosListResponse
+import xyz.lisfox.vocaland.data.model.TagItemDto
 import xyz.lisfox.vocaland.data.model.TrendingCampaignDto
 
 interface VocaLandApi {
@@ -76,4 +81,47 @@ interface VocaLandApi {
         @Query("page") page: Int = 1,
         @Query("page_size") pageSize: Int = 20,
     ): SearchListResponse
+
+    @GET("song/{id}")
+    suspend fun songDetail(
+        @Path("id") id: Int,
+        @Query("include_all_video") includeAllVideo: Boolean = false,
+    ): DataEnvelope<SongDto>
+
+    @GET("{type}/{id}")
+    suspend fun artistDetail(
+        @Path("type") type: String,
+        @Path("id") id: Int,
+    ): DataEnvelope<ArtistDetailDto>
+
+    @GET("{type}/{id}/stats/summary")
+    suspend fun artistStatsSummary(
+        @Path("type") type: String,
+        @Path("id") id: Int,
+    ): DataEnvelope<ArtistStatsSummaryDto>
+
+    @GET("song/by_artist")
+    suspend fun songsByArtist(
+        @Query("type") type: String,
+        @Query("id") id: Int,
+        @Query("page") page: Int = 1,
+        @Query("page_size") pageSize: Int = 20,
+    ): SongWithVideosListResponse
+
+    @GET("song/list/by_tag")
+    suspend fun songsByTag(
+        @Query("tag_id") tagId: Int,
+        @Query("page") page: Int = 1,
+        @Query("page_size") pageSize: Int = 20,
+        @Query("sort") sort: String = "latest",
+    ): SongWithVideosListResponse
+
+    @GET("tag/{entityType}/{entityId}")
+    suspend fun entityTags(
+        @Path("entityType") entityType: String,
+        @Path("entityId") entityId: Int,
+    ): DataEnvelope<List<TagItemDto>>
+
+    @GET("tag/{id}")
+    suspend fun tagDetail(@Path("id") id: Int): TagItemDto
 }
