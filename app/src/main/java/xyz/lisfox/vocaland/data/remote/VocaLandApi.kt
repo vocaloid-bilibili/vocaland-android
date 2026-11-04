@@ -12,6 +12,7 @@ import xyz.lisfox.vocaland.data.model.ComprehensiveSearchResponse
 import xyz.lisfox.vocaland.data.model.DataEnvelope
 import xyz.lisfox.vocaland.data.model.EdCampaignDto
 import xyz.lisfox.vocaland.data.model.HeroSlideDto
+import xyz.lisfox.vocaland.data.model.ListEnvelope
 import xyz.lisfox.vocaland.data.model.MilestoneDto
 import xyz.lisfox.vocaland.data.model.RankingListResponse
 import xyz.lisfox.vocaland.data.model.SearchListResponse

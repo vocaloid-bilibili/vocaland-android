@@ -19,8 +19,9 @@ class BgmRepository(
         val bvids = v3.bgmPlaylist().data
         if (bvids.isEmpty()) return@runCatching emptyList()
 
-        val videos = bvids.chunked(VIDEO_BATCH_SIZE).flatMap { batch ->
-            v3.videosByBvids(VideoBatchRequest(batch)).data
+        val videos = mutableListOf<BgmVideoDto?>()
+        for (batch in bvids.chunked(VIDEO_BATCH_SIZE)) {
+            videos += v3.videosByBvids(VideoBatchRequest(batch)).data
         }
         videos.mapNotNull { it?.toTrack() }
     }
