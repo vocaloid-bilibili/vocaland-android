@@ -2,6 +2,7 @@ package xyz.lisfox.vocaland.data.repository
 
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
+import kotlinx.serialization.decodeFromString
 import xyz.lisfox.vocaland.data.model.EdBonusVoteDto
 import xyz.lisfox.vocaland.data.model.EdCampaignDto
 import xyz.lisfox.vocaland.data.model.EdCandidateDto
@@ -23,6 +24,7 @@ import xyz.lisfox.vocaland.data.model.TrendingNominateRequest
 import xyz.lisfox.vocaland.data.model.TrendingResultRowDto
 import xyz.lisfox.vocaland.data.model.TrendingTallyDto
 import xyz.lisfox.vocaland.data.model.WalletDto
+import xyz.lisfox.vocaland.data.remote.AppJson
 import xyz.lisfox.vocaland.data.remote.CommunityApi
 import xyz.lisfox.vocaland.data.remote.VocaLandApi
 
@@ -45,12 +47,18 @@ class VotingRepository(
     suspend fun loadEdNomination(campaignId: Int): Result<EdNominationData> = runCatching {
         coroutineScope {
             val candidates = async { api.edCandidates(campaignId) }
-            val myNomination = async { api.edMyNomination(campaignId) }
+            val myNomination = async { fetchEdNomination(campaignId) }
             EdNominationData(
                 candidates = candidates.await(),
                 myNomination = myNomination.await(),
             )
         }
+    }
+
+    private suspend fun fetchEdNomination(campaignId: Int): EdCandidateDto? {
+        val raw = api.edMyNomination(campaignId).use { it.string() }
+        if (raw.isBlank()) return null
+        return AppJson.decodeFromString<EdCandidateDto?>(raw)
     }
 
     suspend fun checkEdEligibility(campaignId: Int, bvid: String): Result<EdEligibilityDto> =

@@ -6,13 +6,13 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
 import retrofit2.http.Query
+import okhttp3.ResponseBody
 import xyz.lisfox.vocaland.data.model.ArtistDetailDto
 import xyz.lisfox.vocaland.data.model.ArtistStatsSummaryDto
 import xyz.lisfox.vocaland.data.model.BgmVideoDto
 import xyz.lisfox.vocaland.data.model.ComprehensiveSearchResponse
 import xyz.lisfox.vocaland.data.model.DataEnvelope
 import xyz.lisfox.vocaland.data.model.EdCampaignDto
-import xyz.lisfox.vocaland.data.model.EdCandidateDto
 import xyz.lisfox.vocaland.data.model.EdCandidateListResponse
 import xyz.lisfox.vocaland.data.model.EdCastVotesRequest
 import xyz.lisfox.vocaland.data.model.EdEligibilityDto
@@ -94,7 +94,7 @@ interface VocaLandApi {
     @GET("ed/my-nomination")
     suspend fun edMyNomination(
         @Query("campaign_id") campaignId: Int,
-    ): EdCandidateDto?
+    ): ResponseBody
 
     @POST("ed/submit")
     suspend fun submitEdNomination(
