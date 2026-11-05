@@ -36,6 +36,7 @@ import xyz.lisfox.vocaland.data.model.TagItemDto
 import xyz.lisfox.vocaland.data.model.PlaylistDetailDto
 import xyz.lisfox.vocaland.data.model.PublicPlaylistListResponse
 import xyz.lisfox.vocaland.data.model.TrendingCampaignDto
+import xyz.lisfox.vocaland.data.model.TrendingCandidateDto
 import xyz.lisfox.vocaland.data.model.TrendingCandidateListResponse
 import xyz.lisfox.vocaland.data.model.TrendingCastVotesRequest
 import xyz.lisfox.vocaland.data.model.TrendingHistoryListResponse

@@ -782,11 +782,11 @@ fun TrendingEntitySearchRow(
         ?: entity.name.trim().takeIf { it.isNotEmpty() }
         ?: entity.title?.trim()?.takeIf { it.isNotEmpty() }
         ?: entity.bvid
-    val producers = entity.producers.map { it.name.trim() }
+    val producers = entity.producers.map { it.producer.name.trim() }
         .filter { it.isNotEmpty() }
         .distinct()
         .joinToString(" / ")
-    val vocalists = entity.vocalists.map { it.name.trim() }
+    val vocalists = entity.vocalists.map { it.vocalist.name.trim() }
         .filter { it.isNotEmpty() }
         .distinct()
         .joinToString(" / ")
