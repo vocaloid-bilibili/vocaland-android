@@ -1,6 +1,8 @@
 package xyz.lisfox.vocaland.ui
 
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -31,17 +33,20 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,6 +69,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import java.io.File
 import kotlinx.coroutines.launch
 import xyz.lisfox.vocaland.data.collection.CollectionTarget
 import xyz.lisfox.vocaland.data.collection.DerivedCollectionKind
@@ -71,7 +77,6 @@ import xyz.lisfox.vocaland.data.collection.LitEntityType
 import xyz.lisfox.vocaland.data.community.CommunityTargets
 import xyz.lisfox.vocaland.data.model.ArtistKind
 import xyz.lisfox.vocaland.data.model.VotingKind
-import xyz.lisfox.vocaland.data.update.enqueueUpdateDownload
 import xyz.lisfox.vocaland.di.AppContainer
 import xyz.lisfox.vocaland.ui.account.WalletScreen
 import xyz.lisfox.vocaland.ui.artist.ArtistDetailScreen
@@ -105,7 +110,12 @@ import xyz.lisfox.vocaland.ui.tag.TagDetailScreen
 import xyz.lisfox.vocaland.ui.tag.TagIndexScreen
 import xyz.lisfox.vocaland.ui.theme.VocaLandTheme
 import xyz.lisfox.vocaland.ui.update.UpdateDialog
+import xyz.lisfox.vocaland.ui.update.UpdateDownloadDialog
+import xyz.lisfox.vocaland.ui.update.UpdateDownloadStatus
 import xyz.lisfox.vocaland.ui.update.UpdateViewModel
+import xyz.lisfox.vocaland.ui.update.canInstallPackages
+import xyz.lisfox.vocaland.ui.update.installApk
+import xyz.lisfox.vocaland.ui.update.installPermissionIntent
 import xyz.lisfox.vocaland.ui.user.UserScreen
 import xyz.lisfox.vocaland.ui.voting.EdVotingScreen
 import xyz.lisfox.vocaland.ui.voting.TrendingVotingScreen
@@ -124,16 +134,61 @@ fun VocaLandApp(
     val sessionState by container.session.state.collectAsStateWithLifecycle()
     val updateViewModel: UpdateViewModel = viewModel(
         factory = viewModelFactory {
-            initializer { UpdateViewModel(container.updateRepository) }
+            initializer { UpdateViewModel(container.updateRepository, container.updateDownloader) }
         },
     )
     val updateState by updateViewModel.state.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    var pendingInstallFile by remember { mutableStateOf<File?>(null) }
+    var showInstallPermission by remember { mutableStateOf(false) }
+    var promptedInstallFile by rememberSaveable { mutableStateOf<String?>(null) }
+
+    val installPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) {
+        val file = pendingInstallFile
+        showInstallPermission = false
+        if (file != null) {
+            when {
+                !canInstallPackages(context) -> {
+                    Toast.makeText(context, "未获得安装权限", Toast.LENGTH_SHORT).show()
+                }
+                installApk(context, file) -> {
+                    pendingInstallFile = null
+                }
+                else -> {
+                    Toast.makeText(context, "无法启动安装程序", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    val requestInstall: (File) -> Unit = { file ->
+        if (canInstallPackages(context)) {
+            if (!installApk(context, file)) {
+                Toast.makeText(context, "无法启动安装程序", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            pendingInstallFile = file
+            showInstallPermission = true
+        }
+    }
 
     LaunchedEffect(updateState.message) {
         val message = updateState.message ?: return@LaunchedEffect
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         updateViewModel.consumeMessage()
+    }
+
+    LaunchedEffect(updateState.download?.status, updateState.download?.apkFile) {
+        val download = updateState.download ?: return@LaunchedEffect
+        if (download.status != UpdateDownloadStatus.Completed) return@LaunchedEffect
+        val file = download.apkFile ?: return@LaunchedEffect
+        if (!canInstallPackages(context) && promptedInstallFile != file.absolutePath) {
+            promptedInstallFile = file.absolutePath
+            pendingInstallFile = file
+            showInstallPermission = true
+        }
     }
 
     VocaLandTheme(
@@ -1171,16 +1226,53 @@ fun VocaLandApp(
                         update = update,
                         onDismiss = updateViewModel::dismiss,
                         onDownload = { source ->
-                            val started = enqueueUpdateDownload(context, update, source)
-                            Toast.makeText(
-                                context,
-                                if (started) "已开始下载" else "无法开始下载",
-                                Toast.LENGTH_SHORT,
-                            ).show()
-                            if (started) updateViewModel.dismiss()
+                            updateViewModel.startDownload(update, source)
                         },
                     )
                 }
+            }
+            updateState.download?.let { download ->
+                UpdateDownloadDialog(
+                    download = download,
+                    onCancel = updateViewModel::cancelDownload,
+                    onClose = updateViewModel::closeDownload,
+                    onRetry = {
+                        updateState.update?.let { update ->
+                            updateViewModel.startDownload(update, download.source)
+                        }
+                    },
+                    onInstall = {
+                        download.apkFile?.let(requestInstall)
+                    },
+                )
+            }
+            if (showInstallPermission) {
+                AlertDialog(
+                    onDismissRequest = { showInstallPermission = false },
+                    title = { Text("需要安装权限") },
+                    text = {
+                        Text("更新包已下载完成。请允许 VocaLand 安装未知应用，授权后将自动继续安装。")
+                    },
+                    confirmButton = {
+                        TextButton(
+                            onClick = {
+                                showInstallPermission = false
+                                runCatching {
+                                    installPermissionLauncher.launch(installPermissionIntent(context))
+                                }.onFailure {
+                                    Toast.makeText(context, "无法打开安装权限设置", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                        ) {
+                            Text("去设置")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { showInstallPermission = false }) {
+                            Text("稍后")
+                        }
+                    },
+                )
             }
         }
     }

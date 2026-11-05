@@ -54,6 +54,7 @@ import xyz.lisfox.vocaland.data.songactions.SongActionsRepository
 import xyz.lisfox.vocaland.data.stat.StatApi
 import xyz.lisfox.vocaland.data.stat.StatRepository
 import xyz.lisfox.vocaland.data.update.UpdateApi
+import xyz.lisfox.vocaland.data.update.UpdateDownloader
 import xyz.lisfox.vocaland.data.update.UpdateRepository
 import java.util.concurrent.TimeUnit
 
@@ -154,6 +155,7 @@ class AppContainer(context: Context) {
     val updateRepository = UpdateRepository(
         retrofit(UPDATE_BASE_URL, updateClient).create(UpdateApi::class.java),
     )
+    val updateDownloader = UpdateDownloader(appContext)
     val themePreferences = ThemePreferences(appContext)
 
     private fun retrofit(

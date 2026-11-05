@@ -32,7 +32,9 @@ class UpdateRepository(
             publishedAt = publishedAt,
             apkName = asset.name,
             apkUrl = asset.browserDownloadUrl,
-            mirrorApkUrl = MIRROR_PREFIX + asset.browserDownloadUrl,
+            mirrorApkUrls = DOWNLOAD_MIRROR_PREFIXES.map { prefix ->
+                prefix + asset.browserDownloadUrl
+            },
         )
     }
 
@@ -41,6 +43,12 @@ class UpdateRepository(
         const val GITHUB_API =
             "https://api.github.com/repos/" + REPOSITORY + "/releases/latest"
         const val MIRROR_PREFIX = "https://gh-proxy.com/"
+        val DOWNLOAD_MIRROR_PREFIXES = listOf(
+            "https://ghproxy.site/",
+            "https://gh-proxy.org/",
+            "https://ghproxy.imciel.com/",
+            MIRROR_PREFIX,
+        )
         val RELEASE_URLS = listOf(GITHUB_API, MIRROR_PREFIX + GITHUB_API)
 
         fun isNewerVersion(remote: String, current: String): Boolean {

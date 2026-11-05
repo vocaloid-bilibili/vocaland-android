@@ -24,11 +24,11 @@ data class AppUpdate(
     val publishedAt: String?,
     val apkName: String,
     val apkUrl: String,
-    val mirrorApkUrl: String,
+    val mirrorApkUrls: List<String>,
 ) {
-    fun downloadUrl(source: UpdateDownloadSource): String = when (source) {
-        UpdateDownloadSource.GitHub -> apkUrl
-        UpdateDownloadSource.Mirror -> mirrorApkUrl
+    fun downloadUrls(source: UpdateDownloadSource): List<String> = when (source) {
+        UpdateDownloadSource.GitHub -> listOf(apkUrl)
+        UpdateDownloadSource.Mirror -> mirrorApkUrls
     }
 }
 
