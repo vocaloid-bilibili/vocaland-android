@@ -30,6 +30,8 @@ val releaseSigningValues = listOf(
     releaseKeyPassword,
 )
 val hasReleaseSigning = releaseSigningValues.all { it != null }
+val buildVersionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
+val buildVersionName = System.getenv("VERSION_NAME")?.trim()?.takeIf { it.isNotEmpty() } ?: "1.0"
 
 if (releaseSigningValues.any { it != null } && !hasReleaseSigning) {
     throw GradleException(
@@ -47,8 +49,8 @@ android {
         applicationId = "xyz.lisfox.vocaland"
         minSdk = 29
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = buildVersionCode
+        versionName = buildVersionName
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
