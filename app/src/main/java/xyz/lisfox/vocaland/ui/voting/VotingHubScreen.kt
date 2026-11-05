@@ -20,7 +20,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,13 +34,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import xyz.lisfox.vocaland.data.model.ArtistKind
 import xyz.lisfox.vocaland.data.model.EdCampaignDto
 import xyz.lisfox.vocaland.data.model.TrendingCampaignDto
 import xyz.lisfox.vocaland.data.model.VotingKind
-import xyz.lisfox.vocaland.data.repository.VotingHubData
 import xyz.lisfox.vocaland.data.repository.VotingRepository
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
+import xyz.lisfox.vocaland.ui.components.PagerRow
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
 import xyz.lisfox.vocaland.ui.components.StatusPill
 import xyz.lisfox.vocaland.util.boardLabel
@@ -50,6 +53,8 @@ import xyz.lisfox.vocaland.util.votingStatusLabel
 fun VotingHubScreen(
     repository: VotingRepository,
     onOpenVoting: (VotingKind, Int) -> Unit,
+    onOpenSong: (Int) -> Unit = {},
+    onOpenArtist: (ArtistKind, Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     val viewModel: VotingHubViewModel = viewModel(
@@ -77,8 +82,15 @@ fun VotingHubScreen(
 
         else -> {
             VotingHubContent(
-                data = state.data!!,
+                state = state,
                 onOpenVoting = onOpenVoting,
+                onOpenSong = onOpenSong,
+                onOpenArtist = onOpenArtist,
+                onSelectEdHistoryBoard = viewModel::selectEdHistoryBoard,
+                onPreviousTrendingHistory = viewModel::previousTrendingHistoryPage,
+                onNextTrendingHistory = viewModel::nextTrendingHistoryPage,
+                onPreviousEdHistory = viewModel::previousEdHistoryPage,
+                onNextEdHistory = viewModel::nextEdHistoryPage,
                 modifier = modifier,
             )
         }
@@ -87,10 +99,18 @@ fun VotingHubScreen(
 
 @Composable
 private fun VotingHubContent(
-    data: VotingHubData,
+    state: VotingHubUiState,
     onOpenVoting: (VotingKind, Int) -> Unit,
+    onOpenSong: (Int) -> Unit,
+    onOpenArtist: (ArtistKind, Int) -> Unit,
+    onSelectEdHistoryBoard: (String) -> Unit,
+    onPreviousTrendingHistory: () -> Unit,
+    onNextTrendingHistory: () -> Unit,
+    onPreviousEdHistory: () -> Unit,
+    onNextEdHistory: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val data = state.data ?: return
     val ed = data.ed
         .filter { it.status == "voting" || it.status == "nomination" || it.status == "finalized" }
         .sortedWith(
@@ -128,6 +148,56 @@ private fun VotingHubContent(
         item {
             Spacer(Modifier.height(14.dp))
             Text(
+                text = "ED 往期结果",
+                style = MaterialTheme.typography.titleLarge,
+            )
+        }
+        item {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                listOf("vocaloid-weekly", "vocaloid-monthly", "vocaloid-daily").forEach { board ->
+                    FilterChip(
+                        selected = state.edHistoryBoard == board,
+                        onClick = { onSelectEdHistoryBoard(board) },
+                        label = { Text(boardLabel(board)) },
+                    )
+                }
+            }
+        }
+        if (state.edHistoryLoading) {
+            item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
+        }
+        state.edHistoryError?.takeIf { it.isNotBlank() }?.let { error ->
+            item { EmptyHint(text = error) }
+        }
+        val edHistory = state.edHistory
+        if (edHistory != null && edHistory.items.isNotEmpty()) {
+            items(edHistory.items, key = { "ed-history-${it.id}" }) { history ->
+                EdHistoryRow(
+                    history = history,
+                    onOpenSong = onOpenSong,
+                )
+            }
+            item {
+                PagerRow(
+                    page = edHistory.page,
+                    totalPages = edHistory.totalPages,
+                    total = edHistory.total,
+                    loading = state.edHistoryLoading,
+                    onPrevious = onPreviousEdHistory,
+                    onNext = onNextEdHistory,
+                    unit = "条",
+                )
+            }
+        } else if (!state.edHistoryLoading && state.edHistoryError.isNullOrBlank()) {
+            item { EmptyHint(text = "暂无 ED 往期结果") }
+        }
+
+        item {
+            Spacer(Modifier.height(14.dp))
+            Text(
                 text = "人气投票",
                 style = MaterialTheme.typography.titleLarge,
             )
@@ -141,6 +211,46 @@ private fun VotingHubContent(
                     onClick = { onOpenVoting(VotingKind.Trending, campaign.id) },
                 )
             }
+        }
+
+        item {
+            Spacer(Modifier.height(14.dp))
+            Text(
+                text = "人气投票往期结果",
+                style = MaterialTheme.typography.titleLarge,
+            )
+        }
+        if (state.trendingHistoryLoading) {
+            item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
+        }
+        state.trendingHistoryError?.takeIf { it.isNotBlank() }?.let { error ->
+            item { EmptyHint(text = error) }
+        }
+        val trendingHistory = state.trendingHistory
+        if (trendingHistory != null && trendingHistory.items.isNotEmpty()) {
+            items(
+                trendingHistory.items,
+                key = { "trending-history-${trendingHistory.page}-${it.rank}-${it.candidate.id}" },
+            ) { result ->
+                TrendingResultItem(
+                    result = result,
+                    onOpenSong = onOpenSong,
+                    onOpenArtist = onOpenArtist,
+                )
+            }
+            item {
+                PagerRow(
+                    page = trendingHistory.page,
+                    totalPages = trendingHistory.totalPages,
+                    total = trendingHistory.total,
+                    loading = state.trendingHistoryLoading,
+                    onPrevious = onPreviousTrendingHistory,
+                    onNext = onNextTrendingHistory,
+                    unit = "条",
+                )
+            }
+        } else if (!state.trendingHistoryLoading && state.trendingHistoryError.isNullOrBlank()) {
+            item { EmptyHint(text = "暂无人气投票往期结果") }
         }
     }
 }

@@ -16,6 +16,7 @@ import xyz.lisfox.vocaland.data.model.EdBonusVoteDto
 import xyz.lisfox.vocaland.data.model.EdCampaignDto
 import xyz.lisfox.vocaland.data.model.EdCandidateDto
 import xyz.lisfox.vocaland.data.model.EdEligibilityDto
+import xyz.lisfox.vocaland.data.model.EdMechanismConfigDto
 import xyz.lisfox.vocaland.data.model.EdResultDto
 import xyz.lisfox.vocaland.data.model.EdVotingCandidateDto
 import xyz.lisfox.vocaland.data.remote.toUserMessage
@@ -55,6 +56,8 @@ data class EdVotingUiState(
     val serverBonusVotes: Map<Int, EdBonusVoteDto> = emptyMap(),
     val allowBonusVote: Boolean = true,
     val allowNegativeVote: Boolean = true,
+    val mechanismConfig: EdMechanismConfigDto = EdMechanismConfigDto(),
+    val voteExpired: Boolean = false,
     val walletTickets: Int = 0,
     val walletLoading: Boolean = false,
     val candidateLoading: Boolean = false,
@@ -83,7 +86,7 @@ data class EdVotingUiState(
     val votingOpen: Boolean
         get() {
             val current = campaign ?: return false
-            if (current.status != "voting") return false
+            if (current.status != "voting" || voteExpired) return false
             val end = parseIsoMillis(current.voteEnd) ?: return true
             return end > System.currentTimeMillis()
         }
@@ -128,6 +131,10 @@ class EdVotingViewModel(
 
     fun refresh() {
         load()
+    }
+
+    fun markVoteExpired() {
+        _state.update { it.copy(voteExpired = true) }
     }
 
     fun updateBvid(value: String) {
@@ -459,6 +466,7 @@ class EdVotingViewModel(
                             loading = false,
                             error = null,
                             isLoggedIn = loggedIn,
+                            voteExpired = false,
                             voterCount = campaign.voterCount ?: it.voterCount,
                         )
                     }
@@ -592,6 +600,7 @@ class EdVotingViewModel(
                         serverBonusVotes = bonus,
                         allowBonusVote = data.candidates.mechanism?.config?.allowBonusVote ?: true,
                         allowNegativeVote = data.candidates.mechanism?.config?.allowNegativeVote ?: true,
+                        mechanismConfig = data.candidates.mechanism?.config ?: EdMechanismConfigDto(),
                         candidateLoading = false,
                         candidateError = null,
                     )

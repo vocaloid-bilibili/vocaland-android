@@ -31,6 +31,13 @@ data class EdMechanismDto(
 data class EdMechanismConfigDto(
     @SerialName("allowNegativeVote") val allowNegativeVote: Boolean = true,
     @SerialName("allowBonusVote") val allowBonusVote: Boolean = true,
+    @SerialName("roleBonusMultiplier") val roleBonusMultiplier: Double = 1.2,
+    @SerialName("negativeWeight") val negativeWeight: Double = 0.5,
+    @SerialName("bonusExponent") val bonusExponent: Double = 0.6,
+    @SerialName("winPenaltyDailyPct") val winPenaltyDailyPct: Double = 5.0,
+    @SerialName("winPenaltyWeeklyMonthlyPct") val winPenaltyWeeklyMonthlyPct: Double = 10.0,
+    @SerialName("winPenaltyWindowMonths") val winPenaltyWindowMonths: Int = 12,
+    @SerialName("tieBreakers") val tieBreakers: List<String> = emptyList(),
 )
 
 @Serializable
@@ -130,12 +137,26 @@ data class EdVoteDto(
 )
 
 @Serializable
+data class EdVoteUserDto(
+    val id: Int = 0,
+    val nickname: String = "",
+    val avatar: String? = null,
+    val role: String = "user",
+    val level: Int = 0,
+)
+
+@Serializable
 data class EdVoteSnapshotDto(
     val userId: Int = 0,
+    val user: EdVoteUserDto? = null,
     val isNegative: Boolean = false,
     val isBonus: Boolean = false,
     val bonusCount: Int = 0,
+    val rawWeight: Double = 0.0,
+    val roleBonusPct: Double = 100.0,
+    val votePenaltyPct: Double = 0.0,
     val actualWeight: Double = 0.0,
+    val createdAt: String = "",
 )
 
 @Serializable
