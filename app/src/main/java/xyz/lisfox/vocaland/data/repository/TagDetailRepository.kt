@@ -1,41 +1,45 @@
 package xyz.lisfox.vocaland.data.repository
 
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import xyz.lisfox.vocaland.data.discovery.DiscoveryRepository
+import xyz.lisfox.vocaland.data.discovery.TagArtistPage
+import xyz.lisfox.vocaland.data.model.ArtistKind
 import xyz.lisfox.vocaland.data.model.SongPage
 import xyz.lisfox.vocaland.data.model.TagItemDto
 import xyz.lisfox.vocaland.data.remote.VocaLandApi
 
 data class TagDetailContent(
     val tag: TagItemDto,
-    val songs: SongPage,
+    val hot: SongPage,
+    val latest: SongPage,
+    val artists: Map<ArtistKind, TagArtistPage>,
 )
 
 class TagDetailRepository(
     private val api: VocaLandApi,
+    private val discovery: DiscoveryRepository = DiscoveryRepository(),
 ) {
-    suspend fun load(
-        tagId: Int,
-        sort: String,
-    ): Result<TagDetailContent> = runCatching {
+    suspend fun load(tagId: Int): Result<TagDetailContent> = runCatching {
+        val tag = api.tagDetail(tagId)
+        val artistKinds = resolveArtistKinds(tag.scope)
+
         coroutineScope {
-            val tag = async { api.tagDetail(tagId) }
-            val songs = async {
-                api.songsByTag(
-                    tagId = tagId,
-                    page = 1,
-                    pageSize = PAGE_SIZE,
-                    sort = sort,
-                )
+            val hotDeferred = async { loadSongs(tagId, page = 1, sort = "hot") }
+            val latestDeferred = async { loadSongs(tagId, page = 1, sort = "latest") }
+            val artistsDeferred = artistKinds.map { kind ->
+                async {
+                    kind to loadArtistPage(kind, tagId, page = 1)
+                        .getOrDefault(TagArtistPage(emptyList(), 0, 1))
+                }
             }
-            val songResponse = songs.await()
 
             TagDetailContent(
-                tag = tag.await(),
-                songs = SongPage(
-                    songs = songResponse.data,
-                    total = songResponse.total.coerceAtLeast(songResponse.data.size),
-                ),
+                tag = tag,
+                hot = hotDeferred.await().getOrDefault(SongPage()),
+                latest = latestDeferred.await().getOrDefault(SongPage()),
+                artists = artistsDeferred.awaitAll().toMap(),
             )
         }
     }
@@ -48,7 +52,7 @@ class TagDetailRepository(
         val response = api.songsByTag(
             tagId = tagId,
             page = page,
-            pageSize = PAGE_SIZE,
+            pageSize = SONG_PAGE_SIZE,
             sort = sort,
         )
         SongPage(
@@ -57,7 +61,24 @@ class TagDetailRepository(
         )
     }
 
+    suspend fun loadArtistPage(
+        kind: ArtistKind,
+        tagId: Int,
+        page: Int,
+    ): Result<TagArtistPage> = discovery.loadTagArtists(
+        artistType = kind.apiType,
+        tagId = tagId,
+        page = page,
+        pageSize = ARTIST_PAGE_SIZE,
+    )
+
+    private fun resolveArtistKinds(scope: List<String>): List<ArtistKind> {
+        if (scope.contains("all")) return ArtistKind.entries
+        return ArtistKind.entries.filter { it.apiType in scope }
+    }
+
     private companion object {
-        const val PAGE_SIZE = 20
+        const val SONG_PAGE_SIZE = 20
+        const val ARTIST_PAGE_SIZE = 24
     }
 }

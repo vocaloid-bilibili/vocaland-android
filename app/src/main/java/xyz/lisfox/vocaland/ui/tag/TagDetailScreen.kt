@@ -1,29 +1,38 @@
 package xyz.lisfox.vocaland.ui.tag
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import xyz.lisfox.vocaland.data.discovery.TagArtistPage
+import xyz.lisfox.vocaland.data.model.ArtistKind
 import xyz.lisfox.vocaland.data.model.TagItemDto
 import xyz.lisfox.vocaland.data.repository.TagDetailRepository
 import xyz.lisfox.vocaland.ui.components.EmptyHint
@@ -35,16 +44,12 @@ import xyz.lisfox.vocaland.ui.components.SectionHeader
 import xyz.lisfox.vocaland.ui.components.StatusPill
 import xyz.lisfox.vocaland.ui.components.songCoverGrid
 
-private val tagSorts = listOf(
-    "latest" to "最新",
-    "hot" to "最热",
-)
-
 @Composable
 fun TagDetailScreen(
     repository: TagDetailRepository,
     tagId: Int,
     onOpenSong: (Int) -> Unit,
+    onOpenArtist: (ArtistKind, Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     val viewModel: TagDetailViewModel = viewModel(
@@ -79,70 +84,161 @@ fun TagDetailScreen(
             ) {
                 item {
                     state.tag?.let { tag ->
-                        TagHero(tag = tag, total = state.total)
+                        TagHero(tag = tag, total = state.hotTotal)
                     }
                 }
 
-                item {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                        SectionHeader(
-                            title = "歌曲",
-                            subtitle = "共 ${state.total} 首",
-                        )
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            tagSorts.forEach { (key, label) ->
-                                FilterChip(
-                                    selected = state.sort == key,
-                                    onClick = { viewModel.selectSort(key) },
-                                    label = { Text(label) },
-                                )
+                state.artists.forEach { (kind, pageData) ->
+                    if (pageData.artists.isNotEmpty()) {
+                        item(key = "artist-header-${kind.apiType}") {
+                            SectionHeader(
+                                title = "${kind.label}（${pageData.total}）",
+                            )
+                        }
+                        items(
+                            items = pageData.artists.chunked(2),
+                            key = { row ->
+                                "artist-${kind.apiType}-${row.joinToString("-") { it.id.toString() }}"
+                            },
+                        ) { row ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                row.forEach { artist ->
+                                    Surface(
+                                        modifier = Modifier
+                                            .weight(1f)
+                                            .clickable {
+                                                onOpenArtist(kind, artist.id)
+                                            },
+                                        shape = RoundedCornerShape(16.dp),
+                                        color = MaterialTheme.colorScheme.surfaceContainerLow,
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(10.dp),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            NetworkImage(
+                                                url = artist.picture,
+                                                contentDescription = artist.name,
+                                                modifier = Modifier
+                                                    .size(42.dp)
+                                                    .clip(CircleShape),
+                                            )
+                                            Spacer(Modifier.width(10.dp))
+                                            Text(
+                                                text = artist.name,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                maxLines = 2,
+                                                overflow = TextOverflow.Ellipsis,
+                                            )
+                                        }
+                                    }
+                                }
+                                if (row.size == 1) {
+                                    Spacer(Modifier.weight(1f))
+                                }
                             }
+                        }
+                        item(key = "artist-pager-${kind.apiType}") {
+                            ArtistPager(
+                                pageData = pageData,
+                                page = state.artistPages[kind] ?: 1,
+                                loading = state.artistLoading == kind,
+                                error = if (state.artistErrorKind == kind) {
+                                    state.artistError
+                                } else {
+                                    null
+                                },
+                                onPrevious = { viewModel.previousArtistPage(kind) },
+                                onNext = { viewModel.nextArtistPage(kind) },
+                                onRetry = { viewModel.retryArtist(kind) },
+                            )
                         }
                     }
                 }
 
-                if (state.songsLoading) {
-                    item {
-                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
-                    }
+                item {
+                    SectionHeader(
+                        title = "最热歌曲",
+                        subtitle = "共 ${state.hotTotal} 首",
+                    )
                 }
-
-                if (state.error != null && state.songs.isNotEmpty()) {
-                    item {
-                        ScreenMessage(
-                            title = "歌曲加载失败",
-                            message = state.error ?: "请稍后重试",
-                            actionLabel = "重试",
-                            onAction = viewModel::retry,
-                        )
-                    }
-                }
-
-                if (state.songs.isEmpty() && !state.songsLoading) {
+                if (state.hotSongs.isEmpty()) {
                     item {
                         EmptyHint("暂无歌曲")
                     }
                 } else {
                     songCoverGrid(
-                        songs = state.songs,
-                        keyPrefix = "tag-${tagId}-${state.sort}",
+                        songs = state.hotSongs,
+                        keyPrefix = "tag-$tagId-hot",
                         onOpenSong = onOpenSong,
                     )
                 }
 
-                if (state.totalPages > 1) {
+                item {
+                    SectionHeader(
+                        title = "最新歌曲",
+                        subtitle = "共 ${state.latestTotal} 首",
+                    )
+                }
+                if (state.latestSongs.isEmpty()) {
                     item {
-                        PagerRow(
-                            page = state.page,
-                            totalPages = state.totalPages,
-                            total = state.total,
-                            loading = state.songsLoading,
-                            onPrevious = viewModel::previousPage,
-                            onNext = viewModel::nextPage,
-                        )
+                        EmptyHint("暂无歌曲")
                     }
+                } else {
+                    songCoverGrid(
+                        songs = state.latestSongs,
+                        keyPrefix = "tag-$tagId-latest",
+                        onOpenSong = onOpenSong,
+                    )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun ArtistPager(
+    pageData: TagArtistPage,
+    page: Int,
+    loading: Boolean,
+    error: String?,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
+    onRetry: () -> Unit,
+) {
+    Column {
+        if (loading) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        }
+        if (error != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = error,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+                TextButton(onClick = onRetry) {
+                    Text("重试")
+                }
+            }
+        }
+        if (pageData.totalPages > 1) {
+            PagerRow(
+                page = page,
+                totalPages = pageData.totalPages,
+                total = pageData.total,
+                loading = loading,
+                onPrevious = onPrevious,
+                onNext = onNext,
+                unit = "位",
+            )
         }
     }
 }
@@ -202,7 +298,7 @@ private fun TagHero(
     }
 }
 
-private fun tagCategoryLabel(category: String): String = when (category) {
+internal fun tagCategoryLabel(category: String): String = when (category) {
     "content" -> "内容"
     "meta" -> "元数据"
     "audience" -> "受众"

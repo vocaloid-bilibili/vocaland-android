@@ -514,6 +514,14 @@ private fun CommentRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (comment.likeCount > 0) {
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "赞 ${formatNumber(comment.likeCount.toLong())}",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = scheme.onSurfaceVariant,
+                    )
+                }
             }
             Spacer(Modifier.height(3.dp))
             Text(

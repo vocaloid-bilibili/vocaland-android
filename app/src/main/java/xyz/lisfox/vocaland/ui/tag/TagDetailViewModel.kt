@@ -8,21 +8,25 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import xyz.lisfox.vocaland.data.discovery.TagArtistPage
+import xyz.lisfox.vocaland.data.model.ArtistKind
 import xyz.lisfox.vocaland.data.model.SongDto
 import xyz.lisfox.vocaland.data.model.TagItemDto
 import xyz.lisfox.vocaland.data.remote.toUserMessage
 import xyz.lisfox.vocaland.data.repository.TagDetailRepository
-import kotlin.math.ceil
 
 data class TagDetailUiState(
     val tag: TagItemDto? = null,
-    val sort: String = "latest",
-    val songs: List<SongDto> = emptyList(),
-    val page: Int = 1,
-    val total: Int = 0,
-    val totalPages: Int = 1,
+    val hotSongs: List<SongDto> = emptyList(),
+    val hotTotal: Int = 0,
+    val latestSongs: List<SongDto> = emptyList(),
+    val latestTotal: Int = 0,
+    val artists: Map<ArtistKind, TagArtistPage> = emptyMap(),
+    val artistPages: Map<ArtistKind, Int> = emptyMap(),
+    val artistLoading: ArtistKind? = null,
+    val artistErrorKind: ArtistKind? = null,
+    val artistError: String? = null,
     val loading: Boolean = true,
-    val songsLoading: Boolean = false,
     val error: String? = null,
 )
 
@@ -34,64 +38,51 @@ class TagDetailViewModel(
     val state: StateFlow<TagDetailUiState> = _state.asStateFlow()
 
     private var loadJob: Job? = null
-    private var songsJob: Job? = null
+    private var artistJob: Job? = null
 
     init {
         load()
     }
 
-    fun selectSort(sort: String) {
-        val current = _state.value
-        if (current.sort == sort || current.loading) return
-
-        _state.update {
-            it.copy(
-                sort = sort,
-                page = 1,
-                songsLoading = true,
-                error = null,
-            )
-        }
-        loadSongs(page = 1)
-    }
-
     fun retry() {
-        if (_state.value.tag == null) {
-            load()
-        } else {
-            loadSongs(_state.value.page)
-        }
+        load()
     }
 
-    fun previousPage() {
-        val current = _state.value
-        if (current.page <= 1 || current.songsLoading) return
-        loadSongs(current.page - 1)
+    fun retryArtist(kind: ArtistKind) {
+        loadArtist(kind, _state.value.artistPages[kind] ?: 1)
     }
 
-    fun nextPage() {
-        val current = _state.value
-        if (current.page >= current.totalPages || current.songsLoading) return
-        loadSongs(current.page + 1)
+    fun previousArtistPage(kind: ArtistKind) {
+        val page = _state.value.artistPages[kind] ?: 1
+        if (page <= 1) return
+        loadArtist(kind, page - 1)
+    }
+
+    fun nextArtistPage(kind: ArtistKind) {
+        val page = _state.value.artistPages[kind] ?: 1
+        val totalPages = _state.value.artists[kind]?.totalPages ?: 1
+        if (page >= totalPages) return
+        loadArtist(kind, page + 1)
     }
 
     private fun load() {
         loadJob?.cancel()
-        songsJob?.cancel()
+        artistJob?.cancel()
         _state.update { it.copy(loading = true, error = null) }
 
         loadJob = viewModelScope.launch {
-            repository.load(tagId, _state.value.sort)
+            repository.load(tagId)
                 .onSuccess { content ->
                     _state.update {
                         it.copy(
                             tag = content.tag,
-                            songs = content.songs.songs,
-                            page = 1,
-                            total = content.songs.total,
-                            totalPages = pagesFor(content.songs.total),
+                            hotSongs = content.hot.songs,
+                            hotTotal = content.hot.total,
+                            latestSongs = content.latest.songs,
+                            latestTotal = content.latest.total,
+                            artists = content.artists,
+                            artistPages = content.artists.keys.associateWith { 1 },
                             loading = false,
-                            songsLoading = false,
                             error = null,
                         )
                     }
@@ -107,39 +98,38 @@ class TagDetailViewModel(
         }
     }
 
-    private fun loadSongs(page: Int) {
-        songsJob?.cancel()
-        _state.update { it.copy(songsLoading = true, error = null) }
+    private fun loadArtist(kind: ArtistKind, page: Int) {
+        artistJob?.cancel()
+        _state.update {
+            it.copy(
+                artistLoading = kind,
+                artistErrorKind = null,
+                artistError = null,
+            )
+        }
 
-        songsJob = viewModelScope.launch {
-            repository.loadSongs(tagId, page, _state.value.sort)
-                .onSuccess { songPage ->
+        artistJob = viewModelScope.launch {
+            repository.loadArtistPage(kind, tagId, page)
+                .onSuccess { pageData ->
                     _state.update {
                         it.copy(
-                            songs = songPage.songs,
-                            page = page,
-                            total = songPage.total,
-                            totalPages = pagesFor(songPage.total),
-                            songsLoading = false,
-                            error = null,
+                            artists = it.artists + (kind to pageData),
+                            artistPages = it.artistPages + (kind to page),
+                            artistLoading = null,
+                            artistErrorKind = null,
+                            artistError = null,
                         )
                     }
                 }
                 .onFailure { error ->
                     _state.update {
                         it.copy(
-                            songsLoading = false,
-                            error = error.toUserMessage(),
+                            artistLoading = null,
+                            artistErrorKind = kind,
+                            artistError = error.toUserMessage(),
                         )
                     }
                 }
         }
-    }
-
-    private fun pagesFor(total: Int): Int =
-        maxOf(1, ceil(total.toDouble() / PAGE_SIZE).toInt())
-
-    private companion object {
-        const val PAGE_SIZE = 20
     }
 }

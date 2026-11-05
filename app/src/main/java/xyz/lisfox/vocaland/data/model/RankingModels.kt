@@ -67,6 +67,33 @@ enum class RankingOrder(val key: String, val label: String) {
     Share("share", "分享"),
 }
 
+enum class RankingTab(val key: String, val label: String) {
+    Main("main", "主榜"),
+    New("new", "新曲"),
+    Vocalist("vocalist", "歌手排行"),
+    Producer("producer", "P主排行"),
+    Milestone("milestone", "里程碑"),
+    ;
+
+    val isSongTab: Boolean
+        get() = this == Main || this == New
+}
+
+fun availableRankingTabs(board: RankingBoard): List<RankingTab> {
+    val tabs = mutableListOf(RankingTab.Main)
+    if (board.supportsNewPart) {
+        tabs += RankingTab.New
+    }
+    if (board != RankingBoard.Annual && board != RankingBoard.CoverWeekly) {
+        tabs += RankingTab.Vocalist
+        tabs += RankingTab.Producer
+    }
+    if (board == RankingBoard.Daily || board == RankingBoard.Weekly) {
+        tabs += RankingTab.Milestone
+    }
+    return tabs
+}
+
 data class RankingPage(
     val board: RankingBoard,
     val part: String,
@@ -77,4 +104,47 @@ data class RankingPage(
     val total: Int,
     val totalPages: Int,
     val items: List<RankingDto>,
+    val oldestIssue: Int = 1,
+    val requestedIssue: Int? = null,
+    val requestedPage: Int = 1,
+    val clamped: Boolean = false,
 )
+
+fun rankingIssueDateRange(board: RankingBoard, issue: Int): String? {
+    if (issue <= 0) return null
+    val baseDaily = java.time.LocalDate.of(2024, 7, 3)
+    val baseWeekly = java.time.LocalDate.of(2024, 8, 31)
+    val baseMonthly = java.time.LocalDate.of(2024, 7, 1)
+    val baseCoverWeekly = java.time.LocalDate.of(2026, 4, 1)
+    return when (board) {
+        RankingBoard.Daily -> {
+            val start = baseDaily.plusDays((issue - 1).toLong())
+            val end = baseDaily.plusDays(issue.toLong())
+            "$start ~ $end"
+        }
+
+        RankingBoard.Weekly -> {
+            val start = baseWeekly.plusDays(((issue - 1) * 7).toLong())
+            val end = baseWeekly.plusDays((issue * 7).toLong())
+            "$start ~ $end"
+        }
+
+        RankingBoard.Monthly -> {
+            val start = baseMonthly.plusMonths((issue - 1).toLong())
+            val end = baseMonthly.plusMonths(issue.toLong())
+            "$start ~ $end"
+        }
+
+        RankingBoard.Annual -> {
+            val start = java.time.LocalDate.of(issue, 1, 1)
+            val end = java.time.LocalDate.of(issue + 1, 1, 1)
+            "$start ~ $end"
+        }
+
+        RankingBoard.CoverWeekly -> {
+            val start = baseCoverWeekly.plusDays(((issue - 1) * 7).toLong())
+            val end = baseCoverWeekly.plusDays((issue * 7).toLong())
+            "$start ~ $end"
+        }
+    }
+}

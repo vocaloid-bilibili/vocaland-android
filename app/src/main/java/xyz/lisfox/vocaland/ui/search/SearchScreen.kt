@@ -41,7 +41,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -63,8 +62,6 @@ import xyz.lisfox.vocaland.ui.components.ScreenMessage
 import xyz.lisfox.vocaland.ui.components.SongCoverCard
 import xyz.lisfox.vocaland.util.coverUrl
 import xyz.lisfox.vocaland.util.formatNumber
-import xyz.lisfox.vocaland.util.openBilibiliUser
-import xyz.lisfox.vocaland.util.openBilibiliVideo
 import xyz.lisfox.vocaland.util.songArtistLine
 import xyz.lisfox.vocaland.util.songDisplayName
 
@@ -83,7 +80,6 @@ fun SearchScreen(
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
-    val context = LocalContext.current
 
     Column(modifier = modifier.fillMaxSize()) {
         OutlinedTextField(
@@ -252,14 +248,13 @@ fun SearchScreen(
                                     onClick = {
                                         when (group.type) {
                                             "video" -> {
-                                                openBilibiliVideo(context, entity.bvid)
+                                                (entity.song?.id ?: entity.songId)
+                                                    .takeIf { it > 0 }
+                                                    ?.let(onOpenSong)
                                             }
 
                                             "uploader" -> {
-                                                openBilibiliUser(
-                                                    context,
-                                                    entity.uid ?: entity.uploader?.uid,
-                                                )
+                                                onOpenArtist(ArtistKind.Uploader, entity.id)
                                             }
 
                                             "producer", "vocalist", "synthesizer" -> {
