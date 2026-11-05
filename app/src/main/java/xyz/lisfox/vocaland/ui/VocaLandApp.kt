@@ -352,10 +352,19 @@ fun VocaLandApp(
                                 when (title) {
                                     "我的收藏" -> navController.navigate(Routes.COLLECTION_LIST)
                                     "我的歌单" -> navController.navigate(Routes.MY_PLAYLISTS)
-                                    "个人资料" -> navController.navigate(Routes.SETTINGS)
                                     "标签图鉴" -> navController.navigate(Routes.TAG_INDEX)
                                     "数据统计" -> navController.navigate(Routes.STAT)
                                     "自定义排行榜" -> navController.navigate(Routes.CUSTOM_RANKING)
+                                    "个人资料" -> {
+                                        val userId = sessionState.user?.id
+                                        if (userId != null) {
+                                            navController.navigate(Routes.user(userId)) {
+                                                launchSingleTop = true
+                                            }
+                                        } else {
+                                            navController.navigate(Routes.LOGIN)
+                                        }
+                                    }
                                     else -> navController.navigate(Routes.feature(title))
                                 }
                             },

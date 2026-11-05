@@ -658,7 +658,9 @@ private fun SponsorSection(
             OutlinedTextField(
                 value = orderId,
                 onValueChange = { orderId = it },
-                modifier = Modifier.weight(1f),
+                modifier = Modifier
+                    .weight(1f)
+                    .height(56.dp),
                 label = { Text("爱发电订单号") },
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
@@ -666,6 +668,7 @@ private fun SponsorSection(
             Button(
                 onClick = { onSubmit(orderId) },
                 enabled = !claiming && orderId.isNotBlank() && !me.isBanned,
+                modifier = Modifier.height(56.dp),
             ) {
                 if (claiming) {
                     CircularProgressIndicator(

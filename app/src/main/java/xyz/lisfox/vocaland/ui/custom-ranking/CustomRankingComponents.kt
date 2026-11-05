@@ -10,8 +10,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
@@ -37,7 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import java.util.Locale
+import kotlin.math.roundToLong
 import kotlinx.coroutines.delay
 import xyz.lisfox.vocaland.data.customranking.CUSTOM_RANKING_PRESET_BOARDS
 import xyz.lisfox.vocaland.data.customranking.CUSTOM_RANKING_STAT_KEYS
@@ -299,35 +302,41 @@ fun PlaylistPickerDialog(
                 if (playlists.isEmpty() && !loading) {
                     EmptyHint(text = "没有找到歌单")
                 }
-                playlists.forEach { playlist ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSelect(playlist) }
-                            .padding(vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        NetworkImage(
-                            url = playlist.coverVideo?.thumbnail,
-                            contentDescription = playlist.name,
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 360.dp),
+                ) {
+                    items(playlists, key = { it.id }) { playlist ->
+                        Row(
                             modifier = Modifier
-                                .width(52.dp)
-                                .aspectRatio(16f / 9f)
-                                .clip(RoundedCornerShape(8.dp)),
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = playlist.name,
-                                style = MaterialTheme.typography.bodySmall,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
+                                .fillMaxWidth()
+                                .clickable { onSelect(playlist) }
+                                .padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            NetworkImage(
+                                url = playlist.coverVideo?.thumbnail,
+                                contentDescription = playlist.name,
+                                modifier = Modifier
+                                    .width(52.dp)
+                                    .aspectRatio(16f / 9f)
+                                    .clip(RoundedCornerShape(8.dp)),
                             )
-                            Text(
-                                text = "${playlist.songCount} 首",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                            Spacer(Modifier.width(8.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = playlist.name,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                                Text(
+                                    text = "${playlist.songCount} 首",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 }
@@ -385,7 +394,7 @@ fun CustomRankingResultRow(
                 Spacer(Modifier.width(8.dp))
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
-                        text = String.format(Locale.CHINA, "%.2f", entry.point),
+                        text = formatNumber(entry.point.roundToLong()),
                         style = MaterialTheme.typography.titleSmall,
                     )
                     Text(

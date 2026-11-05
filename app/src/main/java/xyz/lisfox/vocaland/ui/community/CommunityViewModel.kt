@@ -25,7 +25,7 @@ internal const val COMMUNITY_COMMENT_MAX = 2000
 internal val COMMUNITY_SCORE_RANGE = COMMUNITY_RATING_MIN..COMMUNITY_RATING_MAX
 
 data class RatingDraft(
-    val score: Int = -1,
+    val score: Int = 0,
     val comment: String = "",
     val isAnonymous: Boolean = false,
 ) {
