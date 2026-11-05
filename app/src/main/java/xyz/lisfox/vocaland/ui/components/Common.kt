@@ -26,6 +26,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,6 +41,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
 import coil.request.ImageRequest
 import xyz.lisfox.vocaland.R
 import xyz.lisfox.vocaland.util.toHttps
@@ -61,6 +66,8 @@ fun NetworkImage(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
             )
         } else {
+            var imageState by remember { mutableStateOf<AsyncImagePainter.State?>(null) }
+            val loading = imageState == null || imageState is AsyncImagePainter.State.Loading
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(resolved)
@@ -69,7 +76,29 @@ fun NetworkImage(
                 contentDescription = contentDescription,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = contentScale,
+                onState = { imageState = it },
             )
+            if (loading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(placeholderColor)
+                        .shimmer(),
+                )
+            } else if (imageState is AsyncImagePainter.State.Error) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(placeholderColor),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.ErrorOutline,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
+                    )
+                }
+            }
         }
     }
 }

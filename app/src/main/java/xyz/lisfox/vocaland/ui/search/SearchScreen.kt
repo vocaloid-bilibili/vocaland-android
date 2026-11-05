@@ -1,5 +1,6 @@
 package xyz.lisfox.vocaland.ui.search
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,6 +39,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -65,6 +67,7 @@ import xyz.lisfox.vocaland.util.formatNumber
 import xyz.lisfox.vocaland.util.songArtistLine
 import xyz.lisfox.vocaland.util.songDisplayName
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SearchScreen(
     repository: SearchRepository,
@@ -160,7 +163,9 @@ fun SearchScreen(
             }
 
             else -> {
-                val groups = state.groups.filter { it.data.isNotEmpty() }
+                val groups = remember(state.groups) {
+                    state.groups.filter { it.data.isNotEmpty() }
+                }
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     contentPadding = PaddingValues(
@@ -210,10 +215,17 @@ fun SearchScreen(
                         if (group.type == "song") {
                             itemsIndexed(
                                 items = group.data.chunked(2),
-                                key = { index, _ -> "song-row-${group.type}-$index" },
+                                key = { _, row ->
+                                    "song-row-${group.type}-" + row.joinToString("-") { entity ->
+                                        entity.bvid.ifBlank { entity.id.toString() }
+                                    }
+                                },
+                                contentType = { _, _ -> "song-row" },
                             ) { _, row ->
                                 Row(
-                                    modifier = Modifier.fillMaxWidth(),
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .animateItem(),
                                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 ) {
                                     row.forEach { entity ->
@@ -241,10 +253,12 @@ fun SearchScreen(
                                 key = { entity ->
                                     "${group.type}-${entity.bvid.ifBlank { entity.id.toString() }}"
                                 },
+                                contentType = { "entity-row" },
                             ) { entity ->
                                 SearchEntityRow(
                                     type = group.type,
                                     entity = entity,
+                                    modifier = Modifier.animateItem(),
                                     onClick = {
                                         when (group.type) {
                                             "video" -> {
@@ -328,13 +342,14 @@ private fun SearchEntityRow(
     type: String,
     entity: SearchEntityDto,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val isVideo = type == "video"
     val title = entityTitle(type, entity)
     val subtitle = entitySubtitle(type, entity)
 
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(16.dp),

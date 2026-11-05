@@ -1,5 +1,6 @@
 package xyz.lisfox.vocaland.ui.user
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -56,6 +57,7 @@ import xyz.lisfox.vocaland.ui.components.StatusPill
 import xyz.lisfox.vocaland.util.targetLabel
 import xyz.lisfox.vocaland.util.timeAgo
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun UserScreen(
     repository: UserRepository,
@@ -148,16 +150,22 @@ fun UserScreen(
                         EmptyHint("还没有评分")
                     }
                 } else {
-                    items(state.ratings.size) { index ->
+                    items(
+                        count = state.ratings.size,
+                        key = { index -> state.ratings[index].id.ifBlank { "rating-$index" } },
+                        contentType = { "rating" },
+                    ) { index ->
                         val rating = state.ratings[index]
-                        UserRatingRow(
-                            rating = rating,
-                            onOpenSong = onOpenSong,
-                        )
-                        if (index != state.ratings.lastIndex) {
-                            HorizontalDivider(
-                                color = MaterialTheme.colorScheme.outlineVariant,
+                        Column(modifier = Modifier.animateItem()) {
+                            UserRatingRow(
+                                rating = rating,
+                                onOpenSong = onOpenSong,
                             )
+                            if (index != state.ratings.lastIndex) {
+                                HorizontalDivider(
+                                    color = MaterialTheme.colorScheme.outlineVariant,
+                                )
+                            }
                         }
                     }
                 }

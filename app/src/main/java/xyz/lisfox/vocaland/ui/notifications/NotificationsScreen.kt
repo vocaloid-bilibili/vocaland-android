@@ -1,5 +1,8 @@
 package xyz.lisfox.vocaland.ui.notifications
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -45,11 +48,13 @@ import xyz.lisfox.vocaland.data.notification.NotificationRepository
 import xyz.lisfox.vocaland.data.notification.notificationPreviewText
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
+import xyz.lisfox.vocaland.ui.components.MotionDurations
 import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
 import xyz.lisfox.vocaland.ui.components.SectionHeader
 import xyz.lisfox.vocaland.util.timeAgo
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun NotificationsScreen(
     repository: NotificationRepository,
@@ -182,10 +187,11 @@ fun NotificationsScreen(
             }
 
             else -> {
-                items(state.entries, key = { it.id }) { entry ->
+                items(state.entries, key = { it.id }, contentType = { "notification" }) { entry ->
                     NotificationCard(
                         entry = entry,
                         onClick = { viewModel.open(entry) },
+                        modifier = Modifier.animateItem(),
                     )
                 }
             }
@@ -208,22 +214,28 @@ fun NotificationsScreen(
 private fun NotificationCard(
     entry: NotificationEntryDto,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
     val kind = NotificationKind.fromApi(entry.type) ?: NotificationKind.Reply
     val actorName = entry.actor?.nickname?.ifBlank { "系统消息" } ?: "系统消息"
     val preview = notificationPreviewText(entry.contentPreview)
-
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .clickable(onClick = onClick),
-        color = if (entry.isRead) {
+    val containerColor by animateColorAsState(
+        targetValue = if (entry.isRead) {
             scheme.surfaceContainerLow
         } else {
             scheme.primaryContainer.copy(alpha = 0.45f)
         },
+        animationSpec = tween(MotionDurations.MEDIUM),
+        label = "notificationContainer",
+    )
+
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .clickable(onClick = onClick),
+        color = containerColor,
     ) {
         Row(
             modifier = Modifier

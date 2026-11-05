@@ -1,5 +1,9 @@
 package xyz.lisfox.vocaland.ui.home
 
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +31,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,6 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import xyz.lisfox.vocaland.data.model.HeroSlideDto
+import xyz.lisfox.vocaland.ui.components.MotionDurations
 import xyz.lisfox.vocaland.ui.components.NetworkImage
 
 @Composable
@@ -52,8 +60,14 @@ fun HeroCarousel(
 
     val pagerState = rememberPagerState(pageCount = { slides.size })
 
-    LaunchedEffect(slides.size) {
-        if (slides.size <= 1) return@LaunchedEffect
+    // 用户手动滑动 / 页面被按下时暂停自动轮播，松手后继续
+    val userInteracting by remember {
+        derivedStateOf {
+            pagerState.isScrollInProgress || pagerState.currentPageOffsetFraction != 0f
+        }
+    }
+    LaunchedEffect(slides.size, userInteracting) {
+        if (slides.size <= 1 || userInteracting) return@LaunchedEffect
         while (true) {
             delay(5_000)
             val next = (pagerState.currentPage + 1) % slides.size
@@ -122,18 +136,25 @@ fun HeroCarousel(
             ) {
                 repeat(slides.size) { index ->
                     val selected = pagerState.currentPage == index
+                    val dotWidth by animateDpAsState(
+                        targetValue = if (selected) 16.dp else 6.dp,
+                        animationSpec = tween(
+                            durationMillis = MotionDurations.MEDIUM,
+                            easing = FastOutSlowInEasing,
+                        ),
+                        label = "heroIndicatorWidth",
+                    )
+                    val dotAlpha by animateFloatAsState(
+                        targetValue = if (selected) 1f else 0.45f,
+                        animationSpec = tween(MotionDurations.MEDIUM),
+                        label = "heroIndicatorAlpha",
+                    )
                     Box(
                         modifier = Modifier
-                            .width(if (selected) 16.dp else 6.dp)
+                            .width(dotWidth)
                             .height(6.dp)
                             .clip(CircleShape)
-                            .background(
-                                if (selected) {
-                                    Color.White
-                                } else {
-                                    Color.White.copy(alpha = 0.45f)
-                                },
-                            ),
+                            .background(Color.White.copy(alpha = dotAlpha)),
                     )
                 }
             }

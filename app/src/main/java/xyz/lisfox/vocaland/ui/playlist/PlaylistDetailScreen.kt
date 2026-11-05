@@ -1,5 +1,6 @@
 package xyz.lisfox.vocaland.ui.playlist
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -247,7 +248,7 @@ fun PlaylistDetailScreen(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 private fun PlaylistDetailContent(
     detail: PlaylistDetailDto,
@@ -457,8 +458,10 @@ private fun PlaylistDetailContent(
             itemsIndexed(
                 items = detail.songs,
                 key = { _, item -> item.id },
+                contentType = { _, _ -> "playlist-song" },
             ) { index, item ->
                 PlaylistSongRow(
+                    modifier = Modifier.animateItem(),
                     index = index,
                     item = item,
                     canEdit = canEdit,
@@ -541,10 +544,11 @@ private fun PlaylistSongRow(
     onMoveDown: () -> Unit,
     onRemove: () -> Unit,
     onEditNote: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val song = item.song
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,

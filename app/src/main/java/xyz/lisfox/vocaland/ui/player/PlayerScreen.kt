@@ -1,5 +1,9 @@
 package xyz.lisfox.vocaland.ui.player
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -59,11 +63,15 @@ import xyz.lisfox.vocaland.data.model.BgmTrack
 import xyz.lisfox.vocaland.data.player.BgmPlayerController
 import xyz.lisfox.vocaland.data.player.PlayMode
 import xyz.lisfox.vocaland.ui.components.LoadingPane
+import xyz.lisfox.vocaland.ui.components.MotionDurations
 import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
 import xyz.lisfox.vocaland.ui.components.SectionHeader
 import kotlin.math.roundToInt
 
+private enum class PlayButtonState { Loading, Playing, Paused }
+
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PlayerScreen(
     controller: BgmPlayerController,
@@ -144,8 +152,10 @@ fun PlayerScreen(
                 itemsIndexed(
                     items = state.tracks,
                     key = { _, track -> track.bvid },
+                    contentType = { _, _ -> "track" },
                 ) { index, track ->
                     TrackRow(
+                        modifier = Modifier.animateItem(),
                         index = index,
                         track = track,
                         selected = index == state.currentIndex,
@@ -257,13 +267,15 @@ private fun PlayerControls(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
+            val positionText = remember(positionMs) { formatDuration(positionMs) }
+            val durationText = remember(durationMs) { formatDuration(durationMs) }
             Text(
-                text = formatDuration(positionMs),
+                text = positionText,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = formatDuration(durationMs),
+                text = durationText,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -291,18 +303,34 @@ private fun PlayerControls(
                 modifier = Modifier.size(66.dp),
                 enabled = hasTrack && !loadingTrack,
             ) {
-                if (loadingTrack) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(26.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
-                } else {
-                    Icon(
-                        imageVector = if (playing) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                        contentDescription = if (playing) "暂停" else "播放",
-                        modifier = Modifier.size(36.dp),
-                    )
+                Crossfade(
+                    targetState = when {
+                        loadingTrack -> PlayButtonState.Loading
+                        playing -> PlayButtonState.Playing
+                        else -> PlayButtonState.Paused
+                    },
+                    animationSpec = tween(MotionDurations.FAST),
+                    label = "playPauseCrossfade",
+                ) { buttonState ->
+                    when (buttonState) {
+                        PlayButtonState.Loading -> CircularProgressIndicator(
+                            modifier = Modifier.size(26.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
+
+                        PlayButtonState.Playing -> Icon(
+                            imageVector = Icons.Filled.Pause,
+                            contentDescription = "暂停",
+                            modifier = Modifier.size(36.dp),
+                        )
+
+                        PlayButtonState.Paused -> Icon(
+                            imageVector = Icons.Filled.PlayArrow,
+                            contentDescription = "播放",
+                            modifier = Modifier.size(36.dp),
+                        )
+                    }
                 }
             }
             Spacer(Modifier.width(20.dp))
@@ -377,13 +405,19 @@ private fun TrackRow(
     onMoveUp: () -> Unit,
     onMoveDown: () -> Unit,
     onRemove: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
+    val containerColor by animateColorAsState(
+        targetValue = if (selected) scheme.primaryContainer else scheme.surfaceContainerLow,
+        animationSpec = tween(MotionDurations.FAST),
+        label = "trackRowBackground",
+    )
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .background(if (selected) scheme.primaryContainer else scheme.surfaceContainerLow)
+            .background(containerColor)
             .clickable(enabled = !editing, onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
