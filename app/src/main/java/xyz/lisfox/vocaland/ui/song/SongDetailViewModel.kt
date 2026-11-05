@@ -22,13 +22,23 @@ import xyz.lisfox.vocaland.data.model.TagItemDto
 import xyz.lisfox.vocaland.data.remote.toUserMessage
 import xyz.lisfox.vocaland.data.repository.SongDetailRepository
 import xyz.lisfox.vocaland.data.session.AuthSession
+import xyz.lisfox.vocaland.data.songactions.SongActionsRepository
+import xyz.lisfox.vocaland.data.songactions.SongListenStateDto
+import xyz.lisfox.vocaland.data.songactions.SongListenStatus
+import xyz.lisfox.vocaland.data.songactions.sortSongVideos
 
 data class SongDetailUiState(
     val song: SongDto? = null,
     val tags: List<TagItemDto> = emptyList(),
+    val selectedBvid: String? = null,
     val loading: Boolean = true,
     val error: String? = null,
     val isLoggedIn: Boolean = false,
+    val listenStatus: SongListenStatus? = null,
+    val listenLitCount: Int = 0,
+    val listenLoading: Boolean = false,
+    val listenUpdating: Boolean = false,
+    val listenError: String? = null,
     val ratingSummary: RatingSummaryDto? = null,
     val ratings: List<RatingDto> = emptyList(),
     val ratingsPage: Int = 1,
@@ -54,6 +64,7 @@ class SongDetailViewModel(
     private val repository: SongDetailRepository,
     private val session: AuthSession,
     private val songId: Int,
+    private val songActions: SongActionsRepository? = null,
 ) : ViewModel() {
     private val _state = MutableStateFlow(SongDetailUiState())
     val state: StateFlow<SongDetailUiState> = _state.asStateFlow()
@@ -63,12 +74,74 @@ class SongDetailViewModel(
     private var ratingsJob: Job? = null
     private var commentsJob: Job? = null
     private var rankingJob: Job? = null
+    private var litCountJob: Job? = null
+    private var listenJob: Job? = null
+    private var listenActionJob: Job? = null
 
     init {
         observeSession()
         loadSong()
         loadRatingSummary()
         loadRatings(1)
+        loadLitCount()
+    }
+
+    fun selectVideo(bvid: String) {
+        if (_state.value.selectedBvid == bvid) return
+        _state.update { it.copy(selectedBvid = bvid) }
+    }
+
+    fun setListenStatus(status: SongListenStatus) {
+        val actions = songActions ?: return
+        val current = _state.value
+        if (!current.isLoggedIn || current.listenUpdating) return
+
+        listenActionJob?.cancel()
+        _state.update { it.copy(listenUpdating = true, listenError = null) }
+        listenActionJob = viewModelScope.launch {
+            val result = actions.setListenStatus(songId, status)
+            if (!isActive) return@launch
+            result
+                .onSuccess(::applyListenState)
+                .onFailure { error ->
+                    _state.update {
+                        it.copy(
+                            listenUpdating = false,
+                            listenError = error.toUserMessage(),
+                        )
+                    }
+                }
+        }
+    }
+
+    fun clearListenStatus() {
+        val actions = songActions ?: return
+        val current = _state.value
+        if (!current.isLoggedIn || current.listenUpdating) return
+
+        listenActionJob?.cancel()
+        _state.update { it.copy(listenUpdating = true, listenError = null) }
+        listenActionJob = viewModelScope.launch {
+            val result = actions.clearListenStatus(songId)
+            if (!isActive) return@launch
+            result
+                .onSuccess(::applyListenState)
+                .onFailure { error ->
+                    _state.update {
+                        it.copy(
+                            listenUpdating = false,
+                            listenError = error.toUserMessage(),
+                        )
+                    }
+                }
+        }
+    }
+
+    fun retryListen() {
+        loadLitCount()
+        if (_state.value.isLoggedIn) {
+            loadListenState()
+        }
     }
 
     fun retrySong() {
@@ -146,9 +219,12 @@ class SongDetailViewModel(
                     if (loggedIn) {
                         loadComments(1)
                         loadRanking(_state.value.rankingBoard)
+                        loadListenState()
                     } else {
                         commentsJob?.cancel()
                         rankingJob?.cancel()
+                        listenJob?.cancel()
+                        listenActionJob?.cancel()
                         _state.update {
                             it.copy(
                                 comments = emptyList(),
@@ -163,6 +239,10 @@ class SongDetailViewModel(
                                 rankingLoading = false,
                                 rankingLoaded = false,
                                 rankingError = null,
+                                listenStatus = null,
+                                listenLoading = false,
+                                listenUpdating = false,
+                                listenError = null,
                             )
                         }
                     }
@@ -179,10 +259,15 @@ class SongDetailViewModel(
             if (!isActive) return@launch
             result
                 .onSuccess { content ->
+                    val videos = sortSongVideos(content.song.videos)
+                    val selectedBvid = _state.value.selectedBvid
+                        ?.takeIf { bvid -> videos.any { it.bvid == bvid } }
+                        ?: videos.firstOrNull { it.bvid.isNotBlank() }?.bvid
                     _state.update {
                         it.copy(
                             song = content.song,
                             tags = content.tags,
+                            selectedBvid = selectedBvid,
                             loading = false,
                             error = null,
                         )
@@ -196,6 +281,52 @@ class SongDetailViewModel(
                         )
                     }
                 }
+        }
+    }
+
+    private fun loadLitCount() {
+        val actions = songActions ?: return
+        litCountJob?.cancel()
+        litCountJob = viewModelScope.launch {
+            val result = actions.loadLitCount(songId)
+            if (!isActive) return@launch
+            result.onSuccess { count ->
+                _state.update { it.copy(listenLitCount = count) }
+            }
+        }
+    }
+
+    private fun loadListenState() {
+        val actions = songActions ?: return
+        if (!_state.value.isLoggedIn) return
+
+        listenJob?.cancel()
+        _state.update { it.copy(listenLoading = true, listenError = null) }
+        listenJob = viewModelScope.launch {
+            val result = actions.loadListenState(songId)
+            if (!isActive) return@launch
+            result
+                .onSuccess(::applyListenState)
+                .onFailure { error ->
+                    _state.update {
+                        it.copy(
+                            listenLoading = false,
+                            listenError = error.toUserMessage(),
+                        )
+                    }
+                }
+        }
+    }
+
+    private fun applyListenState(stateDto: SongListenStateDto) {
+        _state.update {
+            it.copy(
+                listenStatus = SongListenStatus.fromApiValue(stateDto.status),
+                listenLitCount = stateDto.litCount,
+                listenLoading = false,
+                listenUpdating = false,
+                listenError = null,
+            )
         }
     }
 

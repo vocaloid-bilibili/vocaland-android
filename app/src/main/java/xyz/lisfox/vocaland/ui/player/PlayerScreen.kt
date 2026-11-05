@@ -5,6 +5,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,11 +21,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDownward
+import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.VolumeOff
+import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
@@ -32,6 +39,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -54,6 +62,7 @@ import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
 import xyz.lisfox.vocaland.ui.components.SectionHeader
+import kotlin.math.roundToInt
 
 @Composable
 fun PlayerScreen(
@@ -61,6 +70,7 @@ fun PlayerScreen(
     modifier: Modifier = Modifier,
 ) {
     val state by controller.state.collectAsStateWithLifecycle()
+    var editingQueue by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         controller.ensureLoaded()
@@ -101,6 +111,7 @@ fun PlayerScreen(
                         durationMs = state.durationMs,
                         hasTrack = state.currentTrack != null,
                         playMode = state.playMode,
+                        volume = state.volume,
                     )
                 }
 
@@ -122,6 +133,11 @@ fun PlayerScreen(
                     SectionHeader(
                         title = "播放列表",
                         subtitle = "共 ${state.tracks.size} 首",
+                        action = {
+                            TextButton(onClick = { editingQueue = !editingQueue }) {
+                                Text(if (editingQueue) "完成" else "编辑")
+                            }
+                        },
                     )
                 }
 
@@ -133,7 +149,13 @@ fun PlayerScreen(
                         index = index,
                         track = track,
                         selected = index == state.currentIndex,
+                        editing = editingQueue,
+                        canMoveUp = index > 0,
+                        canMoveDown = index < state.tracks.lastIndex,
                         onClick = { controller.playAt(index) },
+                        onMoveUp = { controller.moveTrack(index, index - 1) },
+                        onMoveDown = { controller.moveTrack(index, index + 1) },
+                        onRemove = { controller.removeTrack(index) },
                     )
                 }
             }
@@ -192,6 +214,7 @@ private fun PlayerHero(track: BgmTrack?) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PlayerControls(
     controller: BgmPlayerController,
@@ -201,6 +224,7 @@ private fun PlayerControls(
     durationMs: Long,
     hasTrack: Boolean,
     playMode: PlayMode,
+    volume: Float,
 ) {
     val duration = durationMs.coerceAtLeast(1L)
     var dragging by remember { mutableStateOf(false) }
@@ -295,12 +319,13 @@ private fun PlayerControls(
         }
 
         Spacer(Modifier.height(10.dp))
-        Row(
+        FlowRow(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(
                 8.dp,
                 Alignment.CenterHorizontally,
             ),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             PlayMode.entries.forEach { mode ->
                 FilterChip(
@@ -311,6 +336,32 @@ private fun PlayerControls(
                 )
             }
         }
+
+        Spacer(Modifier.height(12.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(
+                imageVector = if (volume == 0f) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Slider(
+                value = volume,
+                onValueChange = controller::setVolume,
+                valueRange = 0f..1f,
+                modifier = Modifier.weight(1f),
+            )
+            Text(
+                text = "${(volume * 100).roundToInt()}%",
+                modifier = Modifier.width(40.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.End,
+            )
+        }
     }
 }
 
@@ -319,7 +370,13 @@ private fun TrackRow(
     index: Int,
     track: BgmTrack,
     selected: Boolean,
+    editing: Boolean,
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
     onClick: () -> Unit,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
+    onRemove: () -> Unit,
 ) {
     val scheme = MaterialTheme.colorScheme
     Row(
@@ -327,7 +384,7 @@ private fun TrackRow(
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
             .background(if (selected) scheme.primaryContainer else scheme.surfaceContainerLow)
-            .clickable(onClick = onClick)
+            .clickable(enabled = !editing, onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -367,11 +424,51 @@ private fun TrackRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Text(
-            text = formatDuration(track.durationSeconds * 1000L),
-            style = MaterialTheme.typography.labelSmall,
-            color = if (selected) scheme.onPrimaryContainer else scheme.onSurfaceVariant,
-        )
+        if (editing) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(
+                    onClick = onMoveUp,
+                    enabled = canMoveUp,
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.ArrowUpward,
+                        contentDescription = "上移",
+                        modifier = Modifier.size(18.dp),
+                        tint = if (selected) scheme.onPrimaryContainer else scheme.onSurfaceVariant,
+                    )
+                }
+                IconButton(
+                    onClick = onMoveDown,
+                    enabled = canMoveDown,
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.ArrowDownward,
+                        contentDescription = "下移",
+                        modifier = Modifier.size(18.dp),
+                        tint = if (selected) scheme.onPrimaryContainer else scheme.onSurfaceVariant,
+                    )
+                }
+                IconButton(
+                    onClick = onRemove,
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.DeleteOutline,
+                        contentDescription = "从队列移除",
+                        modifier = Modifier.size(18.dp),
+                        tint = scheme.error,
+                    )
+                }
+            }
+        } else {
+            Text(
+                text = formatDuration(track.durationSeconds * 1000L),
+                style = MaterialTheme.typography.labelSmall,
+                color = if (selected) scheme.onPrimaryContainer else scheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
