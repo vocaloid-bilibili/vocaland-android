@@ -13,23 +13,24 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -70,7 +71,8 @@ import xyz.lisfox.vocaland.ui.tag.TagDetailScreen
 import xyz.lisfox.vocaland.ui.theme.VocaLandTheme
 import xyz.lisfox.vocaland.ui.user.UserScreen
 
-@OptIn(ExperimentalMaterial3Api::class)
+private val bottomBarRowHeight = 62.dp
+
 @Composable
 fun VocaLandApp(
     container: AppContainer,
@@ -85,7 +87,8 @@ fun VocaLandApp(
         val navController = rememberNavController()
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = backStackEntry?.destination?.route
-        val isTopLevel = TOP_LEVEL_DESTINATIONS.any { it.route == currentRoute }
+        val isTopLevel = currentRoute == null ||
+            TOP_LEVEL_DESTINATIONS.any { it.route == currentRoute }
         val navigateToTopLevel: (String) -> Unit = { route ->
             navController.navigate(route) {
                 popUpTo(navController.graph.findStartDestination().id) {
@@ -96,23 +99,27 @@ fun VocaLandApp(
             }
         }
 
-        Scaffold(
-            modifier = modifier.fillMaxSize(),
-            containerColor = MaterialTheme.colorScheme.background,
-            contentWindowInsets = WindowInsets.systemBars,
-            bottomBar = {
-                if (isTopLevel) {
-                    CompactBottomBar(
-                        currentRoute = currentRoute,
-                        onSelect = navigateToTopLevel,
-                    )
-                }
-            },
-        ) { innerPadding ->
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+        ) {
+            CompactBottomBar(
+                currentRoute = currentRoute,
+                onSelect = navigateToTopLevel,
+                enabled = isTopLevel,
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
             NavHost(
                 navController = navController,
                 startDestination = Routes.HOME,
-                modifier = Modifier.padding(innerPadding),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .windowInsetsPadding(
+                        WindowInsets.systemBars.only(
+                            WindowInsetsSides.Top + WindowInsetsSides.Horizontal,
+                        ),
+                    ),
                 enterTransition = {
                     val direction = tabDirection()
                     if (direction != null) {
@@ -512,9 +519,12 @@ fun VocaLandApp(
 private fun CompactBottomBar(
     currentRoute: String?,
     onSelect: (String) -> Unit,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
 ) {
     val scheme = MaterialTheme.colorScheme
     Surface(
+        modifier = modifier,
         color = scheme.surfaceContainer,
         tonalElevation = 3.dp,
     ) {
@@ -526,7 +536,7 @@ private fun CompactBottomBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(62.dp)
+                    .height(bottomBarRowHeight)
                     .selectableGroup(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -538,6 +548,7 @@ private fun CompactBottomBar(
                             .weight(1f)
                             .selectable(
                                 selected = selected,
+                                enabled = enabled,
                                 role = Role.Tab,
                                 onClick = { onSelect(destination.route) },
                             )
@@ -591,9 +602,19 @@ private fun PageScaffold(
     onBack: (() -> Unit)? = null,
     content: @Composable (Modifier) -> Unit,
 ) {
+    val topLevelBottomInset = if (onBack == null) {
+        Modifier
+            .windowInsetsPadding(
+                WindowInsets.navigationBars.only(WindowInsetsSides.Bottom),
+            )
+            .padding(bottom = bottomBarRowHeight)
+    } else {
+        Modifier
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .then(topLevelBottomInset)
             .background(MaterialTheme.colorScheme.background),
     ) {
         Surface(
@@ -638,7 +659,16 @@ private fun PageScaffold(
         Box(
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth(),
+                .fillMaxWidth()
+                .then(
+                    if (onBack != null) {
+                        Modifier.windowInsetsPadding(
+                            WindowInsets.navigationBars.only(WindowInsetsSides.Bottom),
+                        )
+                    } else {
+                        Modifier
+                    },
+                ),
         ) {
             content(Modifier.fillMaxSize())
         }
