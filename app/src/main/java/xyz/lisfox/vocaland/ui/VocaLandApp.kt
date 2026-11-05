@@ -72,6 +72,7 @@ import xyz.lisfox.vocaland.ui.song.SongDetailScreen
 import xyz.lisfox.vocaland.ui.tag.TagDetailScreen
 import xyz.lisfox.vocaland.ui.theme.VocaLandTheme
 import xyz.lisfox.vocaland.ui.user.UserScreen
+import xyz.lisfox.vocaland.util.SiteTarget
 
 private val bottomBarRowHeight = 62.dp
 
@@ -98,6 +99,33 @@ fun VocaLandApp(
                 }
                 launchSingleTop = true
                 restoreState = true
+            }
+        }
+        val openTarget: (SiteTarget) -> Unit = { target ->
+            when (target) {
+                is SiteTarget.Song -> navController.navigate(Routes.song(target.id)) {
+                    launchSingleTop = true
+                }
+
+                is SiteTarget.Artist -> navController.navigate(
+                    Routes.artist(target.kind, target.id),
+                ) {
+                    launchSingleTop = true
+                }
+
+                is SiteTarget.Tag -> navController.navigate(Routes.tag(target.id)) {
+                    launchSingleTop = true
+                }
+
+                is SiteTarget.User -> navController.navigate(Routes.user(target.id)) {
+                    launchSingleTop = true
+                }
+
+                is SiteTarget.Playlist -> navController.navigate(Routes.playlist(target.id)) {
+                    launchSingleTop = true
+                }
+
+                SiteTarget.Ranking -> navigateToTopLevel(Routes.RANKING)
             }
         }
 
@@ -188,6 +216,7 @@ fun VocaLandApp(
                             onOpenFeature = { title ->
                                 navController.navigate(Routes.feature(title))
                             },
+                            onOpenTarget = openTarget,
                             onOpenSong = { id ->
                                 navController.navigate(Routes.song(id)) {
                                     launchSingleTop = true

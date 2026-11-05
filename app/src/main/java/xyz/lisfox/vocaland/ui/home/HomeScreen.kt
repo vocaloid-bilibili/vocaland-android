@@ -33,12 +33,16 @@ import xyz.lisfox.vocaland.data.repository.HomeRepository
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
 import xyz.lisfox.vocaland.ui.playlist.PlaylistPreviewSection
+import xyz.lisfox.vocaland.util.SiteTarget
+import xyz.lisfox.vocaland.util.parseSitePath
+import xyz.lisfox.vocaland.util.parseTargetKey
 import xyz.lisfox.vocaland.util.targetLabel
 
 @Composable
 fun HomeScreen(
     repository: HomeRepository,
     onOpenFeature: (String) -> Unit,
+    onOpenTarget: (SiteTarget) -> Unit,
     onOpenSong: (Int) -> Unit,
     onOpenUser: (Int) -> Unit,
     onOpenPlaylist: (Int) -> Unit,
@@ -81,6 +85,7 @@ fun HomeScreen(
                     onRefresh = viewModel::refresh,
                     onSelectStat = viewModel::selectStat,
                     onOpenFeature = onOpenFeature,
+                    onOpenTarget = onOpenTarget,
                     onOpenSong = onOpenSong,
                     onOpenUser = onOpenUser,
                     onOpenPlaylist = onOpenPlaylist,
@@ -103,6 +108,7 @@ private fun HomeContentList(
     onRefresh: () -> Unit,
     onSelectStat: (String) -> Unit,
     onOpenFeature: (String) -> Unit,
+    onOpenTarget: (SiteTarget) -> Unit,
     onOpenSong: (Int) -> Unit,
     onOpenUser: (Int) -> Unit,
     onOpenPlaylist: (Int) -> Unit,
@@ -168,7 +174,12 @@ private fun HomeContentList(
             HeroCarousel(
                 slides = content.heroSlides,
                 onClick = { slide ->
-                    onOpenFeature(slide.caption.ifBlank { "主视觉详情" })
+                    val target = parseSitePath(slide.linkUrl)
+                    if (target != null) {
+                        onOpenTarget(target)
+                    } else {
+                        onOpenFeature(slide.caption.ifBlank { "主视觉详情" })
+                    }
                 },
             )
         }
@@ -228,7 +239,16 @@ private fun HomeContentList(
         item {
             RatingsSection(
                 ratings = content.ratings,
-                onOpen = { onOpenFeature("评分：${it.targetName ?: targetLabel(it.targetKey)}") },
+                onOpen = { rating ->
+                    val target = parseTargetKey(rating.targetKey)
+                    if (target != null) {
+                        onOpenTarget(target)
+                    } else {
+                        onOpenFeature(
+                            "评分：${rating.targetName ?: targetLabel(rating.targetKey)}",
+                        )
+                    }
+                },
                 onOpenUser = onOpenUser,
             )
         }
@@ -243,7 +263,14 @@ private fun HomeContentList(
         item {
             CommentsSection(
                 comments = content.comments,
-                onOpen = { onOpenFeature("评论：${targetLabel(it.targetKey)}") },
+                onOpen = { comment ->
+                    val target = parseTargetKey(comment.targetKey)
+                    if (target != null) {
+                        onOpenTarget(target)
+                    } else {
+                        onOpenFeature("评论：${targetLabel(comment.targetKey)}")
+                    }
+                },
                 onOpenUser = onOpenUser,
             )
         }

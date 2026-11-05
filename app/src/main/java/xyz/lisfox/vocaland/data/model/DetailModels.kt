@@ -94,6 +94,7 @@ enum class ArtistKind(
     Vocalist("vocalist", "歌手"),
     Producer("producer", "P主"),
     Synthesizer("synthesizer", "合成器"),
+    Uploader("uploader", "UP主"),
     ;
 
     companion object {

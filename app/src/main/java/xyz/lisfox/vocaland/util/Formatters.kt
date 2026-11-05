@@ -61,45 +61,8 @@ fun artistLine(
         .ifBlank { "未知" }
 }
 
-fun targetLabel(targetKey: String): String {
-    val separator = targetKey.indexOf(':')
-    if (separator <= 0) return targetKey
-
-    val type = targetKey.substring(0, separator)
-    val rest = targetKey.substring(separator + 1)
-
-    return when (type) {
-        "song" -> "歌曲 #$rest"
-        "tag" -> "标签 #$rest"
-        "user" -> "用户 #$rest"
-        "artist" -> {
-            val boundary = rest.indexOf('-')
-            if (boundary <= 0) {
-                targetKey
-            } else {
-                "${artistKindLabel(rest.substring(0, boundary))} #${rest.substring(boundary + 1)}"
-            }
-        }
-
-        "interaction" -> {
-            if (rest.startsWith("tag:")) {
-                "标签 #${rest.removePrefix("tag:")}"
-            } else {
-                targetKey
-            }
-        }
-
-        else -> targetKey
-    }
-}
-
-private fun artistKindLabel(kind: String): String = when (kind) {
-    "producer" -> "P主"
-    "vocalist" -> "歌手"
-    "synthesizer" -> "引擎"
-    "uploader" -> "UP主"
-    else -> kind
-}
+fun targetLabel(targetKey: String): String =
+    parseTargetKey(targetKey)?.displayLabel() ?: targetKey
 
 fun timeAgo(iso: String?): String {
     val millis = parseIsoMillis(iso) ?: return ""
