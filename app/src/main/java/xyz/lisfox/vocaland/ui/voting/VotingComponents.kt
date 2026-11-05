@@ -774,7 +774,9 @@ fun TrendingResultItem(
 @Composable
 fun TrendingEntitySearchRow(
     entity: SearchEntityDto,
-    nominating: Boolean,
+    entityKind: String,
+    submitting: Boolean,
+    enabled: Boolean,
     onNominate: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -806,10 +808,16 @@ fun TrendingEntitySearchRow(
             NetworkImage(
                 url = imageUrl,
                 contentDescription = null,
-                modifier = Modifier
-                    .width(64.dp)
-                    .height(48.dp)
-                    .clip(RoundedCornerShape(10.dp)),
+                modifier = if (entityKind == "song") {
+                    Modifier
+                        .width(64.dp)
+                        .height(48.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                } else {
+                    Modifier
+                        .size(56.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                },
             )
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
@@ -830,8 +838,8 @@ fun TrendingEntitySearchRow(
                     )
                 }
             }
-            TextButton(onClick = onNominate, enabled = !nominating) {
-                Text(if (nominating) "提交中…" else "提名")
+            TextButton(onClick = onNominate, enabled = enabled) {
+                Text(if (submitting) "提交中…" else "提名")
             }
         }
     }

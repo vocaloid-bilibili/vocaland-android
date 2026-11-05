@@ -48,6 +48,7 @@ data class TrendingVotingUiState(
     val entitySearchLoading: Boolean = false,
     val entitySearchError: String? = null,
     val nominating: Boolean = false,
+    val nominatingId: Int? = null,
     val nominationError: String? = null,
     val nominationNotice: String? = null,
     val withdrawingId: Int? = null,
@@ -205,6 +206,7 @@ class TrendingVotingViewModel(
             _state.update {
                 it.copy(
                     nominating = true,
+                    nominatingId = entity.id,
                     nominationError = null,
                     nominationNotice = null,
                 )
@@ -217,6 +219,7 @@ class TrendingVotingViewModel(
                 _state.update {
                     it.copy(
                         nominating = false,
+                        nominatingId = null,
                         entityQuery = "",
                         entityResults = emptyList(),
                         nominationNotice = "提名成功",
@@ -227,6 +230,7 @@ class TrendingVotingViewModel(
                 _state.update {
                     it.copy(
                         nominating = false,
+                        nominatingId = null,
                         nominationError = error.toUserMessage(),
                     )
                 }
@@ -286,6 +290,7 @@ class TrendingVotingViewModel(
                     entitySearchLoading = false,
                     entitySearchError = null,
                     nominating = false,
+                    nominatingId = null,
                     withdrawingId = null,
                     results = emptyList(),
                     resultsLoading = false,

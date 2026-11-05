@@ -267,7 +267,9 @@ private fun androidx.compose.foundation.lazy.LazyListScope.nominationContent(
                 items(state.entityResults, key = { "search-${it.id}" }) { entity ->
                     TrendingEntitySearchRow(
                         entity = entity,
-                        nominating = state.nominating,
+                        entityKind = state.campaign?.entityKind ?: "song",
+                        submitting = state.nominatingId == entity.id,
+                        enabled = !state.nominating,
                         onNominate = { onNominate(entity) },
                     )
                 }

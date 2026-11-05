@@ -1,5 +1,6 @@
 package xyz.lisfox.vocaland.data.model
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 enum class VotingKind(val routeValue: String, val label: String) {
@@ -28,8 +29,8 @@ data class EdMechanismDto(
 
 @Serializable
 data class EdMechanismConfigDto(
-    val allowNegativeVote: Boolean = true,
-    val allowBonusVote: Boolean = true,
+    @SerialName("allowNegativeVote") val allowNegativeVote: Boolean = true,
+    @SerialName("allowBonusVote") val allowBonusVote: Boolean = true,
 )
 
 @Serializable
@@ -47,7 +48,7 @@ data class EdVotingCandidateDto(
 @Serializable
 data class EdSongSummaryDto(
     val id: Int = 0,
-    val name: String = "",
+    val name: String? = null,
     val displayName: String? = null,
     val vocalists: List<EdArtistBriefDto> = emptyList(),
     val producers: List<EdArtistBriefDto> = emptyList(),
@@ -56,13 +57,13 @@ data class EdSongSummaryDto(
 @Serializable
 data class EdArtistBriefDto(
     val id: Int = 0,
-    val name: String = "",
+    val name: String? = null,
 )
 
 @Serializable
 data class EdVideoSummaryDto(
     val bvid: String = "",
-    val title: String = "",
+    val title: String? = null,
     val thumbnail: String? = null,
     val duration: Int? = null,
     val uploaderName: String? = null,

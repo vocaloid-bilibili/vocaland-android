@@ -33,12 +33,12 @@ fun EdVotingCandidateDto.displayTitle(): String =
 
 fun EdVotingCandidateDto.displayArtistLine(): String {
     val producers = song?.producers.orEmpty()
-        .map { it.name.trim() }
+        .map { it.name?.trim().orEmpty() }
         .filter { it.isNotEmpty() }
         .distinct()
         .joinToString(" / ")
     val vocalists = song?.vocalists.orEmpty()
-        .map { it.name.trim() }
+        .map { it.name?.trim().orEmpty() }
         .filter { it.isNotEmpty() }
         .distinct()
         .joinToString(" / ")
@@ -62,12 +62,12 @@ fun EdCandidateDto.displayTitle(): String =
 
 fun EdCandidateDto.displayArtistLine(): String {
     val producers = song?.producers.orEmpty()
-        .map { it.name.trim() }
+        .map { it.name?.trim().orEmpty() }
         .filter { it.isNotEmpty() }
         .distinct()
         .joinToString(" / ")
     val vocalists = song?.vocalists.orEmpty()
-        .map { it.name.trim() }
+        .map { it.name?.trim().orEmpty() }
         .filter { it.isNotEmpty() }
         .distinct()
         .joinToString(" / ")
