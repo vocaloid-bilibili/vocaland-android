@@ -1,5 +1,6 @@
 package xyz.lisfox.vocaland.ui
 
+import android.widget.Toast
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -36,6 +37,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,11 +46,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -65,6 +71,7 @@ import xyz.lisfox.vocaland.data.collection.LitEntityType
 import xyz.lisfox.vocaland.data.community.CommunityTargets
 import xyz.lisfox.vocaland.data.model.ArtistKind
 import xyz.lisfox.vocaland.data.model.VotingKind
+import xyz.lisfox.vocaland.data.update.enqueueUpdateDownload
 import xyz.lisfox.vocaland.di.AppContainer
 import xyz.lisfox.vocaland.ui.account.WalletScreen
 import xyz.lisfox.vocaland.ui.artist.ArtistDetailScreen
@@ -97,6 +104,8 @@ import xyz.lisfox.vocaland.ui.stat.StatScreen
 import xyz.lisfox.vocaland.ui.tag.TagDetailScreen
 import xyz.lisfox.vocaland.ui.tag.TagIndexScreen
 import xyz.lisfox.vocaland.ui.theme.VocaLandTheme
+import xyz.lisfox.vocaland.ui.update.UpdateDialog
+import xyz.lisfox.vocaland.ui.update.UpdateViewModel
 import xyz.lisfox.vocaland.ui.user.UserScreen
 import xyz.lisfox.vocaland.ui.voting.EdVotingScreen
 import xyz.lisfox.vocaland.ui.voting.TrendingVotingScreen
@@ -113,6 +122,19 @@ fun VocaLandApp(
 ) {
     val themeSettings by container.themePreferences.settings.collectAsStateWithLifecycle()
     val sessionState by container.session.state.collectAsStateWithLifecycle()
+    val updateViewModel: UpdateViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer { UpdateViewModel(container.updateRepository) }
+        },
+    )
+    val updateState by updateViewModel.state.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+
+    LaunchedEffect(updateState.message) {
+        val message = updateState.message ?: return@LaunchedEffect
+        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        updateViewModel.consumeMessage()
+    }
 
     VocaLandTheme(
         palette = themeSettings.palette,
@@ -373,6 +395,9 @@ fun VocaLandApp(
                             onOpenWallet = { navController.navigate(Routes.WALLET) },
                             onOpenShop = { navController.navigate(Routes.SHOP) },
                             onOpenCheckIn = { navController.navigate(Routes.WALLET) },
+                            onCheckUpdate = {
+                                updateViewModel.checkForUpdates(silent = false)
+                            },
                             modifier = contentModifier,
                         )
                     }
@@ -1139,6 +1164,23 @@ fun VocaLandApp(
                         navController.navigate(Routes.MY_PLAYLISTS)
                     },
                 )
+            }
+            if (updateState.visible) {
+                updateState.update?.let { update ->
+                    UpdateDialog(
+                        update = update,
+                        onDismiss = updateViewModel::dismiss,
+                        onDownload = { source ->
+                            val started = enqueueUpdateDownload(context, update, source)
+                            Toast.makeText(
+                                context,
+                                if (started) "已开始下载" else "无法开始下载",
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                            if (started) updateViewModel.dismiss()
+                        },
+                    )
+                }
             }
         }
     }

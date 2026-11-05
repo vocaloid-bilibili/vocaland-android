@@ -35,6 +35,7 @@ import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlaylistPlay
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Star
@@ -59,6 +60,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
+import xyz.lisfox.vocaland.BuildConfig
 import xyz.lisfox.vocaland.data.model.CachedUserDto
 import xyz.lisfox.vocaland.data.preferences.ThemePreferences
 import xyz.lisfox.vocaland.data.repository.AuthRepository
@@ -84,6 +86,7 @@ fun ProfileScreen(
     onOpenWallet: (() -> Unit)? = null,
     onOpenShop: (() -> Unit)? = null,
     onOpenCheckIn: (() -> Unit)? = null,
+    onCheckUpdate: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val sessionState by session.state.collectAsStateWithLifecycle()
@@ -94,6 +97,7 @@ fun ProfileScreen(
     val openWallet = onOpenWallet ?: { onOpenFeature("我的钱包") }
     val openShop = onOpenShop ?: { onOpenFeature("商城") }
     val openCheckIn = onOpenCheckIn ?: { onOpenFeature("每日签到") }
+    val checkUpdate = onCheckUpdate ?: { onOpenFeature("检查更新") }
 
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
@@ -218,6 +222,15 @@ fun ProfileScreen(
                             title = "账号设置",
                             onClick = openSettings,
                         )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                        )
+                        ProfileMenuItem(
+                            icon = { Icon(Icons.Filled.Refresh, contentDescription = null) },
+                            title = "检查更新",
+                            onClick = checkUpdate,
+                        )
                     }
                 }
             }
@@ -329,7 +342,7 @@ fun ProfileScreen(
 
         item {
             Text(
-                text = "VocaLand · 术力口数据库 Android",
+                text = "VocaLand · 术力口数据库 Android · v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
                 modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),

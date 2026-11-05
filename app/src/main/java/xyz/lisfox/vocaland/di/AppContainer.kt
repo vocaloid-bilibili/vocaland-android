@@ -53,6 +53,8 @@ import xyz.lisfox.vocaland.data.songactions.SongActionsApi
 import xyz.lisfox.vocaland.data.songactions.SongActionsRepository
 import xyz.lisfox.vocaland.data.stat.StatApi
 import xyz.lisfox.vocaland.data.stat.StatRepository
+import xyz.lisfox.vocaland.data.update.UpdateApi
+import xyz.lisfox.vocaland.data.update.UpdateRepository
 import java.util.concurrent.TimeUnit
 
 class AppContainer(context: Context) {
@@ -91,6 +93,11 @@ class AppContainer(context: Context) {
     private val playUrlClient = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
         .readTimeout(20, TimeUnit.SECONDS)
+        .build()
+
+    private val updateClient = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
         .build()
 
     private val accountAuthRetrofit = Retrofit.Builder()
@@ -144,6 +151,9 @@ class AppContainer(context: Context) {
     val statRepository = StatRepository(statApi, v3Api)
     val customRankingRepository = CustomRankingRepository(customRankingApi, v3Api)
     val userRepository = UserRepository(v3Api, v2Api, communityExtrasApi)
+    val updateRepository = UpdateRepository(
+        retrofit(UPDATE_BASE_URL, updateClient).create(UpdateApi::class.java),
+    )
     val themePreferences = ThemePreferences(appContext)
 
     private fun retrofit(
@@ -163,6 +173,7 @@ class AppContainer(context: Context) {
         const val V2_BASE_URL = "https://api.vocabili.top/v2/"
         const val V3_BASE_URL = "https://api.vocabili.top/v3/"
         const val PLAYURL_BASE_URL = "https://proxy.vocaloid.world:3013/"
+        const val UPDATE_BASE_URL = "https://api.github.com/"
         val JSON_MEDIA_TYPE = "application/json".toMediaType()
     }
 }
