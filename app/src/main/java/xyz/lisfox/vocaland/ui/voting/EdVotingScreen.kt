@@ -5,19 +5,27 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -42,6 +50,7 @@ fun EdVotingScreen(
     campaignId: Int,
     onLogin: () -> Unit,
     onOpenSong: (Int) -> Unit,
+    onOpenShop: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: EdVotingViewModel = viewModel(
@@ -73,6 +82,8 @@ fun EdVotingScreen(
                 state = state,
                 onLogin = onLogin,
                 onOpenSong = onOpenSong,
+                onOpenShop = onOpenShop,
+                onVoteExpired = viewModel::markVoteExpired,
                 onBvidChange = viewModel::updateBvid,
                 onNameChange = viewModel::updateName,
                 onVocalistChange = viewModel::updateVocalist,
@@ -97,6 +108,8 @@ private fun EdVotingContent(
     state: EdVotingUiState,
     onLogin: () -> Unit,
     onOpenSong: (Int) -> Unit,
+    onOpenShop: (() -> Unit)?,
+    onVoteExpired: () -> Unit,
     onBvidChange: (String) -> Unit,
     onNameChange: (String) -> Unit,
     onVocalistChange: (String) -> Unit,
@@ -119,6 +132,8 @@ private fun EdVotingContent(
         state.voterCount.takeIf { it > 0 }?.let { add("$it 人投票") }
     }.joinToString(" · ")
     val overLimit = state.maxVotes > 0 && state.selectedCount > state.maxVotes
+    var detailsOpen by remember { mutableStateOf(false) }
+    var losersOpen by remember { mutableStateOf(false) }
 
     Box(modifier = modifier) {
         LazyColumn(
@@ -132,12 +147,36 @@ private fun EdVotingContent(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             item {
-                VotingCampaignHeader(
-                    title = "${boardLabel(campaign.board)} · 第 ${campaign.issue} 期",
-                    status = votingStatusLabel(campaign.status),
-                    deadline = deadline,
-                    meta = meta,
-                )
+                Column {
+                    VotingCampaignHeader(
+                        title = "${boardLabel(campaign.board)} · 第 ${campaign.issue} 期",
+                        status = votingStatusLabel(campaign.status),
+                        deadline = deadline,
+                        meta = meta,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (campaign.status == "voting") {
+                            VoteCountdown(
+                                endTime = campaign.voteEnd,
+                                modifier = Modifier.weight(1f),
+                                onExpire = onVoteExpired,
+                            )
+                        } else {
+                            Spacer(Modifier.weight(1f))
+                        }
+                        EdRulesButton(config = state.mechanismConfig)
+                        if (campaign.status == "finalized") {
+                            Spacer(Modifier.width(6.dp))
+                            TextButton(onClick = { detailsOpen = !detailsOpen }) {
+                                Text(if (detailsOpen) "收起明细" else "查看明细")
+                            }
+                        }
+                    }
+                }
             }
 
             when {
@@ -166,11 +205,18 @@ private fun EdVotingContent(
                         onRemoveBonus = onRemoveBonus,
                         onBonusNegativeChange = onBonusNegativeChange,
                         overLimit = overLimit,
+                        onOpenShop = onOpenShop,
                     )
                 }
 
                 campaign.status == "finalized" -> {
-                    resultsContent(state = state, onOpenSong = onOpenSong)
+                    resultsContent(
+                        state = state,
+                        onOpenSong = onOpenSong,
+                        detailsOpen = detailsOpen,
+                        losersOpen = losersOpen,
+                        onToggleLosers = { losersOpen = !losersOpen },
+                    )
                 }
 
                 else -> {
@@ -343,6 +389,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.votingContent(
     onRemoveBonus: (Int) -> Unit,
     onBonusNegativeChange: (Int, Boolean) -> Unit,
     overLimit: Boolean,
+    onOpenShop: (() -> Unit)?,
 ) {
     if (!state.votingOpen) {
         item {
@@ -371,15 +418,22 @@ private fun androidx.compose.foundation.lazy.LazyListScope.votingContent(
     }
     if (state.allowBonusVote) {
         item {
-            Text(
-                text = if (state.walletLoading) {
-                    "附加票加载中…"
-                } else {
-                    "附加票预算 ${state.bonusBudget}，剩余 ${state.bonusRemaining}"
-                },
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Column {
+                Text(
+                    text = if (state.walletLoading) {
+                        "附加票加载中…"
+                    } else {
+                        "附加票预算 ${state.bonusBudget}，剩余 ${state.bonusRemaining}"
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (!state.walletLoading && state.bonusRemaining <= 0 && onOpenShop != null) {
+                    TextButton(onClick = onOpenShop) {
+                        Text("附加票不足，去商城购买")
+                    }
+                }
+            }
         }
     }
     if (overLimit) {
@@ -432,6 +486,9 @@ private fun androidx.compose.foundation.lazy.LazyListScope.votingContent(
 private fun androidx.compose.foundation.lazy.LazyListScope.resultsContent(
     state: EdVotingUiState,
     onOpenSong: (Int) -> Unit,
+    detailsOpen: Boolean,
+    losersOpen: Boolean,
+    onToggleLosers: () -> Unit,
 ) {
     state.resultsError?.takeIf { it.isNotBlank() }?.let { error ->
         item { VotingInlineMessage(text = error, isError = true) }
@@ -439,15 +496,79 @@ private fun androidx.compose.foundation.lazy.LazyListScope.resultsContent(
     if (state.resultsLoading) {
         item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
     }
-    val winnerIds = state.results.mapTo(mutableSetOf()) { it.candidate.id }
-    val rows = state.results + state.ranking.filterNot { it.candidate.id in winnerIds }
-    if (rows.isEmpty() && !state.resultsLoading) {
-        item { EmptyHint(text = "暂无结果") }
-    } else {
-        items(rows, key = { "${it.category}-${it.rank}-${it.candidate.id}" }) { result ->
-            EdResultItem(result = result, onOpenSong = onOpenSong)
+
+    val categoryOrder = listOf("weekly", "monthly", "daily")
+    val grouped = categoryOrder.mapNotNull { category ->
+        state.results
+            .filter { it.category == category }
+            .takeIf { it.isNotEmpty() }
+            ?.let { category to it }
+    }
+    val hasSelected = grouped.isNotEmpty()
+
+    grouped.forEach { (category, categoryItems) ->
+        item(key = "result-header-$category") {
+            Text(
+                text = categoryResultLabel(category),
+                style = MaterialTheme.typography.titleMedium,
+            )
+        }
+        itemsIndexed(
+            categoryItems.sortedBy { it.rank },
+            key = { _, result -> "$category-${result.rank}-${result.candidate.id}" },
+        ) { index, result ->
+            EdResultItem(
+                result = result,
+                onOpenSong = onOpenSong,
+                isWinner = index == 0,
+                detailsOpen = detailsOpen,
+                negativeWeight = state.mechanismConfig.negativeWeight,
+            )
         }
     }
+
+    val selectedIds = state.results.mapTo(mutableSetOf()) { it.candidate.id }
+    val losers = state.ranking
+        .filterNot { it.candidate.id in selectedIds }
+        .sortedBy { it.rank }
+    if (losers.isNotEmpty()) {
+        item(key = "losers-header") {
+            TextButton(
+                onClick = onToggleLosers,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    if (losersOpen) {
+                        "收起落选（${losers.size}）"
+                    } else {
+                        "展开落选（${losers.size}）"
+                    },
+                )
+            }
+        }
+        if (losersOpen) {
+            items(losers, key = { "loser-${it.rank}-${it.candidate.id}" }) { result ->
+                EdResultItem(
+                    result = result,
+                    onOpenSong = onOpenSong,
+                    detailsOpen = detailsOpen,
+                    negativeWeight = state.mechanismConfig.negativeWeight,
+                )
+            }
+        }
+    }
+
+    if (!hasSelected && losers.isEmpty() && !state.resultsLoading) {
+        item { EmptyHint(text = "暂无结果") }
+    }
+}
+
+private fun categoryResultLabel(category: String): String = when (category) {
+    "weekly" -> "周刊结果"
+    "monthly" -> "月刊结果"
+    "daily" -> "日刊结果"
+    "loser" -> "落选"
+    else -> category.ifBlank { "投票结果" }
 }
 
 @Composable
