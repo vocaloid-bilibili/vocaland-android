@@ -14,11 +14,14 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -33,10 +36,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import xyz.lisfox.vocaland.data.community.CommunityRepository
+import xyz.lisfox.vocaland.data.community.CommunityTargets
 import xyz.lisfox.vocaland.data.model.PublicUserDto
 import xyz.lisfox.vocaland.data.model.RatingDto
 import xyz.lisfox.vocaland.data.model.UserLitStatsDto
 import xyz.lisfox.vocaland.data.repository.UserRepository
+import xyz.lisfox.vocaland.data.session.AuthSession
+import xyz.lisfox.vocaland.ui.community.CommunityPanel
+import xyz.lisfox.vocaland.ui.community.CommunityTab
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.MetricGrid
@@ -54,14 +62,21 @@ fun UserScreen(
     userId: Int,
     onOpenSong: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    session: AuthSession? = null,
+    communityRepository: CommunityRepository? = null,
+    onLogin: () -> Unit = {},
+    onOpenUser: (Int) -> Unit = {},
+    onOpenSettings: () -> Unit = {},
+    onOpenWallet: (() -> Unit)? = null,
 ) {
     val viewModel: UserViewModel = viewModel(
         key = "user-$userId",
         factory = viewModelFactory {
-            initializer { UserViewModel(repository, userId) }
+            initializer { UserViewModel(repository, userId, session) }
         },
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val community = repository.community ?: communityRepository
 
     when {
         state.loading && state.user == null -> {
@@ -90,9 +105,34 @@ fun UserScreen(
                     UserHero(user)
                 }
 
+                item {
+                    UserProfileCard(
+                        profile = state.profile,
+                        isLoggedIn = state.isLoggedIn,
+                        nickname = user.nickname.ifBlank { user.username },
+                        onLogin = onLogin,
+                    )
+                }
+
                 state.litStats?.let { stats ->
                     item {
                         UserLitStatsCard(stats)
+                    }
+                }
+
+                if (state.isOwner && community != null) {
+                    item {
+                        UserOwnerSection(
+                            wallet = state.wallet,
+                            level = state.level,
+                            loading = state.ownerLoading,
+                            error = state.ownerError,
+                            notice = state.ownerNotice,
+                            checkinBusy = state.checkinBusy,
+                            onCheckin = viewModel::checkin,
+                            onOpenSettings = onOpenSettings,
+                            onOpenWallet = onOpenWallet,
+                        )
                     }
                 }
 
@@ -119,6 +159,49 @@ fun UserScreen(
                                 color = MaterialTheme.colorScheme.outlineVariant,
                             )
                         }
+                    }
+                }
+
+                item {
+                    when {
+                        state.ratingsLoadingMore -> {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(18.dp))
+                            }
+                        }
+
+                        state.ratingsPage < state.ratingsTotalPages -> {
+                            Button(
+                                onClick = viewModel::loadMoreRatings,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Text("加载更多评分")
+                            }
+                        }
+                    }
+                    state.ratingsLoadMoreError?.let { error ->
+                        TextButton(onClick = viewModel::loadMoreRatings) {
+                            Text("加载失败，点击重试：$error")
+                        }
+                    }
+                }
+
+                if (community != null) {
+                    item {
+                        CommunityPanel(
+                            repository = community,
+                            targetKey = CommunityTargets.user(user.id),
+                            session = session,
+                            onLogin = onLogin,
+                            onOpenUser = onOpenUser,
+                            initialTab = CommunityTab.Comments,
+                            showRatings = false,
+                            title = "评论",
+                        )
                     }
                 }
             }
