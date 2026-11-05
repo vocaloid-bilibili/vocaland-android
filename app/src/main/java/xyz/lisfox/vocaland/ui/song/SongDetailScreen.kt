@@ -1,5 +1,7 @@
 package xyz.lisfox.vocaland.ui.song
 
+import android.widget.Toast
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,6 +10,7 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -16,20 +19,30 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -41,7 +54,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import xyz.lisfox.vocaland.VocaLandApplication
 import xyz.lisfox.vocaland.data.model.ArtistKind
+import xyz.lisfox.vocaland.data.model.BgmTrack
 import xyz.lisfox.vocaland.data.model.CommentDto
 import xyz.lisfox.vocaland.data.model.RankingBoard
 import xyz.lisfox.vocaland.data.model.RankingDto
@@ -51,8 +66,14 @@ import xyz.lisfox.vocaland.data.model.SongDto
 import xyz.lisfox.vocaland.data.model.SongRankingStatsDto
 import xyz.lisfox.vocaland.data.model.TagItemDto
 import xyz.lisfox.vocaland.data.model.VideoDto
+import xyz.lisfox.vocaland.data.player.BgmPlayerController
+import xyz.lisfox.vocaland.data.player.BgmPlayerState
 import xyz.lisfox.vocaland.data.repository.SongDetailRepository
 import xyz.lisfox.vocaland.data.session.AuthSession
+import xyz.lisfox.vocaland.data.songactions.SongActionsRepository
+import xyz.lisfox.vocaland.data.songactions.SongListenStatus
+import xyz.lisfox.vocaland.data.songactions.songVideoTrack
+import xyz.lisfox.vocaland.data.songactions.sortSongVideos
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.MetricGrid
@@ -79,6 +100,13 @@ private val songRankingBoards = listOf(
 )
 
 @Composable
+private fun rememberPlayerState(controller: BgmPlayerController?): BgmPlayerState? {
+    if (controller == null) return null
+    val state by controller.state.collectAsStateWithLifecycle()
+    return state
+}
+
+@Composable
 fun SongDetailScreen(
     repository: SongDetailRepository,
     session: AuthSession,
@@ -88,11 +116,20 @@ fun SongDetailScreen(
     onOpenUser: (Int) -> Unit,
     onLogin: () -> Unit,
     modifier: Modifier = Modifier,
+    playerController: BgmPlayerController? = null,
+    songActionsRepository: SongActionsRepository? = null,
+    onAddToPlaylist: ((Int) -> Unit)? = null,
 ) {
+    val context = LocalContext.current
+    val appContainer = (context.applicationContext as? VocaLandApplication)?.container
+    val controller = playerController ?: appContainer?.bgmPlayerController
+    val playerState = rememberPlayerState(controller)
     val viewModel: SongDetailViewModel = viewModel(
         key = "song-$songId",
         factory = viewModelFactory {
-            initializer { SongDetailViewModel(repository, session, songId) }
+            initializer {
+                SongDetailViewModel(repository, session, songId, songActionsRepository)
+            }
         },
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -118,10 +155,35 @@ fun SongDetailScreen(
                 SongDetailContent(
                     state = state,
                     song = song,
+                    playerState = playerState,
+                    playerAvailable = controller != null,
+                    listenAvailable = songActionsRepository != null,
                     onOpenArtist = onOpenArtist,
                     onOpenTag = onOpenTag,
                     onOpenUser = onOpenUser,
                     onLogin = onLogin,
+                    onSelectVideo = viewModel::selectVideo,
+                    onSetListenStatus = viewModel::setListenStatus,
+                    onClearListenStatus = viewModel::clearListenStatus,
+                    onRetryListen = viewModel::retryListen,
+                    onAddToPlaylist = onAddToPlaylist,
+                    onPlayTrack = { track ->
+                        if (controller == null) {
+                            Toast.makeText(context, "播放器尚未就绪", Toast.LENGTH_SHORT).show()
+                        } else {
+                            controller.playTrackNow(track)
+                        }
+                    },
+                    onTogglePlayback = { controller?.toggle() },
+                    onAddToQueue = { track ->
+                        val added = controller?.addToQueue(track)
+                        val message = when (added) {
+                            null -> "播放器尚未就绪"
+                            true -> "已加入播放队列"
+                            false -> "已在播放队列中"
+                        }
+                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                    },
                     onSelectRankingBoard = viewModel::selectRankingBoard,
                     onRetryRanking = viewModel::retryRanking,
                     onRetryRatings = viewModel::retryRatings,
@@ -141,10 +203,21 @@ fun SongDetailScreen(
 private fun SongDetailContent(
     state: SongDetailUiState,
     song: SongDto,
+    playerState: BgmPlayerState?,
+    playerAvailable: Boolean,
+    listenAvailable: Boolean,
     onOpenArtist: (ArtistKind, Int) -> Unit,
     onOpenTag: (Int) -> Unit,
     onOpenUser: (Int) -> Unit,
     onLogin: () -> Unit,
+    onSelectVideo: (String) -> Unit,
+    onSetListenStatus: (SongListenStatus) -> Unit,
+    onClearListenStatus: () -> Unit,
+    onRetryListen: () -> Unit,
+    onAddToPlaylist: ((Int) -> Unit)?,
+    onPlayTrack: (BgmTrack) -> Unit,
+    onTogglePlayback: () -> Unit,
+    onAddToQueue: (BgmTrack) -> Unit,
     onSelectRankingBoard: (RankingBoard) -> Unit,
     onRetryRanking: () -> Unit,
     onRetryRatings: () -> Unit,
@@ -155,6 +228,10 @@ private fun SongDetailContent(
     onNextComments: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val videos = remember(song.id, song.videos) { sortSongVideos(song.videos) }
+    val selectedVideo = videos.firstOrNull { it.bvid == state.selectedBvid }
+        ?: videos.firstOrNull()
+
     val producers = song.producers
         .map { it.producer }
         .filter { it.id > 0 }
@@ -178,6 +255,19 @@ private fun SongDetailContent(
     ) {
         item {
             SongHero(song)
+        }
+
+        item {
+            SongActionSection(
+                songId = song.id,
+                state = state,
+                listenAvailable = listenAvailable,
+                onLogin = onLogin,
+                onAddToPlaylist = onAddToPlaylist,
+                onSetListenStatus = onSetListenStatus,
+                onClearListenStatus = onClearListenStatus,
+                onRetryListen = onRetryListen,
+            )
         }
 
         if (producers.isNotEmpty()) {
@@ -228,21 +318,38 @@ private fun SongDetailContent(
 
         item {
             SectionHeader(
-                title = "视频",
-                subtitle = if (song.videos.isEmpty()) null else "共 ${song.videos.size} 个投稿",
+                title = "投稿视频",
+                subtitle = if (videos.isEmpty()) null else "共 ${videos.size} 个投稿",
             )
         }
 
-        if (song.videos.isEmpty()) {
+        if (videos.isEmpty()) {
             item {
                 EmptyHint("暂无视频")
             }
         } else {
-            itemsIndexed(
-                items = song.videos,
-                key = { index, video -> "${video.bvid}-$index" },
-            ) { _, video ->
-                VideoCard(video)
+            if (videos.size > 1) {
+                item {
+                    SubmissionSelector(
+                        videos = videos,
+                        selectedBvid = selectedVideo?.bvid,
+                        onSelect = onSelectVideo,
+                    )
+                }
+            }
+
+            selectedVideo?.let { video ->
+                item {
+                    SubmissionDetailCard(
+                        song = song,
+                        video = video,
+                        playerState = playerState,
+                        playerAvailable = playerAvailable,
+                        onPlayTrack = onPlayTrack,
+                        onTogglePlayback = onTogglePlayback,
+                        onAddToQueue = onAddToQueue,
+                    )
+                }
             }
         }
 
@@ -973,9 +1080,193 @@ private fun LoginHintCard(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun VideoCard(video: VideoDto) {
+private fun SongActionSection(
+    songId: Int,
+    state: SongDetailUiState,
+    listenAvailable: Boolean,
+    onLogin: () -> Unit,
+    onAddToPlaylist: ((Int) -> Unit)?,
+    onSetListenStatus: (SongListenStatus) -> Unit,
+    onClearListenStatus: () -> Unit,
+    onRetryListen: () -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        FlowRow(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedButton(
+                onClick = { onAddToPlaylist?.invoke(songId) },
+                enabled = onAddToPlaylist != null,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.PlaylistAdd,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.size(6.dp))
+                Text("加入歌单")
+            }
+
+            if (!state.isLoggedIn) {
+                OutlinedButton(onClick = onLogin) {
+                    Icon(
+                        imageVector = Icons.Filled.Favorite,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                    )
+                    Spacer(Modifier.size(6.dp))
+                    Text("登录后标记")
+                }
+            } else {
+                FilterChip(
+                    selected = state.listenStatus == SongListenStatus.Want,
+                    onClick = { onSetListenStatus(SongListenStatus.Want) },
+                    enabled = listenAvailable && !state.listenUpdating,
+                    label = { Text(SongListenStatus.Want.label) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.Favorite,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    },
+                )
+                FilterChip(
+                    selected = state.listenStatus == SongListenStatus.Listened,
+                    onClick = { onSetListenStatus(SongListenStatus.Listened) },
+                    enabled = listenAvailable && !state.listenUpdating,
+                    label = { Text(SongListenStatus.Listened.label) },
+                    leadingIcon = {
+                        Icon(
+                            imageVector = Icons.Filled.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    },
+                )
+                if (state.listenStatus != null) {
+                    TextButton(
+                        onClick = onClearListenStatus,
+                        enabled = listenAvailable && !state.listenUpdating,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.size(4.dp))
+                        Text("清除")
+                    }
+                }
+            }
+        }
+
+        if (state.listenLoading || state.listenUpdating) {
+            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        }
+
+        when {
+            !listenAvailable -> {
+                Text(
+                    text = "标记功能尚未接入",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            state.listenError != null -> {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Text(
+                        text = state.listenError,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.error,
+                    )
+                    TextButton(onClick = onRetryListen) {
+                        Text("重试")
+                    }
+                }
+            }
+
+            state.listenLitCount > 0 -> {
+                Text(
+                    text = "已有 ${formatNumber(state.listenLitCount.toLong())} 人听过",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SubmissionSelector(
+    videos: List<VideoDto>,
+    selectedBvid: String?,
+    onSelect: (String) -> Unit,
+) {
+    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        items(videos, key = { "${it.bvid}-${it.page ?: 0}" }) { video ->
+            val selected = video.bvid == selectedBvid
+            Column(
+                modifier = Modifier
+                    .width(148.dp)
+                    .clip(RoundedCornerShape(14.dp))
+                    .border(
+                        width = 2.dp,
+                        color = if (selected) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.outlineVariant
+                        },
+                        shape = RoundedCornerShape(14.dp),
+                    )
+                    .clickable { onSelect(video.bvid) }
+                    .padding(4.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                NetworkImage(
+                    url = video.thumbnail,
+                    contentDescription = video.title,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(16f / 9f)
+                        .clip(RoundedCornerShape(10.dp)),
+                )
+                Text(
+                    text = video.title?.takeIf { it.isNotBlank() } ?: "未命名视频",
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(horizontal = 2.dp),
+                )
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun SubmissionDetailCard(
+    song: SongDto,
+    video: VideoDto,
+    playerState: BgmPlayerState?,
+    playerAvailable: Boolean,
+    onPlayTrack: (BgmTrack) -> Unit,
+    onTogglePlayback: () -> Unit,
+    onAddToQueue: (BgmTrack) -> Unit,
+) {
     val context = LocalContext.current
+    val track = remember(song.id, video.bvid) { songVideoTrack(song, video) }
+    val isCurrent = playerState?.currentTrack?.bvid == video.bvid
+    val isPlaying = isCurrent && playerState?.playing == true
+    val inQueue = playerState?.tracks?.any { it.bvid == video.bvid } == true
     val metrics = video.latestSnapshot
         ?.let { "${formatNumber(it.view)} 播放" }
         ?.takeIf { it.isNotBlank() }
@@ -989,48 +1280,49 @@ private fun VideoCard(video: VideoDto) {
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { openBilibiliVideo(context, video.bvid) }
-                .padding(10.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
+        Column {
             NetworkImage(
                 url = video.thumbnail,
                 contentDescription = video.title,
                 modifier = Modifier
-                    .width(124.dp)
-                    .aspectRatio(16f / 9f)
-                    .clip(RoundedCornerShape(12.dp)),
+                    .fillMaxWidth()
+                    .aspectRatio(16f / 9f),
             )
 
             Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .align(Alignment.CenterVertically),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
                     text = video.title?.takeIf { it.isNotBlank() } ?: "未命名视频",
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.titleMedium,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
 
-                Text(
-                    text = video.uploader?.name?.takeIf { it.isNotBlank() } ?: "未知UP主",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.clickable(
-                        enabled = !video.uploader?.uid.isNullOrBlank(),
-                        onClick = {
-                            openBilibiliUser(context, video.uploader?.uid)
-                        },
-                    ),
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        text = "UP主",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = video.uploader?.name?.takeIf { it.isNotBlank() } ?: "未知UP主",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.clickable(
+                            enabled = !video.uploader?.uid.isNullOrBlank(),
+                            onClick = {
+                                openBilibiliUser(context, video.uploader?.uid)
+                            },
+                        ),
+                    )
+                }
 
                 if (meta.isNotBlank()) {
                     Text(
@@ -1048,6 +1340,65 @@ private fun VideoCard(video: VideoDto) {
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.error,
                     )
+                }
+
+                FlowRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    FilledTonalButton(
+                        onClick = {
+                            if (isCurrent) {
+                                onTogglePlayback()
+                            } else {
+                                track?.let(onPlayTrack)
+                            }
+                        },
+                        enabled = playerAvailable && track != null && !video.disabled,
+                    ) {
+                        if (isPlaying) {
+                            Icon(
+                                imageVector = Icons.Filled.Pause,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Filled.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                        Spacer(Modifier.size(6.dp))
+                        Text(
+                            when {
+                                !playerAvailable -> "播放器未就绪"
+                                isPlaying -> "暂停"
+                                isCurrent -> "继续播放"
+                                else -> "站内播放"
+                            },
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = { track?.let(onAddToQueue) },
+                        enabled = playerAvailable && track != null && !inQueue && !video.disabled,
+                    ) {
+                        Icon(
+                            imageVector = if (inQueue) Icons.Filled.Check else Icons.Filled.PlaylistAdd,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.size(6.dp))
+                        Text(if (inQueue) "已在队列" else "加入队列")
+                    }
+
+                    TextButton(
+                        onClick = { openBilibiliVideo(context, video.bvid) },
+                    ) {
+                        Text("B站观看")
+                    }
                 }
             }
         }

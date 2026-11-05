@@ -29,9 +29,11 @@ private val PLAYBACK_AUDIO_ATTRIBUTES = AudioAttributes.Builder()
     .build()
 
 enum class PlayMode(val label: String) {
-    SEQUENTIAL("顺序播放"),
-    REPEAT_ONE("单曲循环"),
-    SHUFFLE("随机播放"),
+    SINGLE("单曲循环"),
+    LIST("列表循环"),
+    SHUFFLE("随机循环"),
+    STOP_AFTER_LIST("播完全部暂停"),
+    STOP_AFTER_TRACK("播完当前暂停"),
 }
 
 data class BgmPlayerState(
@@ -43,7 +45,8 @@ data class BgmPlayerState(
     val positionMs: Long = 0,
     val durationMs: Long = 0,
     val error: String? = null,
-    val playMode: PlayMode = PlayMode.SEQUENTIAL,
+    val playMode: PlayMode = PlayMode.LIST,
+    val volume: Float = 1f,
 ) {
     val currentTrack: BgmTrack?
         get() = tracks.getOrNull(currentIndex)
@@ -67,11 +70,13 @@ class BgmPlayerController(
                 AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> pause()
 
                 AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                    player?.setVolume(0.2f, 0.2f)
+                    val volume = _state.value.volume * 0.2f
+                    player?.setVolume(volume, volume)
                 }
 
                 AudioManager.AUDIOFOCUS_GAIN -> {
-                    player?.setVolume(1f, 1f)
+                    val volume = _state.value.volume
+                    player?.setVolume(volume, volume)
                 }
             }
         }
@@ -82,8 +87,8 @@ class BgmPlayerController(
     private var prepareJob: Job? = null
     private var progressJob: Job? = null
     private var loaded = false
-    private val shuffleHistory = mutableListOf<Int>()
-    private var shuffleHistoryPosition = -1
+    private val pendingQueueAdds = mutableListOf<BgmTrack>()
+    private var pendingPlay: BgmTrack? = null
 
     fun ensureLoaded() {
         if (loaded || loadJob?.isActive == true) return
@@ -92,26 +97,42 @@ class BgmPlayerController(
             val result = repository.loadTracks()
             if (!isActive) return@launch
             result
-                .onSuccess { tracks ->
+                .onSuccess { loadedTracks ->
                     loaded = true
-                    val index = _state.value.currentIndex.coerceIn(
-                        0,
-                        tracks.lastIndex.coerceAtLeast(0),
-                    )
-                    if (_state.value.playMode == PlayMode.SHUFFLE) {
-                        resetShuffleHistory(index)
-                    } else {
-                        clearShuffleHistory()
+                    val current = _state.value
+                    val merged = loadedTracks.toMutableList()
+                    pendingQueueAdds.forEach { pending ->
+                        if (merged.none { it.bvid == pending.bvid }) merged.add(pending)
                     }
-                    _state.update { current ->
-                        current.copy(
-                            tracks = tracks,
+                    pendingQueueAdds.clear()
+
+                    var index = current.currentIndex.coerceIn(
+                        0,
+                        merged.lastIndex.coerceAtLeast(0),
+                    )
+                    val playTarget = pendingPlay
+                    pendingPlay = null
+                    if (playTarget != null) {
+                        val existing = merged.indexOfFirst { it.bvid == playTarget.bvid }
+                        index = if (existing >= 0) {
+                            existing
+                        } else {
+                            merged.add(playTarget)
+                            merged.lastIndex
+                        }
+                    }
+
+                    _state.update {
+                        it.copy(
+                            tracks = merged,
                             currentIndex = index,
                             loadingPlaylist = false,
-                            durationMs = tracks.getOrNull(index)?.durationSeconds?.times(1000L) ?: 0,
+                            durationMs = merged.getOrNull(index)?.durationSeconds?.times(1000L) ?: 0,
                             error = null,
                         )
                     }
+
+                    if (playTarget != null) playAt(index)
                 }
                 .onFailure { error ->
                     loaded = false
@@ -135,6 +156,8 @@ class BgmPlayerController(
         if (tracks.isEmpty()) return
         loadJob?.cancel()
         loaded = true
+        pendingQueueAdds.clear()
+        pendingPlay = null
         prepareJob?.cancel()
         progressJob?.cancel()
         releasePlayer()
@@ -142,11 +165,6 @@ class BgmPlayerController(
             tracks.indices.random()
         } else {
             0
-        }
-        if (_state.value.playMode == PlayMode.SHUFFLE) {
-            resetShuffleHistory(startIndex)
-        } else {
-            clearShuffleHistory()
         }
         _state.update {
             it.copy(
@@ -164,21 +182,123 @@ class BgmPlayerController(
     }
 
     fun setPlayMode(mode: PlayMode) {
-        val current = _state.value
-        if (current.playMode == mode) return
-        if (mode == PlayMode.SHUFFLE && current.tracks.isNotEmpty()) {
-            resetShuffleHistory(current.currentIndex)
-        } else {
-            clearShuffleHistory()
-        }
+        if (_state.value.playMode == mode) return
         _state.update { it.copy(playMode = mode) }
     }
 
-    fun playAt(index: Int, recordHistory: Boolean = true) {
+    fun addToQueue(track: BgmTrack): Boolean {
+        if (_state.value.tracks.any { it.bvid == track.bvid }) return false
+        if (pendingQueueAdds.any { it.bvid == track.bvid }) return false
+        if (!loaded) {
+            pendingQueueAdds.add(track)
+            ensureLoaded()
+            return true
+        }
+        _state.update { it.copy(tracks = it.tracks + track) }
+        return true
+    }
+
+    fun playTrackNow(track: BgmTrack) {
+        val state = _state.value
+        if (!loaded) {
+            pendingPlay = track
+            ensureLoaded()
+            return
+        }
+        val index = state.tracks.indexOfFirst { it.bvid == track.bvid }
+        if (index >= 0) {
+            playAt(index)
+            return
+        }
+        _state.update { it.copy(tracks = it.tracks + track) }
+        playAt(_state.value.tracks.lastIndex)
+    }
+
+    fun removeTrack(index: Int) {
+        val state = _state.value
+        if (index !in state.tracks.indices) return
+        val wasCurrent = index == state.currentIndex
+        val wasPlaying = state.playing
+        val nextTracks = state.tracks.toMutableList().apply { removeAt(index) }
+
+        if (nextTracks.isEmpty()) {
+            prepareJob?.cancel()
+            progressJob?.cancel()
+            releasePlayer()
+            _state.update {
+                it.copy(
+                    tracks = emptyList(),
+                    currentIndex = 0,
+                    loadingTrack = false,
+                    playing = false,
+                    positionMs = 0,
+                    durationMs = 0,
+                    error = null,
+                )
+            }
+            return
+        }
+
+        val nextIndex = when {
+            index < state.currentIndex -> state.currentIndex - 1
+            index == state.currentIndex -> index.coerceAtMost(nextTracks.lastIndex)
+            else -> state.currentIndex
+        }.coerceIn(0, nextTracks.lastIndex)
+
+        if (wasCurrent) {
+            prepareJob?.cancel()
+            progressJob?.cancel()
+            releasePlayer()
+            _state.update {
+                it.copy(
+                    tracks = nextTracks,
+                    currentIndex = nextIndex,
+                    loadingTrack = false,
+                    playing = false,
+                    positionMs = 0,
+                    durationMs = nextTracks[nextIndex].durationSeconds * 1000L,
+                )
+            }
+            if (wasPlaying) playAt(nextIndex)
+        } else {
+            _state.update {
+                it.copy(
+                    tracks = nextTracks,
+                    currentIndex = nextIndex,
+                )
+            }
+        }
+    }
+
+    fun moveTrack(from: Int, to: Int) {
+        val state = _state.value
+        if (from !in state.tracks.indices || to !in state.tracks.indices || from == to) return
+        val currentBvid = state.currentTrack?.bvid
+        val nextTracks = state.tracks.toMutableList()
+        val moved = nextTracks.removeAt(from)
+        nextTracks.add(to, moved)
+        val nextIndex = currentBvid
+            ?.let { bvid -> nextTracks.indexOfFirst { it.bvid == bvid } }
+            ?.takeIf { it >= 0 }
+            ?: state.currentIndex
+        _state.update {
+            it.copy(
+                tracks = nextTracks,
+                currentIndex = nextIndex,
+            )
+        }
+    }
+
+    fun setVolume(value: Float) {
+        val volume = value.coerceIn(0f, 1f)
+        _state.update { it.copy(volume = volume) }
+        player?.setVolume(volume, volume)
+    }
+
+    fun playAt(index: Int) {
         val tracks = _state.value.tracks
         if (index !in tracks.indices) return
         val track = tracks[index]
-        if (recordHistory) recordShuffle(index)
 
         prepareJob?.cancel()
         progressJob?.cancel()
@@ -277,10 +397,6 @@ class BgmPlayerController(
     fun previous() {
         val state = _state.value
         if (state.tracks.isEmpty()) return
-        if (state.playMode == PlayMode.SHUFFLE) {
-            playPreviousShuffle()
-            return
-        }
         val index = (state.currentIndex - 1 + state.tracks.size) % state.tracks.size
         playAt(index)
     }
@@ -288,10 +404,6 @@ class BgmPlayerController(
     fun next() {
         val state = _state.value
         if (state.tracks.isEmpty()) return
-        if (state.playMode == PlayMode.SHUFFLE) {
-            playNextShuffle()
-            return
-        }
         val index = (state.currentIndex + 1) % state.tracks.size
         playAt(index)
     }
@@ -308,15 +420,21 @@ class BgmPlayerController(
         val state = _state.value
         if (state.tracks.isEmpty()) return
         when (state.playMode) {
-            PlayMode.REPEAT_ONE -> restartCurrentTrack()
+            PlayMode.SINGLE -> restartCurrentTrack()
+            PlayMode.LIST -> {
+                playAt((state.currentIndex + 1) % state.tracks.size)
+            }
+
             PlayMode.SHUFFLE -> playNextShuffle()
-            PlayMode.SEQUENTIAL -> {
+            PlayMode.STOP_AFTER_LIST -> {
                 if (state.currentIndex < state.tracks.lastIndex) {
                     playAt(state.currentIndex + 1)
                 } else {
                     finishSequence()
                 }
             }
+
+            PlayMode.STOP_AFTER_TRACK -> finishSequence()
         }
     }
 
@@ -356,72 +474,18 @@ class BgmPlayerController(
             restartCurrentTrack()
             return
         }
-        if (shuffleHistoryPosition < shuffleHistory.lastIndex) {
-            val nextIndex = shuffleHistory[shuffleHistoryPosition + 1]
-            if (nextIndex in state.tracks.indices) {
-                shuffleHistoryPosition += 1
-                playAt(nextIndex, recordHistory = false)
-                return
-            }
-        }
-        playAt(randomShuffleIndex(state))
-    }
-
-    private fun playPreviousShuffle() {
-        val state = _state.value
-        if (state.tracks.isEmpty()) return
-        if (shuffleHistoryPosition > 0) {
-            shuffleHistoryPosition -= 1
-            val index = shuffleHistory[shuffleHistoryPosition]
-            if (index in state.tracks.indices) {
-                playAt(index, recordHistory = false)
-                return
-            }
-        }
-        if (state.tracks.size == 1) {
-            restartCurrentTrack()
-            return
-        }
         playAt(randomShuffleIndex(state))
     }
 
     private fun randomShuffleIndex(state: BgmPlayerState): Int =
         state.tracks.indices.filter { it != state.currentIndex }.random()
 
-    private fun resetShuffleHistory(index: Int) {
-        shuffleHistory.clear()
-        if (index >= 0) {
-            shuffleHistory.add(index)
-            shuffleHistoryPosition = 0
-        } else {
-            shuffleHistoryPosition = -1
-        }
-    }
-
-    private fun clearShuffleHistory() {
-        shuffleHistory.clear()
-        shuffleHistoryPosition = -1
-    }
-
-    private fun recordShuffle(index: Int) {
-        if (_state.value.playMode != PlayMode.SHUFFLE) return
-        if (shuffleHistoryPosition < 0 || shuffleHistory.isEmpty()) {
-            resetShuffleHistory(index)
-            return
-        }
-        if (shuffleHistory.getOrNull(shuffleHistoryPosition) == index) return
-        while (shuffleHistory.size > shuffleHistoryPosition + 1) {
-            shuffleHistory.removeAt(shuffleHistory.lastIndex)
-        }
-        shuffleHistory.add(index)
-        shuffleHistoryPosition = shuffleHistory.lastIndex
-    }
-
     private fun preparePlayer(url: String, track: BgmTrack) {
         val mediaPlayer = MediaPlayer()
         player = mediaPlayer
         mediaPlayer.setAudioAttributes(PLAYBACK_AUDIO_ATTRIBUTES)
         mediaPlayer.setWakeMode(context, PowerManager.PARTIAL_WAKE_LOCK)
+        mediaPlayer.setVolume(_state.value.volume, _state.value.volume)
         mediaPlayer.setDataSource(url)
         mediaPlayer.setOnPreparedListener { prepared ->
             if (player !== prepared) return@setOnPreparedListener
