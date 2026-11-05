@@ -20,16 +20,21 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.BrightnessAuto
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlaylistPlay
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -56,6 +61,7 @@ import xyz.lisfox.vocaland.data.model.CachedUserDto
 import xyz.lisfox.vocaland.data.preferences.ThemePreferences
 import xyz.lisfox.vocaland.data.repository.AuthRepository
 import xyz.lisfox.vocaland.data.session.AuthSession
+import xyz.lisfox.vocaland.ui.account.roleLabel
 import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.SectionHeader
 import xyz.lisfox.vocaland.ui.components.StatusPill
@@ -71,11 +77,21 @@ fun ProfileScreen(
     themePreferences: ThemePreferences,
     onLogin: () -> Unit,
     onOpenFeature: (String) -> Unit,
+    onOpenNotifications: (() -> Unit)? = null,
+    onOpenSettings: (() -> Unit)? = null,
+    onOpenWallet: (() -> Unit)? = null,
+    onOpenShop: (() -> Unit)? = null,
+    onOpenCheckIn: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val sessionState by session.state.collectAsStateWithLifecycle()
     val themeSettings by themePreferences.settings.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
+    val openNotifications = onOpenNotifications ?: { onOpenFeature("通知中心") }
+    val openSettings = onOpenSettings ?: { onOpenFeature("账号设置") }
+    val openWallet = onOpenWallet ?: { onOpenFeature("我的钱包") }
+    val openShop = onOpenShop ?: { onOpenFeature("商城") }
+    val openCheckIn = onOpenCheckIn ?: { onOpenFeature("每日签到") }
 
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
@@ -141,6 +157,64 @@ fun ProfileScreen(
                                         .background(palette.previewColor),
                                 )
                             },
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            Column {
+                SectionHeader(title = "账号与资产")
+                Spacer(Modifier.height(10.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    ),
+                ) {
+                    Column {
+                        ProfileMenuItem(
+                            icon = { Icon(Icons.Filled.Notifications, contentDescription = null) },
+                            title = "通知中心",
+                            onClick = openNotifications,
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                        )
+                        ProfileMenuItem(
+                            icon = { Icon(Icons.Filled.AccountBalanceWallet, contentDescription = null) },
+                            title = "我的钱包",
+                            onClick = openWallet,
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                        )
+                        ProfileMenuItem(
+                            icon = { Icon(Icons.Filled.CalendarMonth, contentDescription = null) },
+                            title = "每日签到",
+                            onClick = openCheckIn,
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                        )
+                        ProfileMenuItem(
+                            icon = { Icon(Icons.Filled.ShoppingBag, contentDescription = null) },
+                            title = "商城",
+                            onClick = openShop,
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                        )
+                        ProfileMenuItem(
+                            icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
+                            title = "账号设置",
+                            onClick = openSettings,
                         )
                     }
                 }
@@ -399,14 +473,4 @@ private fun ProfileMenuItem(
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
-}
-
-private fun roleLabel(role: String): String = when (role) {
-    "guest" -> "游客"
-    "user" -> "用户"
-    "sponsor" -> "赞助者"
-    "worker" -> "工作人员"
-    "admin" -> "管理员"
-    "superuser" -> "超级管理员"
-    else -> role
 }
