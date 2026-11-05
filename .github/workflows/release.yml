@@ -47,7 +47,6 @@ jobs:
             VERSION_NAME="${GITHUB_REF_NAME#v}"
           fi
           echo "name=$VERSION_NAME" >> "$GITHUB_OUTPUT"
-          echo "code=$((GITHUB_RUN_NUMBER + 1))" >> "$GITHUB_OUTPUT"
 
       - name: Validate signing secrets
         env:
@@ -75,7 +74,6 @@ jobs:
       - name: Build release APK
         env:
           VERSION_NAME: ${{ steps.version.outputs.name }}
-          VERSION_CODE: ${{ steps.version.outputs.code }}
           RELEASE_STORE_FILE: ${{ runner.temp }}/release.jks
           RELEASE_STORE_PASSWORD: ${{ secrets.RELEASE_STORE_PASSWORD }}
           RELEASE_KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}

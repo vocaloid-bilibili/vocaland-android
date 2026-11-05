@@ -1,4 +1,5 @@
 import java.util.Properties
+import java.util.concurrent.TimeUnit
 
 plugins {
     id("com.android.application")
@@ -30,8 +31,67 @@ val releaseSigningValues = listOf(
     releaseKeyPassword,
 )
 val hasReleaseSigning = releaseSigningValues.all { it != null }
-val buildVersionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: 1
-val buildVersionName = System.getenv("VERSION_NAME")?.trim()?.takeIf { it.isNotEmpty() } ?: "1.0"
+
+data class ReleaseVersion(val major: Int, val minor: Int, val patch: Int) : Comparable<ReleaseVersion> {
+    override fun compareTo(other: ReleaseVersion): Int =
+        compareValuesBy(this, other, { it.major }, { it.minor }, { it.patch })
+
+    override fun toString(): String = "$major.$minor.$patch"
+}
+
+fun parseReleaseVersion(value: String): ReleaseVersion? =
+    Regex("""^v?(\d+)\.(\d+)\.(\d+)$""")
+        .matchEntire(value.trim())
+        ?.let { match ->
+            val (major, minor, patch) = match.destructured
+            ReleaseVersion(major.toInt(), minor.toInt(), patch.toInt())
+        }
+
+fun latestGitHubReleaseVersion(): String? = runCatching {
+    val process = ProcessBuilder("git", "ls-remote", "--tags", "--refs", "origin")
+        .directory(rootProject.projectDir)
+        .redirectErrorStream(true)
+        .start()
+    if (!process.waitFor(10, TimeUnit.SECONDS)) {
+        process.destroyForcibly()
+        return@runCatching null
+    }
+    val output = process.inputStream.bufferedReader().use { it.readText() }
+    if (process.exitValue() != 0) return@runCatching null
+    output.lineSequence()
+        .mapNotNull { line -> parseReleaseVersion(line.substringAfterLast("refs/tags/", "")) }
+        .maxOrNull()
+        ?.toString()
+}.getOrNull()
+
+fun latestLocalReleaseVersion(): String? = runCatching {
+    val process = ProcessBuilder("git", "tag", "--list")
+        .directory(rootProject.projectDir)
+        .redirectErrorStream(true)
+        .start()
+    if (!process.waitFor(5, TimeUnit.SECONDS)) {
+        process.destroyForcibly()
+        return@runCatching null
+    }
+    val output = process.inputStream.bufferedReader().use { it.readText() }
+    if (process.exitValue() != 0) return@runCatching null
+    output.lineSequence()
+        .mapNotNull(::parseReleaseVersion)
+        .maxOrNull()
+        ?.toString()
+}.getOrNull()
+
+fun releaseVersionCode(versionName: String): Int {
+    val match = Regex("""^v?(\d+)\.(\d+)\.(\d+)""").find(versionName.trim()) ?: return 1
+    val (major, minor, patch) = match.destructured
+    return major.toInt() * 1_000_000 + minor.toInt() * 1_000 + patch.toInt()
+}
+
+val buildVersionName = System.getenv("VERSION_NAME")?.trim()?.takeIf { it.isNotEmpty() }
+    ?: latestGitHubReleaseVersion()
+    ?: latestLocalReleaseVersion()
+    ?: "1.0.5"
+val buildVersionCode = System.getenv("VERSION_CODE")?.toIntOrNull() ?: releaseVersionCode(buildVersionName)
 
 if (releaseSigningValues.any { it != null } && !hasReleaseSigning) {
     throw GradleException(
