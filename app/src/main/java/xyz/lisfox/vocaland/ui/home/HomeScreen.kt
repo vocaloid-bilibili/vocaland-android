@@ -29,6 +29,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import xyz.lisfox.vocaland.data.model.HomeContent
 import xyz.lisfox.vocaland.data.model.SongListItemDto
+import xyz.lisfox.vocaland.data.model.VotingKind
 import xyz.lisfox.vocaland.data.repository.HomeRepository
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
@@ -47,6 +48,8 @@ fun HomeScreen(
     onOpenUser: (Int) -> Unit,
     onOpenPlaylist: (Int) -> Unit,
     onOpenPlaylists: () -> Unit,
+    onOpenVotings: () -> Unit,
+    onOpenVoting: (VotingKind, Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val viewModel: HomeViewModel = viewModel(
@@ -90,6 +93,8 @@ fun HomeScreen(
                     onOpenUser = onOpenUser,
                     onOpenPlaylist = onOpenPlaylist,
                     onOpenPlaylists = onOpenPlaylists,
+                    onOpenVotings = onOpenVotings,
+                    onOpenVoting = onOpenVoting,
                 )
             }
         }
@@ -113,6 +118,8 @@ private fun HomeContentList(
     onOpenUser: (Int) -> Unit,
     onOpenPlaylist: (Int) -> Unit,
     onOpenPlaylists: () -> Unit,
+    onOpenVotings: () -> Unit,
+    onOpenVoting: (VotingKind, Int) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
@@ -200,8 +207,8 @@ private fun HomeContentList(
             VotingCard(
                 entries = content.votingEntries,
                 summary = content.votingSummary,
-                onOpenAll = { onOpenFeature("全部投票") },
-                onOpenEntry = { onOpenFeature(it.title) },
+                onOpenAll = onOpenVotings,
+                onOpenEntry = { onOpenVoting(it.kind, it.campaignId) },
             )
         }
 

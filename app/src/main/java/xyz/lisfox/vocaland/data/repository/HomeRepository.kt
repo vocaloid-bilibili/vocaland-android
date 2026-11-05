@@ -8,10 +8,13 @@ import xyz.lisfox.vocaland.data.model.SongListItemDto
 import xyz.lisfox.vocaland.data.model.TrendingCampaignDto
 import xyz.lisfox.vocaland.data.model.TOP_STATS
 import xyz.lisfox.vocaland.data.model.VotingEntryUi
+import xyz.lisfox.vocaland.data.model.VotingKind
 import xyz.lisfox.vocaland.data.remote.CommunityApi
 import xyz.lisfox.vocaland.data.remote.VocaLandApi
+import xyz.lisfox.vocaland.util.boardLabel
 import xyz.lisfox.vocaland.util.deadlineText
 import xyz.lisfox.vocaland.util.parseIsoMillis
+import xyz.lisfox.vocaland.util.trendingEntityKindLabel
 import java.time.LocalDate
 import java.time.ZoneId
 
@@ -126,7 +129,8 @@ class HomeRepository(
         val end = if (isVoting) voteEnd else submitEnd
         return VotingEntryWithDeadline(
             entry = VotingEntryUi(
-                key = "ed-$id",
+                kind = VotingKind.Ed,
+                campaignId = id,
                 typeLabel = "ED 投票",
                 title = "${boardLabel(board)} · 第 $issue 期",
                 deadlineText = deadlineText(end),
@@ -141,28 +145,15 @@ class HomeRepository(
         val end = if (isVoting) voteEnd else submitEnd
         return VotingEntryWithDeadline(
             entry = VotingEntryUi(
-                key = "trending-$id",
+                kind = VotingKind.Trending,
+                campaignId = id,
                 typeLabel = "人气投票",
-                title = "第 $issue 期 · ${entityKindLabel(entityKind)}",
+                title = "第 $issue 期 · ${trendingEntityKindLabel(entityKind)}",
                 deadlineText = deadlineText(end),
                 isVoting = isVoting,
             ),
             deadlineMillis = parseIsoMillis(end),
         )
-    }
-
-    private fun boardLabel(board: String): String = when (board) {
-        "vocaloid-weekly" -> "周刊"
-        "vocaloid-monthly" -> "月刊"
-        "vocaloid-daily" -> "日刊"
-        else -> board
-    }
-
-    private fun entityKindLabel(kind: String): String = when (kind) {
-        "song" -> "歌曲"
-        "producer" -> "P主"
-        "vocalist" -> "歌手"
-        else -> kind
     }
 
     private data class VotingEntryWithDeadline(

@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.graphics.vector.ImageVector
 import xyz.lisfox.vocaland.data.model.ArtistKind
+import xyz.lisfox.vocaland.data.model.VotingKind
 
 object Routes {
     const val HOME = "home"
@@ -24,6 +25,8 @@ object Routes {
     const val USER = "user/{userId}"
     const val PLAYLISTS = "playlists"
     const val PLAYLIST = "playlist/{playlistId}"
+    const val VOTINGS = "votings"
+    const val VOTING = "voting/{kind}/{campaignId}"
 
     fun feature(title: String): String = "feature/${Uri.encode(title)}"
 
@@ -36,6 +39,9 @@ object Routes {
     fun user(id: Int): String = "user/$id"
 
     fun playlist(id: Int): String = "playlist/$id"
+
+    fun voting(kind: VotingKind, campaignId: Int): String =
+        "voting/${kind.routeValue}/$campaignId"
 }
 
 data class TopLevelDestination(

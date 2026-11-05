@@ -54,6 +54,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import xyz.lisfox.vocaland.data.model.ArtistKind
+import xyz.lisfox.vocaland.data.model.VotingKind
 import xyz.lisfox.vocaland.di.AppContainer
 import xyz.lisfox.vocaland.ui.artist.ArtistDetailScreen
 import xyz.lisfox.vocaland.ui.components.BrandTitle
@@ -72,6 +73,9 @@ import xyz.lisfox.vocaland.ui.song.SongDetailScreen
 import xyz.lisfox.vocaland.ui.tag.TagDetailScreen
 import xyz.lisfox.vocaland.ui.theme.VocaLandTheme
 import xyz.lisfox.vocaland.ui.user.UserScreen
+import xyz.lisfox.vocaland.ui.voting.EdVotingScreen
+import xyz.lisfox.vocaland.ui.voting.TrendingVotingScreen
+import xyz.lisfox.vocaland.ui.voting.VotingHubScreen
 import xyz.lisfox.vocaland.util.SiteTarget
 
 private val bottomBarRowHeight = 62.dp
@@ -122,6 +126,12 @@ fun VocaLandApp(
                 }
 
                 is SiteTarget.Playlist -> navController.navigate(Routes.playlist(target.id)) {
+                    launchSingleTop = true
+                }
+
+                is SiteTarget.Voting -> navController.navigate(
+                    Routes.voting(target.kind, target.campaignId),
+                ) {
                     launchSingleTop = true
                 }
 
@@ -234,6 +244,16 @@ fun VocaLandApp(
                             },
                             onOpenPlaylists = {
                                 navController.navigate(Routes.PLAYLISTS) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            onOpenVotings = {
+                                navController.navigate(Routes.VOTINGS) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            onOpenVoting = { kind, campaignId ->
+                                navController.navigate(Routes.voting(kind, campaignId)) {
                                     launchSingleTop = true
                                 }
                             },
@@ -531,6 +551,76 @@ fun VocaLandApp(
                                 },
                                 modifier = contentModifier,
                             )
+                        }
+                    }
+                }
+                composable(Routes.VOTINGS) {
+                    PageScaffold(
+                        title = "投票",
+                        onBack = { navController.popBackStack() },
+                    ) { contentModifier ->
+                        VotingHubScreen(
+                            repository = container.votingRepository,
+                            onOpenVoting = { kind, campaignId ->
+                                navController.navigate(Routes.voting(kind, campaignId)) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            modifier = contentModifier,
+                        )
+                    }
+                }
+                composable(
+                    route = Routes.VOTING,
+                    arguments = listOf(
+                        navArgument("kind") { type = NavType.StringType },
+                        navArgument("campaignId") { type = NavType.IntType },
+                    ),
+                ) { entry ->
+                    val kind = VotingKind.fromRoute(entry.arguments?.getString("kind"))
+                    val campaignId = entry.arguments?.getInt("campaignId") ?: 0
+                    PageScaffold(
+                        title = kind?.label ?: "投票",
+                        onBack = { navController.popBackStack() },
+                    ) { contentModifier ->
+                        if (kind == null || campaignId <= 0) {
+                            FeatureScreen(
+                                title = "无效的投票",
+                                modifier = contentModifier,
+                            )
+                        } else {
+                            when (kind) {
+                                VotingKind.Ed -> EdVotingScreen(
+                                    repository = container.votingRepository,
+                                    session = container.session,
+                                    campaignId = campaignId,
+                                    onLogin = { navController.navigate(Routes.LOGIN) },
+                                    onOpenSong = { id ->
+                                        navController.navigate(Routes.song(id)) {
+                                            launchSingleTop = true
+                                        }
+                                    },
+                                    modifier = contentModifier,
+                                )
+
+                                VotingKind.Trending -> TrendingVotingScreen(
+                                    repository = container.votingRepository,
+                                    session = container.session,
+                                    campaignId = campaignId,
+                                    onLogin = { navController.navigate(Routes.LOGIN) },
+                                    onOpenSong = { id ->
+                                        navController.navigate(Routes.song(id)) {
+                                            launchSingleTop = true
+                                        }
+                                    },
+                                    onOpenArtist = { artistKind, id ->
+                                        navController.navigate(Routes.artist(artistKind, id)) {
+                                            launchSingleTop = true
+                                        }
+                                    },
+                                    modifier = contentModifier,
+                                )
+                            }
                         }
                     }
                 }

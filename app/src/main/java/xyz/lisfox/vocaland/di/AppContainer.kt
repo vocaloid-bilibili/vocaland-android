@@ -24,6 +24,7 @@ import xyz.lisfox.vocaland.data.repository.SearchRepository
 import xyz.lisfox.vocaland.data.repository.SongDetailRepository
 import xyz.lisfox.vocaland.data.repository.TagDetailRepository
 import xyz.lisfox.vocaland.data.repository.UserRepository
+import xyz.lisfox.vocaland.data.repository.VotingRepository
 import xyz.lisfox.vocaland.data.session.AuthInterceptor
 import xyz.lisfox.vocaland.data.session.AuthSession
 import xyz.lisfox.vocaland.data.session.TokenAuthenticator
@@ -72,6 +73,7 @@ class AppContainer(context: Context) {
     val bgmRepository = BgmRepository(v3Api, playUrlApi)
     val bgmPlayerController = BgmPlayerController(appContext, bgmRepository)
     val homeRepository = HomeRepository(v3Api, v2Api)
+    val votingRepository = VotingRepository(v3Api)
     val rankingRepository = RankingRepository(v3Api)
     val searchRepository = SearchRepository(v3Api)
     val songDetailRepository = SongDetailRepository(v3Api, v2Api)

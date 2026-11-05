@@ -1,6 +1,7 @@
 package xyz.lisfox.vocaland.util
 
 import xyz.lisfox.vocaland.data.model.ArtistKind
+import xyz.lisfox.vocaland.data.model.VotingKind
 
 sealed interface SiteTarget {
     data class Song(val id: Int) : SiteTarget
@@ -13,6 +14,8 @@ sealed interface SiteTarget {
 
     data class Playlist(val id: Int) : SiteTarget
 
+    data class Voting(val kind: VotingKind, val campaignId: Int) : SiteTarget
+
     data object Ranking : SiteTarget
 }
 
@@ -22,6 +25,7 @@ fun SiteTarget.displayLabel(): String = when (this) {
     is SiteTarget.Tag -> "标签 #$id"
     is SiteTarget.User -> "用户 #$id"
     is SiteTarget.Playlist -> "歌单 #$id"
+    is SiteTarget.Voting -> "${kind.label} #$campaignId"
     SiteTarget.Ranking -> "排行榜"
 }
 
@@ -73,6 +77,22 @@ fun parseSitePath(raw: String): SiteTarget? {
         "user" -> segments.singleId()?.let(SiteTarget::User)
         "tag" -> segments.singleId()?.let(SiteTarget::Tag)
         "playlist" -> segments.singleId()?.let(SiteTarget::Playlist)
+        "ed" -> if (segments.size == 3 && segments[1] == "campaign") {
+            segments[2].toId()?.let { SiteTarget.Voting(VotingKind.Ed, it) }
+        } else {
+            null
+        }
+
+        "voting" -> if (
+            segments.size == 4 &&
+            segments[1] == "trending" &&
+            segments[2] == "campaign"
+        ) {
+            segments[3].toId()?.let { SiteTarget.Voting(VotingKind.Trending, it) }
+        } else {
+            null
+        }
+
         "ranking" -> if (segments.size == 1) SiteTarget.Ranking else null
         else -> null
     }

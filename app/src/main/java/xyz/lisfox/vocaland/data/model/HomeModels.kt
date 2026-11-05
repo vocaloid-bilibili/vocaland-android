@@ -19,7 +19,8 @@ data class HomeContent(
 )
 
 data class VotingEntryUi(
-    val key: String,
+    val kind: VotingKind,
+    val campaignId: Int,
     val typeLabel: String,
     val title: String,
     val deadlineText: String?,
