@@ -13,13 +13,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Crown
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Storefront
-import androidx.compose.material.icons.filled.Ticket
 import androidx.compose.material.icons.filled.Wallet
-import androidx.compose.material.icons.filled.Zap
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -65,8 +64,8 @@ private fun categoryLabel(category: String): String = when (category) {
 }
 
 private fun categoryIcon(category: String) = when (category) {
-    "ticket" -> Icons.Filled.Ticket
-    "sponsor" -> Icons.Filled.Crown
+    "ticket" -> Icons.Filled.ShoppingBag
+    "sponsor" -> Icons.Filled.EmojiEvents
     else -> Icons.Filled.Storefront
 }
 
@@ -155,7 +154,7 @@ fun ShopScreen(
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            imageVector = Icons.Filled.Zap,
+                            imageVector = Icons.Filled.Star,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.tertiary,
                             modifier = Modifier.size(20.dp),
@@ -383,7 +382,7 @@ private fun ShopItemCard(
 
             Row(verticalAlignment = Alignment.Bottom) {
                 Icon(
-                    imageVector = Icons.Filled.Zap,
+                    imageVector = Icons.Filled.Star,
                     contentDescription = null,
                     tint = scheme.tertiary,
                     modifier = Modifier.size(15.dp),

@@ -17,7 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.ScrollText
+import androidx.compose.material.icons.filled.List
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -172,7 +172,7 @@ fun EdRulesButton(
     var open by remember { mutableStateOf(false) }
     OutlinedButton(onClick = { open = true }, modifier = modifier) {
         Icon(
-            imageVector = Icons.Filled.ScrollText,
+            imageVector = Icons.Filled.List,
             contentDescription = null,
             modifier = Modifier.size(16.dp),
         )

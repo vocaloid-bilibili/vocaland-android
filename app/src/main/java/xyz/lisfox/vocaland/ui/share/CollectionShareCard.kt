@@ -274,7 +274,7 @@ private fun EntryCell(
             contentDescription = song.title,
             modifier = Modifier
                 .fillMaxSize()
-                .graphicsLayer { saturate = if (song.lit) 1f else 0f },
+                .graphicsLayer { alpha = if (song.lit) 1f else 0.4f },
         )
         song.badge
             ?.takeIf { it.isNotBlank() }

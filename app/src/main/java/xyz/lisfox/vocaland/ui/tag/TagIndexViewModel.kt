@@ -13,7 +13,7 @@ import xyz.lisfox.vocaland.data.discovery.TagCategoryCountDto
 import xyz.lisfox.vocaland.data.discovery.TagGroupedCategoryDto
 import xyz.lisfox.vocaland.data.model.TagItemDto
 import xyz.lisfox.vocaland.data.remote.toUserMessage
-import xyz.lisfox.vocaland.data.repository.TagIndexRepository
+import xyz.lisfox.vocaland.data.discovery.TagIndexRepository
 import kotlin.random.Random
 
 data class TagIndexUiState(

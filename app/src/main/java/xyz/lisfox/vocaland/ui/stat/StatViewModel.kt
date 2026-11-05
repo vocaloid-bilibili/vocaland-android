@@ -120,7 +120,7 @@ class StatViewModel(
         load()
     }
 
-    fun searchEntities(type: String, keyword: String) =
+    suspend fun searchEntities(type: String, keyword: String) =
         repository.searchEntities(type = type, keyword = keyword)
 
     private fun load() {
