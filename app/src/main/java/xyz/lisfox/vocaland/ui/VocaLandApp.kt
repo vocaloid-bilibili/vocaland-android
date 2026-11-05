@@ -1,12 +1,9 @@
 package xyz.lisfox.vocaland.ui
 
 import androidx.compose.animation.AnimatedContentTransitionScope
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
@@ -16,12 +13,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
@@ -90,7 +85,7 @@ fun VocaLandApp(
         val navController = rememberNavController()
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = backStackEntry?.destination?.route
-        val isLogin = currentRoute == Routes.LOGIN
+        val isTopLevel = TOP_LEVEL_DESTINATIONS.any { it.route == currentRoute }
         val navigateToTopLevel: (String) -> Unit = { route ->
             navController.navigate(route) {
                 popUpTo(navController.graph.findStartDestination().id) {
@@ -104,23 +99,9 @@ fun VocaLandApp(
         Scaffold(
             modifier = modifier.fillMaxSize(),
             containerColor = MaterialTheme.colorScheme.background,
-            contentWindowInsets = WindowInsets.systemBars.only(
-                WindowInsetsSides.Top + WindowInsetsSides.Horizontal,
-            ),
+            contentWindowInsets = WindowInsets.systemBars,
             bottomBar = {
-                AnimatedVisibility(
-                    visible = !isLogin,
-                    enter = fadeIn(animationSpec = tween(180)) +
-                        expandVertically(
-                            animationSpec = tween(240),
-                            expandFrom = Alignment.Bottom,
-                        ),
-                    exit = fadeOut(animationSpec = tween(140)) +
-                        shrinkVertically(
-                            animationSpec = tween(220),
-                            shrinkTowards = Alignment.Bottom,
-                        ),
-                ) {
+                if (isTopLevel) {
                     CompactBottomBar(
                         currentRoute = currentRoute,
                         onSelect = navigateToTopLevel,
