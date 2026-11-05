@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.graphics.vector.ImageVector
+import xyz.lisfox.vocaland.data.collection.CollectionTarget
 import xyz.lisfox.vocaland.data.model.ArtistKind
 import xyz.lisfox.vocaland.data.model.VotingKind
 
@@ -27,6 +28,21 @@ object Routes {
     const val PLAYLIST = "playlist/{playlistId}"
     const val VOTINGS = "votings"
     const val VOTING = "voting/{kind}/{campaignId}"
+    const val REGISTER = "register"
+    const val FORGOT_PASSWORD = "forgot-password"
+    const val SETTINGS = "settings"
+    const val NOTIFICATIONS = "notifications"
+    const val SHOP = "shop"
+    const val WALLET = "wallet"
+    const val MY_PLAYLISTS = "my-playlists"
+    const val TAG_INDEX = "tags"
+    const val STAT = "stat"
+    const val CUSTOM_RANKING = "custom-ranking"
+    const val COLLECTION_LIST = "collections"
+    const val COLLECTION_MANUAL = "collection/manual/{collectionId}"
+    const val COLLECTION_DERIVED = "collection/{kind}/{sourceId}/{entityType}"
+    const val COLLECTION_SHARE_MANUAL = "share/collection/manual/{collectionId}"
+    const val COLLECTION_SHARE_DERIVED = "share/collection/{kind}/{sourceId}/{entityType}"
 
     fun feature(title: String): String = "feature/${Uri.encode(title)}"
 
@@ -42,6 +58,18 @@ object Routes {
 
     fun voting(kind: VotingKind, campaignId: Int): String =
         "voting/${kind.routeValue}/$campaignId"
+
+    fun collection(target: CollectionTarget): String = when (target) {
+        is CollectionTarget.Manual -> "collection/manual/${target.id}"
+        is CollectionTarget.Derived ->
+            "collection/${target.kind.key}/${target.sourceId}/${target.entityType.key}"
+    }
+
+    fun collectionShare(target: CollectionTarget): String = when (target) {
+        is CollectionTarget.Manual -> "share/collection/manual/${target.id}"
+        is CollectionTarget.Derived ->
+            "share/collection/${target.kind.key}/${target.sourceId}/${target.entityType.key}"
+    }
 }
 
 data class TopLevelDestination(

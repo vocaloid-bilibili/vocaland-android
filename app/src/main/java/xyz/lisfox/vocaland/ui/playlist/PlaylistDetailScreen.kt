@@ -83,6 +83,7 @@ fun PlaylistDetailScreen(
     onLogin: () -> Unit = {},
     onPlaylistDeleted: () -> Unit = {},
     onOpenMyPlaylists: (() -> Unit)? = null,
+    communitySlot: (@Composable () -> Unit)? = null,
 ) {
     val viewModel: PlaylistDetailViewModel = viewModel(
         key = "playlist-$playlistId",
@@ -469,6 +470,9 @@ private fun PlaylistDetailContent(
             }
         }
 
+        communitySlot?.let { slot ->
+            item { slot() }
+        }
     }
 }
 

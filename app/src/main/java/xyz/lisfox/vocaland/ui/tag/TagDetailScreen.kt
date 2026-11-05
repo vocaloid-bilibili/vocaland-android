@@ -51,6 +51,7 @@ fun TagDetailScreen(
     onOpenSong: (Int) -> Unit,
     onOpenArtist: (ArtistKind, Int) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
+    communitySlot: (@Composable () -> Unit)? = null,
 ) {
     val viewModel: TagDetailViewModel = viewModel(
         key = "tag-$tagId",
@@ -193,6 +194,10 @@ fun TagDetailScreen(
                         keyPrefix = "tag-$tagId-latest",
                         onOpenSong = onOpenSong,
                     )
+                }
+
+                communitySlot?.let { slot ->
+                    item { slot() }
                 }
             }
         }

@@ -37,6 +37,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -47,36 +51,58 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import kotlinx.coroutines.launch
+import xyz.lisfox.vocaland.data.collection.CollectionTarget
+import xyz.lisfox.vocaland.data.collection.DerivedCollectionKind
+import xyz.lisfox.vocaland.data.collection.LitEntityType
+import xyz.lisfox.vocaland.data.community.CommunityTargets
 import xyz.lisfox.vocaland.data.model.ArtistKind
 import xyz.lisfox.vocaland.data.model.VotingKind
 import xyz.lisfox.vocaland.di.AppContainer
+import xyz.lisfox.vocaland.ui.account.WalletScreen
 import xyz.lisfox.vocaland.ui.artist.ArtistDetailScreen
+import xyz.lisfox.vocaland.ui.collection.CollectionDetailScreen
+import xyz.lisfox.vocaland.ui.collection.CollectionListScreen
+import xyz.lisfox.vocaland.ui.community.CommunityPanel
 import xyz.lisfox.vocaland.ui.components.BrandTitle
+import xyz.lisfox.vocaland.ui.customranking.CustomRankingScreen
 import xyz.lisfox.vocaland.ui.home.HomeScreen
+import xyz.lisfox.vocaland.ui.login.ForgotPasswordScreen
 import xyz.lisfox.vocaland.ui.login.LoginScreen
+import xyz.lisfox.vocaland.ui.login.RegisterScreen
 import xyz.lisfox.vocaland.ui.navigation.Routes
 import xyz.lisfox.vocaland.ui.navigation.TOP_LEVEL_DESTINATIONS
+import xyz.lisfox.vocaland.ui.notifications.NotificationsScreen
 import xyz.lisfox.vocaland.ui.placeholder.FeatureScreen
 import xyz.lisfox.vocaland.ui.player.PlayerScreen
+import xyz.lisfox.vocaland.ui.playlist.AddToPlaylistSheet
+import xyz.lisfox.vocaland.ui.playlist.MyPlaylistsScreen
 import xyz.lisfox.vocaland.ui.playlist.PlaylistDetailScreen
 import xyz.lisfox.vocaland.ui.playlist.PlaylistScreen
 import xyz.lisfox.vocaland.ui.profile.ProfileScreen
 import xyz.lisfox.vocaland.ui.ranking.RankingScreen
 import xyz.lisfox.vocaland.ui.search.SearchScreen
+import xyz.lisfox.vocaland.ui.settings.SettingsScreen
+import xyz.lisfox.vocaland.ui.share.CollectionShareScreen
+import xyz.lisfox.vocaland.ui.shop.ShopScreen
 import xyz.lisfox.vocaland.ui.song.SongDetailScreen
+import xyz.lisfox.vocaland.ui.stat.StatScreen
 import xyz.lisfox.vocaland.ui.tag.TagDetailScreen
+import xyz.lisfox.vocaland.ui.tag.TagIndexScreen
 import xyz.lisfox.vocaland.ui.theme.VocaLandTheme
 import xyz.lisfox.vocaland.ui.user.UserScreen
 import xyz.lisfox.vocaland.ui.voting.EdVotingScreen
 import xyz.lisfox.vocaland.ui.voting.TrendingVotingScreen
 import xyz.lisfox.vocaland.ui.voting.VotingHubScreen
 import xyz.lisfox.vocaland.util.SiteTarget
+import xyz.lisfox.vocaland.util.parseTargetKey
 
 private val bottomBarRowHeight = 62.dp
 
@@ -86,14 +112,18 @@ fun VocaLandApp(
     modifier: Modifier = Modifier,
 ) {
     val themeSettings by container.themePreferences.settings.collectAsStateWithLifecycle()
+    val sessionState by container.session.state.collectAsStateWithLifecycle()
 
     VocaLandTheme(
         palette = themeSettings.palette,
         themeMode = themeSettings.mode,
     ) {
         val navController = rememberNavController()
+        val scope = rememberCoroutineScope()
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = backStackEntry?.destination?.route
+        val loggedIn = sessionState.user != null
+        var addToPlaylistSongId by remember { mutableStateOf<Int?>(null) }
         val isTopLevel = currentRoute == null ||
             TOP_LEVEL_DESTINATIONS.any { it.route == currentRoute }
         val navigateToTopLevel: (String) -> Unit = { route ->
@@ -270,6 +300,12 @@ fun VocaLandApp(
                                     launchSingleTop = true
                                 }
                             },
+                            onOpenArtist = { kind, id ->
+                                navController.navigate(Routes.artist(kind, id)) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            session = container.session,
                             modifier = contentModifier,
                         )
                     }
@@ -313,8 +349,21 @@ fun VocaLandApp(
                             themePreferences = container.themePreferences,
                             onLogin = { navController.navigate(Routes.LOGIN) },
                             onOpenFeature = { title ->
-                                navController.navigate(Routes.feature(title))
+                                when (title) {
+                                    "我的收藏" -> navController.navigate(Routes.COLLECTION_LIST)
+                                    "我的歌单" -> navController.navigate(Routes.MY_PLAYLISTS)
+                                    "个人资料" -> navController.navigate(Routes.SETTINGS)
+                                    "标签图鉴" -> navController.navigate(Routes.TAG_INDEX)
+                                    "数据统计" -> navController.navigate(Routes.STAT)
+                                    "自定义排行榜" -> navController.navigate(Routes.CUSTOM_RANKING)
+                                    else -> navController.navigate(Routes.feature(title))
+                                }
                             },
+                            onOpenNotifications = { navController.navigate(Routes.NOTIFICATIONS) },
+                            onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                            onOpenWallet = { navController.navigate(Routes.WALLET) },
+                            onOpenShop = { navController.navigate(Routes.SHOP) },
+                            onOpenCheckIn = { navController.navigate(Routes.WALLET) },
                             modifier = contentModifier,
                         )
                     }
@@ -354,10 +403,14 @@ fun VocaLandApp(
                                 }
                             },
                             onOpenRegister = {
-                                navController.navigate(Routes.feature("注册账号"))
+                                navController.navigate(Routes.REGISTER) {
+                                    launchSingleTop = true
+                                }
                             },
                             onOpenForgotPassword = {
-                                navController.navigate(Routes.feature("找回密码"))
+                                navController.navigate(Routes.FORGOT_PASSWORD) {
+                                    launchSingleTop = true
+                                }
                             },
                             modifier = contentModifier,
                         )
@@ -400,6 +453,22 @@ fun VocaLandApp(
                                     }
                                 },
                                 onLogin = { navController.navigate(Routes.LOGIN) },
+                                playerController = container.bgmPlayerController,
+                                songActionsRepository = container.songActionsRepository,
+                                onAddToPlaylist = { id -> addToPlaylistSongId = id },
+                                communitySlot = {
+                                    CommunityPanel(
+                                        repository = container.communityRepository,
+                                        targetKey = CommunityTargets.song(songId),
+                                        session = container.session,
+                                        onLogin = { navController.navigate(Routes.LOGIN) },
+                                        onOpenUser = { id ->
+                                            navController.navigate(Routes.user(id)) {
+                                                launchSingleTop = true
+                                            }
+                                        },
+                                    )
+                                },
                                 modifier = contentModifier,
                             )
                         }
@@ -430,6 +499,16 @@ fun VocaLandApp(
                                         launchSingleTop = true
                                     }
                                 },
+                                session = container.session,
+                                communityRepository = container.communityRepository,
+                                onLogin = { navController.navigate(Routes.LOGIN) },
+                                onOpenUser = { id ->
+                                    navController.navigate(Routes.user(id)) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                onOpenSettings = { navController.navigate(Routes.SETTINGS) },
+                                onOpenWallet = { navController.navigate(Routes.WALLET) },
                                 modifier = contentModifier,
                             )
                         }
@@ -444,6 +523,11 @@ fun VocaLandApp(
                             repository = container.playlistRepository,
                             onOpenPlaylist = { id ->
                                 navController.navigate(Routes.playlist(id)) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            onOpenMyPlaylists = {
+                                navController.navigate(Routes.MY_PLAYLISTS) {
                                     launchSingleTop = true
                                 }
                             },
@@ -485,6 +569,28 @@ fun VocaLandApp(
                                     container.bgmPlayerController.replaceQueue(tracks)
                                     navigateToTopLevel(Routes.PLAYER)
                                 },
+                                searchRepository = container.searchRepository,
+                                session = container.session,
+                                onLogin = { navController.navigate(Routes.LOGIN) },
+                                onPlaylistDeleted = { navController.popBackStack() },
+                                onOpenMyPlaylists = {
+                                    navController.navigate(Routes.MY_PLAYLISTS) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                communitySlot = {
+                                    CommunityPanel(
+                                        repository = container.communityRepository,
+                                        targetKey = CommunityTargets.playlist(playlistId),
+                                        session = container.session,
+                                        onLogin = { navController.navigate(Routes.LOGIN) },
+                                        onOpenUser = { id ->
+                                            navController.navigate(Routes.user(id)) {
+                                                launchSingleTop = true
+                                            }
+                                        },
+                                    )
+                                },
                                 modifier = contentModifier,
                             )
                         }
@@ -519,6 +625,46 @@ fun VocaLandApp(
                                         launchSingleTop = true
                                     }
                                 },
+                                onOpenArtist = { artistKind, id ->
+                                    navController.navigate(Routes.artist(artistKind, id)) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                onOpenTag = { id ->
+                                    navController.navigate(Routes.tag(id)) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                rating = {
+                                    CommunityPanel(
+                                        repository = container.communityRepository,
+                                        targetKey = CommunityTargets.artist(kind, artistId),
+                                        session = container.session,
+                                        onLogin = { navController.navigate(Routes.LOGIN) },
+                                        onOpenUser = { id ->
+                                            navController.navigate(Routes.user(id)) {
+                                                launchSingleTop = true
+                                            }
+                                        },
+                                        showComments = false,
+                                        title = "评分",
+                                    )
+                                },
+                                comments = {
+                                    CommunityPanel(
+                                        repository = container.communityRepository,
+                                        targetKey = CommunityTargets.artist(kind, artistId),
+                                        session = container.session,
+                                        onLogin = { navController.navigate(Routes.LOGIN) },
+                                        onOpenUser = { id ->
+                                            navController.navigate(Routes.user(id)) {
+                                                launchSingleTop = true
+                                            }
+                                        },
+                                        showRatings = false,
+                                        title = "评论",
+                                    )
+                                },
                                 modifier = contentModifier,
                             )
                         }
@@ -549,6 +695,24 @@ fun VocaLandApp(
                                         launchSingleTop = true
                                     }
                                 },
+                                onOpenArtist = { kind, id ->
+                                    navController.navigate(Routes.artist(kind, id)) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                                communitySlot = {
+                                    CommunityPanel(
+                                        repository = container.communityRepository,
+                                        targetKey = CommunityTargets.tag(tagId),
+                                        session = container.session,
+                                        onLogin = { navController.navigate(Routes.LOGIN) },
+                                        onOpenUser = { id ->
+                                            navController.navigate(Routes.user(id)) {
+                                                launchSingleTop = true
+                                            }
+                                        },
+                                    )
+                                },
                                 modifier = contentModifier,
                             )
                         }
@@ -563,6 +727,16 @@ fun VocaLandApp(
                             repository = container.votingRepository,
                             onOpenVoting = { kind, campaignId ->
                                 navController.navigate(Routes.voting(kind, campaignId)) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            onOpenSong = { id ->
+                                navController.navigate(Routes.song(id)) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            onOpenArtist = { kind, id ->
+                                navController.navigate(Routes.artist(kind, id)) {
                                     launchSingleTop = true
                                 }
                             },
@@ -600,6 +774,7 @@ fun VocaLandApp(
                                             launchSingleTop = true
                                         }
                                     },
+                                    onOpenShop = { navController.navigate(Routes.SHOP) },
                                     modifier = contentModifier,
                                 )
 
@@ -624,6 +799,304 @@ fun VocaLandApp(
                         }
                     }
                 }
+                composable(Routes.REGISTER) {
+                    PageScaffold(
+                        title = "注册",
+                        onBack = { navController.popBackStack() },
+                    ) { contentModifier ->
+                        RegisterScreen(
+                            repository = container.accountAuthRepository,
+                            onBack = { navController.popBackStack() },
+                            onRegistered = {
+                                if (!navController.popBackStack(Routes.LOGIN, false)) {
+                                    navController.navigate(Routes.LOGIN) {
+                                        launchSingleTop = true
+                                    }
+                                }
+                            },
+                            modifier = contentModifier,
+                        )
+                    }
+                }
+                composable(Routes.FORGOT_PASSWORD) {
+                    PageScaffold(
+                        title = "找回密码",
+                        onBack = { navController.popBackStack() },
+                    ) { contentModifier ->
+                        ForgotPasswordScreen(
+                            repository = container.accountAuthRepository,
+                            onBack = { navController.popBackStack() },
+                            onFinished = {
+                                if (!navController.popBackStack(Routes.LOGIN, false)) {
+                                    navController.navigate(Routes.LOGIN) {
+                                        launchSingleTop = true
+                                    }
+                                }
+                            },
+                            modifier = contentModifier,
+                        )
+                    }
+                }
+                composable(Routes.SETTINGS) {
+                    PageScaffold(
+                        title = "账号设置",
+                        onBack = { navController.popBackStack() },
+                    ) { contentModifier ->
+                        SettingsScreen(
+                            accountRepository = container.accountRepository,
+                            accountAuthRepository = container.accountAuthRepository,
+                            notificationRepository = container.notificationRepository,
+                            onLogin = { navController.navigate(Routes.LOGIN) },
+                            onLogout = {
+                                scope.launch {
+                                    container.authRepository.logout()
+                                    navController.popBackStack()
+                                }
+                            },
+                            modifier = contentModifier,
+                        )
+                    }
+                }
+                composable(Routes.NOTIFICATIONS) {
+                    PageScaffold(
+                        title = "通知中心",
+                        onBack = { navController.popBackStack() },
+                    ) { contentModifier ->
+                        NotificationsScreen(
+                            repository = container.notificationRepository,
+                            isLoggedIn = loggedIn,
+                            onOpenNotification = { targetKey, commentId ->
+                                val target = targetKey?.let(::parseTargetKey)
+                                when {
+                                    target != null -> openTarget(target)
+                                    commentId != null -> navController.navigate(
+                                        Routes.feature("评论 #$commentId"),
+                                    )
+                                }
+                            },
+                            onLogin = { navController.navigate(Routes.LOGIN) },
+                            modifier = contentModifier,
+                        )
+                    }
+                }
+                composable(Routes.SHOP) {
+                    PageScaffold(
+                        title = "商城",
+                        onBack = { navController.popBackStack() },
+                    ) { contentModifier ->
+                        ShopScreen(
+                            repository = container.shopRepository,
+                            isLoggedIn = loggedIn,
+                            onLogin = { navController.navigate(Routes.LOGIN) },
+                            onOpenWallet = { navController.navigate(Routes.WALLET) },
+                            modifier = contentModifier,
+                        )
+                    }
+                }
+                composable(Routes.WALLET) {
+                    PageScaffold(
+                        title = "我的钱包",
+                        onBack = { navController.popBackStack() },
+                    ) { contentModifier ->
+                        WalletScreen(
+                            shopRepository = container.shopRepository,
+                            accountRepository = container.accountRepository,
+                            isLoggedIn = loggedIn,
+                            onLogin = { navController.navigate(Routes.LOGIN) },
+                            onOpenShop = { navController.navigate(Routes.SHOP) },
+                            modifier = contentModifier,
+                        )
+                    }
+                }
+                composable(Routes.MY_PLAYLISTS) {
+                    PageScaffold(
+                        title = "我的歌单",
+                        onBack = { navController.popBackStack() },
+                    ) { contentModifier ->
+                        MyPlaylistsScreen(
+                            repository = container.playlistRepository,
+                            loggedIn = loggedIn,
+                            onLogin = { navController.navigate(Routes.LOGIN) },
+                            onOpenPlaylist = { id ->
+                                navController.navigate(Routes.playlist(id)) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            modifier = contentModifier,
+                        )
+                    }
+                }
+                composable(Routes.TAG_INDEX) {
+                    PageScaffold(
+                        title = "标签图鉴",
+                        onBack = { navController.popBackStack() },
+                    ) { contentModifier ->
+                        TagIndexScreen(
+                            repository = container.tagIndexRepository,
+                            onOpenTag = { id ->
+                                navController.navigate(Routes.tag(id)) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            modifier = contentModifier,
+                        )
+                    }
+                }
+                composable(Routes.STAT) {
+                    PageScaffold(
+                        title = "数据统计",
+                        onBack = { navController.popBackStack() },
+                    ) { contentModifier ->
+                        StatScreen(
+                            repository = container.statRepository,
+                            session = container.session,
+                            onOpenSong = { id ->
+                                navController.navigate(Routes.song(id)) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            onLogin = { navController.navigate(Routes.LOGIN) },
+                            onOpenSponsor = { navController.navigate(Routes.SHOP) },
+                            modifier = contentModifier,
+                        )
+                    }
+                }
+                composable(Routes.CUSTOM_RANKING) {
+                    PageScaffold(
+                        title = "自定义排行榜",
+                        onBack = { navController.popBackStack() },
+                    ) { contentModifier ->
+                        CustomRankingScreen(
+                            repository = container.customRankingRepository,
+                            session = container.session,
+                            onOpenSong = { id ->
+                                navController.navigate(Routes.song(id)) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            onLogin = { navController.navigate(Routes.LOGIN) },
+                            onOpenSponsor = { navController.navigate(Routes.SHOP) },
+                            modifier = contentModifier,
+                        )
+                    }
+                }
+                composable(Routes.COLLECTION_LIST) {
+                    PageScaffold(
+                        title = "收藏册",
+                        onBack = { navController.popBackStack() },
+                    ) { contentModifier ->
+                        CollectionListScreen(
+                            repository = container.collectionRepository,
+                            onOpenCollection = { target ->
+                                navController.navigate(Routes.collection(target)) {
+                                    launchSingleTop = true
+                                }
+                            },
+                            modifier = contentModifier,
+                        )
+                    }
+                }
+                composable(
+                    route = Routes.COLLECTION_MANUAL,
+                    arguments = listOf(
+                        navArgument("collectionId") { type = NavType.IntType },
+                    ),
+                ) { entry ->
+                    val collectionId = entry.arguments?.getInt("collectionId") ?: 0
+                    if (collectionId <= 0) {
+                        PageScaffold(
+                            title = "收藏册",
+                            onBack = { navController.popBackStack() },
+                        ) { contentModifier ->
+                            FeatureScreen("无效的收藏册", modifier = contentModifier)
+                        }
+                    } else {
+                        val target = CollectionTarget.Manual(collectionId)
+                        CollectionRouteContent(
+                            container = container,
+                            target = target,
+                            navController = navController,
+                        )
+                    }
+                }
+                composable(
+                    route = Routes.COLLECTION_DERIVED,
+                    arguments = listOf(
+                        navArgument("kind") { type = NavType.StringType },
+                        navArgument("sourceId") { type = NavType.IntType },
+                        navArgument("entityType") { type = NavType.StringType },
+                    ),
+                ) { entry ->
+                    val kind = DerivedCollectionKind.entries.firstOrNull {
+                        it.key == entry.arguments?.getString("kind")
+                    }
+                    val sourceId = entry.arguments?.getInt("sourceId") ?: 0
+                    val entityType = LitEntityType.fromKey(entry.arguments?.getString("entityType"))
+                    if (kind == null || sourceId <= 0) {
+                        PageScaffold(
+                            title = "收藏册",
+                            onBack = { navController.popBackStack() },
+                        ) { contentModifier ->
+                            FeatureScreen("无效的收藏册", modifier = contentModifier)
+                        }
+                    } else {
+                        CollectionRouteContent(
+                            container = container,
+                            target = CollectionTarget.Derived(kind, sourceId, entityType),
+                            navController = navController,
+                        )
+                    }
+                }
+                composable(
+                    route = Routes.COLLECTION_SHARE_MANUAL,
+                    arguments = listOf(
+                        navArgument("collectionId") { type = NavType.IntType },
+                    ),
+                ) { entry ->
+                    val collectionId = entry.arguments?.getInt("collectionId") ?: 0
+                    if (collectionId <= 0) {
+                        PageScaffold(
+                            title = "分享卡",
+                            onBack = { navController.popBackStack() },
+                        ) { contentModifier ->
+                            FeatureScreen("无效的收藏册", modifier = contentModifier)
+                        }
+                    } else {
+                        CollectionShareRouteContent(
+                            container = container,
+                            target = CollectionTarget.Manual(collectionId),
+                            navController = navController,
+                        )
+                    }
+                }
+                composable(
+                    route = Routes.COLLECTION_SHARE_DERIVED,
+                    arguments = listOf(
+                        navArgument("kind") { type = NavType.StringType },
+                        navArgument("sourceId") { type = NavType.IntType },
+                        navArgument("entityType") { type = NavType.StringType },
+                    ),
+                ) { entry ->
+                    val kind = DerivedCollectionKind.entries.firstOrNull {
+                        it.key == entry.arguments?.getString("kind")
+                    }
+                    val sourceId = entry.arguments?.getInt("sourceId") ?: 0
+                    val entityType = LitEntityType.fromKey(entry.arguments?.getString("entityType"))
+                    if (kind == null || sourceId <= 0) {
+                        PageScaffold(
+                            title = "分享卡",
+                            onBack = { navController.popBackStack() },
+                        ) { contentModifier ->
+                            FeatureScreen("无效的收藏册", modifier = contentModifier)
+                        }
+                    } else {
+                        CollectionShareRouteContent(
+                            container = container,
+                            target = CollectionTarget.Derived(kind, sourceId, entityType),
+                            navController = navController,
+                        )
+                    }
+                }
                 composable(
                     route = Routes.FEATURE,
                     arguments = listOf(
@@ -642,7 +1115,74 @@ fun VocaLandApp(
                     }
                 }
             }
+            addToPlaylistSongId?.let { songId ->
+                AddToPlaylistSheet(
+                    repository = container.playlistRepository,
+                    songId = songId,
+                    loggedIn = loggedIn,
+                    onDismiss = { addToPlaylistSongId = null },
+                    onRequireLogin = {
+                        addToPlaylistSongId = null
+                        navController.navigate(Routes.LOGIN)
+                    },
+                    onOpenMyPlaylists = {
+                        addToPlaylistSongId = null
+                        navController.navigate(Routes.MY_PLAYLISTS)
+                    },
+                )
+            }
         }
+    }
+}
+
+@Composable
+private fun CollectionRouteContent(
+    container: AppContainer,
+    target: CollectionTarget,
+    navController: NavHostController,
+) {
+    PageScaffold(
+        title = "收藏册",
+        onBack = { navController.popBackStack() },
+    ) { contentModifier ->
+        CollectionDetailScreen(
+            repository = container.collectionRepository,
+            target = target,
+            onOpenSong = { id ->
+                navController.navigate(Routes.song(id)) {
+                    launchSingleTop = true
+                }
+            },
+            onOpenArtist = { kind, id ->
+                navController.navigate(Routes.artist(kind, id)) {
+                    launchSingleTop = true
+                }
+            },
+            onShare = {
+                navController.navigate(Routes.collectionShare(target)) {
+                    launchSingleTop = true
+                }
+            },
+            modifier = contentModifier,
+        )
+    }
+}
+
+@Composable
+private fun CollectionShareRouteContent(
+    container: AppContainer,
+    target: CollectionTarget,
+    navController: NavHostController,
+) {
+    PageScaffold(
+        title = "分享卡",
+        onBack = { navController.popBackStack() },
+    ) { contentModifier ->
+        CollectionShareScreen(
+            repository = container.collectionRepository,
+            target = target,
+            modifier = contentModifier,
+        )
     }
 }
 

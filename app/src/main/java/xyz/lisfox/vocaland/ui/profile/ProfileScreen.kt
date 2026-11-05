@@ -26,7 +26,9 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.LightMode
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Notifications
@@ -215,6 +217,46 @@ fun ProfileScreen(
                             icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
                             title = "账号设置",
                             onClick = openSettings,
+                        )
+                    }
+                }
+            }
+        }
+
+        item {
+            Column {
+                SectionHeader(title = "探索工具")
+                Spacer(Modifier.height(10.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                    ),
+                ) {
+                    Column {
+                        ProfileMenuItem(
+                            icon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                            title = "标签图鉴",
+                            onClick = { onOpenFeature("标签图鉴") },
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                        )
+                        ProfileMenuItem(
+                            icon = { Icon(Icons.Filled.Leaderboard, contentDescription = null) },
+                            title = "数据统计",
+                            onClick = { onOpenFeature("数据统计") },
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant,
+                        )
+                        ProfileMenuItem(
+                            icon = { Icon(Icons.Filled.Star, contentDescription = null) },
+                            title = "自定义排行榜",
+                            onClick = { onOpenFeature("自定义排行榜") },
                         )
                     }
                 }

@@ -119,6 +119,7 @@ fun SongDetailScreen(
     playerController: BgmPlayerController? = null,
     songActionsRepository: SongActionsRepository? = null,
     onAddToPlaylist: ((Int) -> Unit)? = null,
+    communitySlot: (@Composable () -> Unit)? = null,
 ) {
     val context = LocalContext.current
     val appContainer = (context.applicationContext as? VocaLandApplication)?.container
@@ -192,6 +193,7 @@ fun SongDetailScreen(
                     onRetryComments = viewModel::retryComments,
                     onPreviousComments = viewModel::previousCommentsPage,
                     onNextComments = viewModel::nextCommentsPage,
+                    communitySlot = communitySlot,
                     modifier = modifier,
                 )
             }
@@ -227,6 +229,7 @@ private fun SongDetailContent(
     onPreviousComments: () -> Unit,
     onNextComments: () -> Unit,
     modifier: Modifier = Modifier,
+    communitySlot: (@Composable () -> Unit)? = null,
 ) {
     val videos = remember(song.id, song.videos) { sortSongVideos(song.videos) }
     val selectedVideo = videos.firstOrNull { it.bvid == state.selectedBvid }
@@ -362,25 +365,30 @@ private fun SongDetailContent(
             )
         }
 
-        item {
-            SongRatingsSection(
-                state = state,
-                onRetry = onRetryRatings,
-                onPrevious = onPreviousRatings,
-                onNext = onNextRatings,
-                onOpenUser = onOpenUser,
-            )
-        }
+        val slot = communitySlot
+        if (slot != null) {
+            item { slot() }
+        } else {
+            item {
+                SongRatingsSection(
+                    state = state,
+                    onRetry = onRetryRatings,
+                    onPrevious = onPreviousRatings,
+                    onNext = onNextRatings,
+                    onOpenUser = onOpenUser,
+                )
+            }
 
-        item {
-            SongCommentsSection(
-                state = state,
-                onLogin = onLogin,
-                onRetry = onRetryComments,
-                onPrevious = onPreviousComments,
-                onNext = onNextComments,
-                onOpenUser = onOpenUser,
-            )
+            item {
+                SongCommentsSection(
+                    state = state,
+                    onLogin = onLogin,
+                    onRetry = onRetryComments,
+                    onPrevious = onPreviousComments,
+                    onNext = onNextComments,
+                    onOpenUser = onOpenUser,
+                )
+            }
         }
     }
 }

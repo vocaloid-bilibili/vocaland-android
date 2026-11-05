@@ -41,6 +41,7 @@ fun parseTargetKey(targetKey: String): SiteTarget? {
         "song" -> rest.toId()?.let(SiteTarget::Song)
         "tag" -> rest.toId()?.let(SiteTarget::Tag)
         "user" -> rest.toId()?.let(SiteTarget::User)
+        "playlist" -> rest.toId()?.let(SiteTarget::Playlist)
         "artist" -> parseArtistTarget(rest)
         "interaction" -> {
             val subSeparator = rest.indexOf(':')
