@@ -1,6 +1,7 @@
 package xyz.lisfox.vocaland.ui
 
 import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -105,12 +106,22 @@ fun VocaLandApp(
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background),
         ) {
-            CompactBottomBar(
-                currentRoute = currentRoute,
-                onSelect = navigateToTopLevel,
-                enabled = isTopLevel,
-                modifier = Modifier.align(Alignment.BottomCenter),
-            )
+            AnimatedVisibility(
+                visible = isTopLevel,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth(),
+                enter = fadeIn(animationSpec = tween(200)) +
+                    slideInHorizontally(animationSpec = tween(320)) { -it / 5 },
+                exit = fadeOut(animationSpec = tween(220)) +
+                    slideOutHorizontally(animationSpec = tween(320)) { -it / 5 },
+            ) {
+                CompactBottomBar(
+                    currentRoute = currentRoute,
+                    onSelect = navigateToTopLevel,
+                    enabled = isTopLevel,
+                )
+            }
             NavHost(
                 navController = navController,
                 startDestination = Routes.HOME,
