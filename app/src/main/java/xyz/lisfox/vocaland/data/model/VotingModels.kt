@@ -17,6 +17,19 @@ data class EdVotingCandidatesResponse(
     val data: List<EdVotingCandidateDto> = emptyList(),
     val maxVotes: Int = 0,
     val voterCount: Int = 0,
+    val mechanism: EdMechanismDto? = null,
+)
+
+@Serializable
+data class EdMechanismDto(
+    val key: String = "",
+    val config: EdMechanismConfigDto = EdMechanismConfigDto(),
+)
+
+@Serializable
+data class EdMechanismConfigDto(
+    val allowNegativeVote: Boolean = true,
+    val allowBonusVote: Boolean = true,
 )
 
 @Serializable
@@ -56,6 +69,55 @@ data class EdVideoSummaryDto(
 )
 
 @Serializable
+data class EdCandidateDto(
+    val id: Int = 0,
+    val campaignId: Int = 0,
+    val songId: Int? = null,
+    val bvid: String = "",
+    val status: String = "",
+    val rejectReasonCode: String? = null,
+    val rejectReason: String? = null,
+    val isDaily: Boolean = false,
+    val isWeekly: Boolean = false,
+    val isMonthly: Boolean = false,
+    val createdAt: String = "",
+    val song: EdSongSummaryDto? = null,
+    val video: EdVideoSummaryDto? = null,
+    val nominator: VotingUserDto? = null,
+)
+
+@Serializable
+data class EdCandidateListResponse(
+    val data: List<EdCandidateDto> = emptyList(),
+    val total: Int = 0,
+)
+
+@Serializable
+data class EdEligibilityDto(
+    val canSubmit: Boolean = false,
+    val isDaily: Boolean = false,
+    val isWeekly: Boolean = false,
+    val isMonthly: Boolean = false,
+    val reasons: List<String> = emptyList(),
+    val songId: Int? = null,
+)
+
+@Serializable
+data class EdSubmitNominationRequest(
+    val campaignId: Int,
+    val bvid: String,
+    val songId: Int? = null,
+    val name: String? = null,
+    val vocalist: String? = null,
+    val producer: String? = null,
+)
+
+@Serializable
+data class EdSubmitNominationResponse(
+    val id: Int = 0,
+)
+
+@Serializable
 data class EdVoteDto(
     val id: Int = 0,
     val campaignId: Int = 0,
@@ -64,6 +126,51 @@ data class EdVoteDto(
     val isBonus: Boolean = false,
     val bonusCount: Int = 0,
     val createdAt: String = "",
+)
+
+@Serializable
+data class EdVoteSnapshotDto(
+    val userId: Int = 0,
+    val isNegative: Boolean = false,
+    val isBonus: Boolean = false,
+    val bonusCount: Int = 0,
+    val actualWeight: Double = 0.0,
+)
+
+@Serializable
+data class EdResultDto(
+    val candidate: EdCandidateDto = EdCandidateDto(),
+    val category: String = "",
+    val rank: Int = 0,
+    val score: Double = 0.0,
+    val songPenaltyPct: Double = 0.0,
+    val voteSnapshots: List<EdVoteSnapshotDto> = emptyList(),
+)
+
+@Serializable
+data class EdResultListResponse(
+    val data: List<EdResultDto> = emptyList(),
+)
+
+@Serializable
+data class EdHistoryDto(
+    val id: Int = 0,
+    val board: String = "",
+    val issue: Int = 0,
+    val songId: Int? = null,
+    val bvid: String = "",
+    val score: Double = 0.0,
+    val userId: Int? = null,
+    val createdAt: String = "",
+    val song: EdSongSummaryDto? = null,
+    val video: EdVideoSummaryDto? = null,
+    val nominator: VotingUserDto? = null,
+)
+
+@Serializable
+data class EdHistoryListResponse(
+    val data: List<EdHistoryDto> = emptyList(),
+    val total: Int = 0,
 )
 
 @Serializable
@@ -138,3 +245,51 @@ data class TrendingMyVotesDto(
 data class TrendingCastVotesRequest(
     val candidateIds: List<Int>,
 )
+
+@Serializable
+data class TrendingNominateRequest(
+    val entityKind: String,
+    val entityId: Int,
+)
+
+@Serializable
+data class TrendingResultRowDto(
+    val rank: Int = 0,
+    val candidate: TrendingCandidateDto = TrendingCandidateDto(),
+    val voteCount: Int = 0,
+)
+
+@Serializable
+data class TrendingResultListResponse(
+    val data: List<TrendingResultRowDto> = emptyList(),
+)
+
+@Serializable
+data class TrendingHistoryListResponse(
+    val data: List<TrendingResultRowDto> = emptyList(),
+    val total: Int = 0,
+)
+
+@Serializable
+data class WalletItemDto(
+    val itemId: Int = 0,
+    val name: String = "",
+    val category: String = "",
+    val quantity: Int = 0,
+    val description: String? = null,
+)
+
+@Serializable
+data class WalletDto(
+    val vCoins: Int = 0,
+    val totalVCoinsEarned: Int = 0,
+    val items: List<WalletItemDto> = emptyList(),
+) {
+    val voteTickets: Int get() = items.firstOrNull { it.itemId == VOTE_TICKET_ITEM_ID }?.quantity ?: 0
+
+    private companion object {
+        const val VOTE_TICKET_ITEM_ID = 1
+    }
+}
+
+const val TRENDING_NOMINATION_LIMIT = 3

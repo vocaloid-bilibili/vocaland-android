@@ -13,8 +13,11 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import xyz.lisfox.vocaland.data.model.SearchEntityDto
+import xyz.lisfox.vocaland.data.model.TRENDING_NOMINATION_LIMIT
 import xyz.lisfox.vocaland.data.model.TrendingCampaignDto
 import xyz.lisfox.vocaland.data.model.TrendingCandidateDto
+import xyz.lisfox.vocaland.data.model.TrendingResultRowDto
 import xyz.lisfox.vocaland.data.remote.toUserMessage
 import xyz.lisfox.vocaland.data.repository.VotingRepository
 import xyz.lisfox.vocaland.data.session.AuthSession
@@ -37,6 +40,20 @@ data class TrendingVotingUiState(
     val submitError: String? = null,
     val notice: String? = null,
     val isLoggedIn: Boolean = false,
+    val myNominations: List<TrendingCandidateDto> = emptyList(),
+    val nominationsLoading: Boolean = false,
+    val nominationsError: String? = null,
+    val entityQuery: String = "",
+    val entityResults: List<SearchEntityDto> = emptyList(),
+    val entitySearchLoading: Boolean = false,
+    val entitySearchError: String? = null,
+    val nominating: Boolean = false,
+    val nominationError: String? = null,
+    val nominationNotice: String? = null,
+    val withdrawingId: Int? = null,
+    val results: List<TrendingResultRowDto> = emptyList(),
+    val resultsLoading: Boolean = false,
+    val resultsError: String? = null,
 ) {
     val votingOpen: Boolean
         get() {
@@ -45,6 +62,16 @@ data class TrendingVotingUiState(
             val end = parseIsoMillis(current.voteEnd) ?: return true
             return end > System.currentTimeMillis()
         }
+
+    val nominationOpen: Boolean
+        get() {
+            val current = campaign ?: return false
+            if (current.status != "nomination") return false
+            val end = parseIsoMillis(current.submitEnd) ?: return true
+            return end > System.currentTimeMillis()
+        }
+
+    val nominationAtLimit: Boolean get() = myNominations.size >= TRENDING_NOMINATION_LIMIT
 
     val dirty: Boolean get() = selected != serverSelected
 }
@@ -59,6 +86,7 @@ class TrendingVotingViewModel(
 
     private var loadJob: Job? = null
     private var tallyJob: Job? = null
+    private var searchJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -149,9 +177,99 @@ class TrendingVotingViewModel(
         }
     }
 
+    fun updateEntityQuery(value: String) {
+        _state.update {
+            it.copy(
+                entityQuery = value.take(100),
+                entityResults = emptyList(),
+                entitySearchLoading = false,
+                entitySearchError = null,
+                nominationError = null,
+                nominationNotice = null,
+            )
+        }
+        scheduleEntitySearch()
+    }
+
+    fun submitNomination(entity: SearchEntityDto) {
+        val current = _state.value
+        val campaign = current.campaign ?: return
+        if (!current.isLoggedIn || !current.nominationOpen || current.nominating) return
+        if (current.nominationAtLimit) {
+            _state.update { it.copy(nominationError = "最多提名 $TRENDING_NOMINATION_LIMIT 个候选") }
+            return
+        }
+        if (entity.id <= 0) return
+
+        viewModelScope.launch {
+            _state.update {
+                it.copy(
+                    nominating = true,
+                    nominationError = null,
+                    nominationNotice = null,
+                )
+            }
+            repository.submitTrendingNomination(
+                campaignId = campaignId,
+                entityKind = campaign.entityKind,
+                entityId = entity.id,
+            ).onSuccess {
+                _state.update {
+                    it.copy(
+                        nominating = false,
+                        entityQuery = "",
+                        entityResults = emptyList(),
+                        nominationNotice = "提名成功",
+                    )
+                }
+                loadNominations(loggedIn = true)
+            }.onFailure { error ->
+                _state.update {
+                    it.copy(
+                        nominating = false,
+                        nominationError = error.toUserMessage(),
+                    )
+                }
+            }
+        }
+    }
+
+    fun withdrawNomination(candidateId: Int) {
+        if (candidateId <= 0 || _state.value.withdrawingId != null) return
+
+        viewModelScope.launch {
+            _state.update {
+                it.copy(
+                    withdrawingId = candidateId,
+                    nominationError = null,
+                    nominationNotice = null,
+                )
+            }
+            repository.withdrawTrendingNomination(candidateId)
+                .onSuccess {
+                    _state.update {
+                        it.copy(
+                            withdrawingId = null,
+                            nominationNotice = "提名已撤回",
+                        )
+                    }
+                    loadNominations(loggedIn = true)
+                }
+                .onFailure { error ->
+                    _state.update {
+                        it.copy(
+                            withdrawingId = null,
+                            nominationError = error.toUserMessage(),
+                        )
+                    }
+                }
+        }
+    }
+
     private fun load() {
         loadJob?.cancel()
         tallyJob?.cancel()
+        searchJob?.cancel()
         loadJob = viewModelScope.launch {
             _state.update {
                 it.copy(
@@ -160,6 +278,18 @@ class TrendingVotingViewModel(
                     candidateError = null,
                     submitError = null,
                     notice = null,
+                    nominationError = null,
+                    nominationNotice = null,
+                    myNominations = emptyList(),
+                    entityQuery = "",
+                    entityResults = emptyList(),
+                    entitySearchLoading = false,
+                    entitySearchError = null,
+                    nominating = false,
+                    withdrawingId = null,
+                    results = emptyList(),
+                    resultsLoading = false,
+                    resultsError = null,
                 )
             }
             val loggedIn = session.state.value.isLoggedIn
@@ -174,8 +304,15 @@ class TrendingVotingViewModel(
                             maxVotes = campaign.maxVotes ?: it.maxVotes,
                         )
                     }
-                    loadVotingData(campaign, loggedIn)
-                    if (campaign.status == "voting") startTallyPolling()
+                    when (campaign.status) {
+                        "nomination" -> loadNominations(loggedIn)
+                        "voting" -> {
+                            loadVotingData(campaign, loggedIn)
+                            startTallyPolling()
+                        }
+                        "finalized" -> loadResults()
+                        else -> Unit
+                    }
                 }
                 .onFailure { error ->
                     _state.update {
@@ -189,13 +326,43 @@ class TrendingVotingViewModel(
         }
     }
 
+    private suspend fun loadNominations(loggedIn: Boolean) {
+        _state.update {
+            it.copy(
+                nominationsLoading = true,
+                nominationsError = null,
+                myNominations = emptyList(),
+            )
+        }
+        repository.loadTrendingNominations(campaignId, includeMine = loggedIn)
+            .onSuccess { data ->
+                _state.update {
+                    it.copy(
+                        candidates = data.candidates.data,
+                        myNominations = data.myNominations,
+                        nominationsLoading = false,
+                        candidateLoading = false,
+                    )
+                }
+            }
+            .onFailure { error ->
+                _state.update {
+                    it.copy(
+                        nominationsLoading = false,
+                        nominationsError = error.toUserMessage(),
+                    )
+                }
+            }
+    }
+
     private suspend fun loadVotingData(campaign: TrendingCampaignDto, loggedIn: Boolean) {
         _state.update {
             it.copy(
                 candidateLoading = true,
                 candidateError = null,
                 candidates = emptyList(),
-                selected = if (loggedIn) it.selected else emptySet(),
+                selected = emptySet(),
+                serverSelected = emptySet(),
             )
         }
         repository.loadTrendingVoting(
@@ -225,6 +392,74 @@ class TrendingVotingViewModel(
                     candidateError = error.toUserMessage(),
                 )
             }
+        }
+    }
+
+    private suspend fun loadResults() {
+        _state.update {
+            it.copy(
+                resultsLoading = true,
+                resultsError = null,
+                results = emptyList(),
+            )
+        }
+        repository.loadTrendingResults(campaignId)
+            .onSuccess { results ->
+                _state.update {
+                    it.copy(results = results, resultsLoading = false)
+                }
+            }
+            .onFailure { error ->
+                _state.update {
+                    it.copy(
+                        resultsLoading = false,
+                        resultsError = error.toUserMessage(),
+                    )
+                }
+            }
+    }
+
+    private fun scheduleEntitySearch() {
+        searchJob?.cancel()
+        val current = _state.value
+        val campaign = current.campaign ?: return
+        val query = current.entityQuery.trim()
+        if (!current.isLoggedIn || !current.nominationOpen || query.isEmpty()) {
+            _state.update {
+                it.copy(
+                    entityResults = emptyList(),
+                    entitySearchLoading = false,
+                )
+            }
+            return
+        }
+
+        searchJob = viewModelScope.launch {
+            delay(400)
+            _state.update {
+                it.copy(entitySearchLoading = true, entitySearchError = null)
+            }
+            repository.searchNominationEntities(campaign.entityKind, query)
+                .onSuccess { results ->
+                    if (_state.value.entityQuery.trim() == query) {
+                        _state.update {
+                            it.copy(
+                                entityResults = results,
+                                entitySearchLoading = false,
+                            )
+                        }
+                    }
+                }
+                .onFailure { error ->
+                    if (_state.value.entityQuery.trim() == query) {
+                        _state.update {
+                            it.copy(
+                                entitySearchLoading = false,
+                                entitySearchError = error.toUserMessage(),
+                            )
+                        }
+                    }
+                }
         }
     }
 

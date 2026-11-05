@@ -1,5 +1,6 @@
 package xyz.lisfox.vocaland.util
 
+import xyz.lisfox.vocaland.data.model.EdCandidateDto
 import xyz.lisfox.vocaland.data.model.EdVotingCandidateDto
 import xyz.lisfox.vocaland.data.model.TrendingCandidateDto
 
@@ -51,6 +52,43 @@ fun EdVotingCandidateDto.categoryLabels(): List<String> = buildList {
     if (isDaily) add("日榜")
     if (isWeekly) add("周榜")
     if (isMonthly) add("月榜")
+}
+
+fun EdCandidateDto.displayTitle(): String =
+    song?.displayName?.trim()?.takeIf { it.isNotEmpty() }
+        ?: song?.name?.trim()?.takeIf { it.isNotEmpty() }
+        ?: video?.title?.trim()?.takeIf { it.isNotEmpty() }
+        ?: bvid
+
+fun EdCandidateDto.displayArtistLine(): String {
+    val producers = song?.producers.orEmpty()
+        .map { it.name.trim() }
+        .filter { it.isNotEmpty() }
+        .distinct()
+        .joinToString(" / ")
+    val vocalists = song?.vocalists.orEmpty()
+        .map { it.name.trim() }
+        .filter { it.isNotEmpty() }
+        .distinct()
+        .joinToString(" / ")
+    return listOf(producers, vocalists)
+        .filter { it.isNotEmpty() }
+        .joinToString(" · ")
+        .ifBlank { video?.uploaderName.orEmpty() }
+}
+
+fun EdCandidateDto.categoryLabels(): List<String> = buildList {
+    if (isDaily) add("日榜")
+    if (isWeekly) add("周榜")
+    if (isMonthly) add("月榜")
+}
+
+fun EdCandidateDto.statusLabel(): String = when (status) {
+    "pending" -> "待审核"
+    "accepted" -> "已通过"
+    "rejected" -> "已驳回"
+    "withdrawn" -> "已撤回"
+    else -> status
 }
 
 fun TrendingCandidateDto.displayTitle(): String = when (entityKind) {

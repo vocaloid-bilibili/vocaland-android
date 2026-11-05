@@ -3,6 +3,7 @@ package xyz.lisfox.vocaland.ui.voting
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -13,6 +14,9 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import xyz.lisfox.vocaland.data.model.EdBonusVoteDto
 import xyz.lisfox.vocaland.data.model.EdCampaignDto
+import xyz.lisfox.vocaland.data.model.EdCandidateDto
+import xyz.lisfox.vocaland.data.model.EdEligibilityDto
+import xyz.lisfox.vocaland.data.model.EdResultDto
 import xyz.lisfox.vocaland.data.model.EdVotingCandidateDto
 import xyz.lisfox.vocaland.data.remote.toUserMessage
 import xyz.lisfox.vocaland.data.repository.VotingRepository
@@ -21,6 +25,25 @@ import xyz.lisfox.vocaland.util.parseIsoMillis
 
 data class EdVotingUiState(
     val campaign: EdCampaignDto? = null,
+    val loading: Boolean = true,
+    val error: String? = null,
+    val isLoggedIn: Boolean = false,
+    val myNomination: EdCandidateDto? = null,
+    val nominationLoading: Boolean = false,
+    val nominationCandidates: List<EdCandidateDto> = emptyList(),
+    val nominationCandidatesLoading: Boolean = false,
+    val nominationCandidatesError: String? = null,
+    val bvid: String = "",
+    val name: String = "",
+    val vocalist: String = "",
+    val producer: String = "",
+    val eligibility: EdEligibilityDto? = null,
+    val eligibilityLoading: Boolean = false,
+    val eligibilityError: String? = null,
+    val nominationSubmitting: Boolean = false,
+    val nominationError: String? = null,
+    val nominationNotice: String? = null,
+    val withdrawing: Boolean = false,
     val candidates: List<EdVotingCandidateDto> = emptyList(),
     val maxVotes: Int = 0,
     val voterCount: Int = 0,
@@ -28,20 +51,34 @@ data class EdVotingUiState(
     val negative: Set<Int> = emptySet(),
     val serverPositive: Set<Int> = emptySet(),
     val serverNegative: Set<Int> = emptySet(),
-    val bonusVotes: List<EdBonusVoteDto> = emptyList(),
-    val loading: Boolean = true,
+    val bonusVotes: Map<Int, EdBonusVoteDto> = emptyMap(),
+    val serverBonusVotes: Map<Int, EdBonusVoteDto> = emptyMap(),
+    val allowBonusVote: Boolean = true,
+    val allowNegativeVote: Boolean = true,
+    val walletTickets: Int = 0,
+    val walletLoading: Boolean = false,
     val candidateLoading: Boolean = false,
-    val error: String? = null,
     val candidateError: String? = null,
     val submitting: Boolean = false,
     val submitError: String? = null,
     val notice: String? = null,
-    val isLoggedIn: Boolean = false,
+    val results: List<EdResultDto> = emptyList(),
+    val ranking: List<EdResultDto> = emptyList(),
+    val resultsLoading: Boolean = false,
+    val resultsError: String? = null,
 ) {
     val selectedCount: Int get() = positive.size + negative.size
 
+    val bonusTotal: Int get() = bonusVotes.values.sumOf { it.count }
+
+    val bonusBudget: Int get() = walletTickets + serverBonusVotes.values.sumOf { it.count }
+
+    val bonusRemaining: Int get() = (bonusBudget - bonusTotal).coerceAtLeast(0)
+
     val dirty: Boolean
-        get() = positive != serverPositive || negative != serverNegative
+        get() = positive != serverPositive ||
+            negative != serverNegative ||
+            bonusVotes != serverBonusVotes
 
     val votingOpen: Boolean
         get() {
@@ -49,6 +86,22 @@ data class EdVotingUiState(
             if (current.status != "voting") return false
             val end = parseIsoMillis(current.voteEnd) ?: return true
             return end > System.currentTimeMillis()
+        }
+
+    val nominationOpen: Boolean
+        get() {
+            val current = campaign ?: return false
+            if (current.status != "nomination") return false
+            val end = parseIsoMillis(current.submitEnd) ?: return true
+            return end > System.currentTimeMillis()
+        }
+
+    val canSubmitNomination: Boolean
+        get() {
+            val eligible = eligibility ?: return false
+            if (!eligible.canSubmit) return false
+            if (eligible.songId == null && name.isBlank()) return false
+            return bvid.trim().length >= 10
         }
 }
 
@@ -61,6 +114,8 @@ class EdVotingViewModel(
     val state: StateFlow<EdVotingUiState> = _state.asStateFlow()
 
     private var loadJob: Job? = null
+    private var eligibilityJob: Job? = null
+    private var submitJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -73,6 +128,113 @@ class EdVotingViewModel(
 
     fun refresh() {
         load()
+    }
+
+    fun updateBvid(value: String) {
+        eligibilityJob?.cancel()
+        _state.update {
+            it.copy(
+                bvid = value.take(12),
+                eligibility = null,
+                eligibilityLoading = false,
+                eligibilityError = null,
+                nominationError = null,
+                nominationNotice = null,
+            )
+        }
+        scheduleEligibilityCheck()
+    }
+
+    fun updateName(value: String) {
+        _state.update { it.copy(name = value.take(200), nominationError = null) }
+    }
+
+    fun updateVocalist(value: String) {
+        _state.update { it.copy(vocalist = value.take(200), nominationError = null) }
+    }
+
+    fun updateProducer(value: String) {
+        _state.update { it.copy(producer = value.take(200), nominationError = null) }
+    }
+
+    fun submitNomination() {
+        val current = _state.value
+        if (!current.isLoggedIn) {
+            _state.update { it.copy(nominationError = "请先登录后再提名") }
+            return
+        }
+        if (!current.nominationOpen) {
+            _state.update { it.copy(nominationError = "当前提名已结束") }
+            return
+        }
+        if (!current.canSubmitNomination || current.nominationSubmitting) return
+        val eligibility = current.eligibility ?: return
+
+        submitJob?.cancel()
+        submitJob = viewModelScope.launch {
+            _state.update {
+                it.copy(
+                    nominationSubmitting = true,
+                    nominationError = null,
+                    nominationNotice = null,
+                )
+            }
+            repository.submitEdNomination(
+                campaignId = campaignId,
+                bvid = current.bvid.trim(),
+                eligibility = eligibility,
+                name = current.name.trim(),
+                vocalist = current.vocalist.trim(),
+                producer = current.producer.trim(),
+            ).onSuccess {
+                _state.update {
+                    it.copy(
+                        bvid = "",
+                        name = "",
+                        vocalist = "",
+                        producer = "",
+                        eligibility = null,
+                        nominationSubmitting = false,
+                        nominationNotice = "提名已提交，等待审核",
+                    )
+                }
+                loadNominationData(loggedIn = true)
+            }.onFailure { error ->
+                _state.update {
+                    it.copy(
+                        nominationSubmitting = false,
+                        nominationError = error.toUserMessage(),
+                    )
+                }
+            }
+        }
+    }
+
+    fun withdrawNomination() {
+        val nomination = _state.value.myNomination ?: return
+        if (_state.value.withdrawing) return
+
+        viewModelScope.launch {
+            _state.update { it.copy(withdrawing = true, nominationError = null) }
+            repository.withdrawEdNomination(nomination.id)
+                .onSuccess {
+                    _state.update {
+                        it.copy(
+                            withdrawing = false,
+                            nominationNotice = "提名已撤回",
+                        )
+                    }
+                    loadNominationData(loggedIn = true)
+                }
+                .onFailure { error ->
+                    _state.update {
+                        it.copy(
+                            withdrawing = false,
+                            nominationError = error.toUserMessage(),
+                        )
+                    }
+                }
+        }
     }
 
     fun togglePositive(candidateId: Int) {
@@ -97,7 +259,7 @@ class EdVotingViewModel(
 
     fun toggleNegative(candidateId: Int) {
         val current = _state.value
-        if (!current.votingOpen || candidateId <= 0) return
+        if (!current.votingOpen || !current.allowNegativeVote || candidateId <= 0) return
 
         val negative = if (candidateId in current.negative) {
             current.negative - candidateId
@@ -111,6 +273,75 @@ class EdVotingViewModel(
                 negative = negative,
                 submitError = null,
                 notice = null,
+            )
+        }
+    }
+
+    fun addBonusVote(candidateId: Int, amount: Int = 1) {
+        val current = _state.value
+        if (!current.votingOpen || !current.isLoggedIn || !current.allowBonusVote || candidateId <= 0) return
+        if (current.bonusTotal >= current.bonusBudget) {
+            _state.update { it.copy(notice = "附加票已用完") }
+            return
+        }
+
+        val existingCount = current.bonusVotes[candidateId]?.count ?: 0
+        val nextCount = (existingCount + amount)
+            .coerceAtMost(existingCount + current.bonusRemaining)
+            .coerceAtLeast(0)
+        if (nextCount <= existingCount) return
+
+        val next = EdBonusVoteDto(
+            candidateId = candidateId,
+            count = nextCount,
+            isNegative = current.bonusVotes[candidateId]?.isNegative ?: false,
+        )
+        _state.update {
+            it.copy(
+                bonusVotes = it.bonusVotes + (candidateId to next),
+                notice = null,
+                submitError = null,
+            )
+        }
+    }
+
+    fun removeBonusVote(candidateId: Int) {
+        val existing = _state.value.bonusVotes[candidateId] ?: return
+        if (existing.count <= 1) {
+            clearBonusVote(candidateId)
+            return
+        }
+
+        _state.update {
+            it.copy(
+                bonusVotes = it.bonusVotes + (
+                    candidateId to existing.copy(count = existing.count - 1)
+                    ),
+                notice = null,
+                submitError = null,
+            )
+        }
+    }
+
+    fun setBonusNegative(candidateId: Int, negative: Boolean) {
+        val existing = _state.value.bonusVotes[candidateId] ?: return
+        _state.update {
+            it.copy(
+                bonusVotes = it.bonusVotes + (
+                    candidateId to existing.copy(isNegative = negative)
+                    ),
+                notice = null,
+                submitError = null,
+            )
+        }
+    }
+
+    fun clearBonusVote(candidateId: Int) {
+        _state.update {
+            it.copy(
+                bonusVotes = it.bonusVotes - candidateId,
+                notice = null,
+                submitError = null,
             )
         }
     }
@@ -140,8 +371,16 @@ class EdVotingViewModel(
             repository.castEdVotes(
                 campaignId = campaignId,
                 positiveCandidateIds = current.positive,
-                negativeCandidateIds = current.negative,
-                bonusVotes = current.bonusVotes,
+                negativeCandidateIds = if (current.allowNegativeVote) {
+                    current.negative
+                } else {
+                    emptySet()
+                },
+                bonusVotes = if (current.allowBonusVote) {
+                    current.bonusVotes.values.toList()
+                } else {
+                    emptyList()
+                },
             ).onSuccess { votes ->
                 val positive = votes.filter { !it.isBonus && !it.isNegative }
                     .map { it.candidateId }
@@ -150,11 +389,11 @@ class EdVotingViewModel(
                     .map { it.candidateId }
                     .toSet()
                 val bonus = votes.filter { it.isBonus && it.bonusCount > 0 }
-                    .map {
-                        EdBonusVoteDto(
-                            candidateId = it.candidateId,
-                            count = it.bonusCount,
-                            isNegative = it.isNegative,
+                    .associate { vote ->
+                        vote.candidateId to EdBonusVoteDto(
+                            candidateId = vote.candidateId,
+                            count = vote.bonusCount,
+                            isNegative = vote.isNegative,
                         )
                     }
                 _state.update {
@@ -164,10 +403,12 @@ class EdVotingViewModel(
                         serverPositive = positive,
                         serverNegative = negative,
                         bonusVotes = bonus,
+                        serverBonusVotes = bonus,
                         submitting = false,
                         notice = "投票已保存",
                     )
                 }
+                loadWallet()
             }.onFailure { error ->
                 _state.update {
                     it.copy(
@@ -186,9 +427,27 @@ class EdVotingViewModel(
                 it.copy(
                     loading = true,
                     error = null,
-                    candidateError = null,
+                    nominationError = null,
+                    nominationNotice = null,
+                    myNomination = null,
+                    nominationCandidates = emptyList(),
+                    nominationLoading = false,
+                    nominationCandidatesLoading = false,
+                    nominationCandidatesError = null,
+                    nominationSubmitting = false,
+                    eligibility = null,
+                    eligibilityError = null,
+                    eligibilityLoading = false,
+                    bvid = "",
+                    name = "",
+                    vocalist = "",
+                    producer = "",
+                    withdrawing = false,
                     submitError = null,
                     notice = null,
+                    results = emptyList(),
+                    resultsLoading = false,
+                    resultsError = null,
                 )
             }
             val loggedIn = session.state.value.isLoggedIn
@@ -203,7 +462,12 @@ class EdVotingViewModel(
                             voterCount = campaign.voterCount ?: it.voterCount,
                         )
                     }
-                    loadVotingData(campaign, loggedIn)
+                    when (campaign.status) {
+                        "nomination" -> loadNominationData(loggedIn)
+                        "voting" -> loadVotingData(campaign, loggedIn)
+                        "finalized" -> loadResults()
+                        else -> Unit
+                    }
                 }
                 .onFailure { error ->
                     _state.update {
@@ -217,6 +481,50 @@ class EdVotingViewModel(
         }
     }
 
+    private suspend fun loadNominationData(loggedIn: Boolean) {
+        if (!loggedIn) {
+            _state.update {
+                it.copy(
+                    myNomination = null,
+                    nominationCandidates = emptyList(),
+                    nominationLoading = false,
+                    nominationCandidatesLoading = false,
+                    nominationCandidatesError = null,
+                    eligibility = null,
+                )
+            }
+            return
+        }
+
+        _state.update {
+            it.copy(
+                nominationLoading = true,
+                nominationCandidatesLoading = true,
+                nominationCandidatesError = null,
+            )
+        }
+        repository.loadEdNomination(campaignId)
+            .onSuccess { data ->
+                _state.update {
+                    it.copy(
+                        myNomination = data.myNomination,
+                        nominationCandidates = data.candidates.data,
+                        nominationLoading = false,
+                        nominationCandidatesLoading = false,
+                    )
+                }
+            }
+            .onFailure { error ->
+                _state.update {
+                    it.copy(
+                        nominationLoading = false,
+                        nominationCandidatesLoading = false,
+                        nominationCandidatesError = error.toUserMessage(),
+                    )
+                }
+            }
+    }
+
     private suspend fun loadVotingData(campaign: EdCampaignDto, loggedIn: Boolean) {
         if (campaign.status != "voting" || !loggedIn) {
             _state.update {
@@ -228,7 +536,10 @@ class EdVotingViewModel(
                     negative = emptySet(),
                     serverPositive = emptySet(),
                     serverNegative = emptySet(),
-                    bonusVotes = emptyList(),
+                    bonusVotes = emptyMap(),
+                    serverBonusVotes = emptyMap(),
+                    allowBonusVote = true,
+                    allowNegativeVote = true,
                     maxVotes = campaign.maxVotes ?: 0,
                 )
             }
@@ -240,6 +551,13 @@ class EdVotingViewModel(
                 candidateLoading = true,
                 candidateError = null,
                 candidates = emptyList(),
+                positive = emptySet(),
+                negative = emptySet(),
+                serverPositive = emptySet(),
+                serverNegative = emptySet(),
+                bonusVotes = emptyMap(),
+                serverBonusVotes = emptyMap(),
+                walletTickets = 0,
             )
         }
         repository.loadEdVoting(campaignId)
@@ -254,11 +572,11 @@ class EdVotingViewModel(
                     .toSet()
                 val bonus = data.myVotes
                     .filter { it.isBonus && it.bonusCount > 0 }
-                    .map {
-                        EdBonusVoteDto(
-                            candidateId = it.candidateId,
-                            count = it.bonusCount,
-                            isNegative = it.isNegative,
+                    .associate { vote ->
+                        vote.candidateId to EdBonusVoteDto(
+                            candidateId = vote.candidateId,
+                            count = vote.bonusCount,
+                            isNegative = vote.isNegative,
                         )
                     }
                 _state.update {
@@ -271,10 +589,14 @@ class EdVotingViewModel(
                         serverPositive = positive,
                         serverNegative = negative,
                         bonusVotes = bonus,
+                        serverBonusVotes = bonus,
+                        allowBonusVote = data.candidates.mechanism?.config?.allowBonusVote ?: true,
+                        allowNegativeVote = data.candidates.mechanism?.config?.allowNegativeVote ?: true,
                         candidateLoading = false,
                         candidateError = null,
                     )
                 }
+                if (_state.value.allowBonusVote) loadWallet()
             }
             .onFailure { error ->
                 _state.update {
@@ -284,5 +606,88 @@ class EdVotingViewModel(
                     )
                 }
             }
+    }
+
+    private suspend fun loadResults() {
+        _state.update {
+            it.copy(
+                resultsLoading = true,
+                resultsError = null,
+                results = emptyList(),
+                ranking = emptyList(),
+            )
+        }
+        repository.loadEdResults(campaignId)
+            .onSuccess { data ->
+                _state.update {
+                    it.copy(
+                        results = data.results,
+                        ranking = data.ranking,
+                        resultsLoading = false,
+                    )
+                }
+            }
+            .onFailure { error ->
+                _state.update {
+                    it.copy(
+                        resultsLoading = false,
+                        resultsError = error.toUserMessage(),
+                    )
+                }
+            }
+    }
+
+    private suspend fun loadWallet() {
+        _state.update { it.copy(walletLoading = true) }
+        repository.loadWallet()
+            .onSuccess { wallet ->
+                _state.update {
+                    it.copy(
+                        walletTickets = wallet.voteTickets,
+                        walletLoading = false,
+                    )
+                }
+            }
+            .onFailure {
+                _state.update { it.copy(walletLoading = false) }
+            }
+    }
+
+    private fun scheduleEligibilityCheck() {
+        eligibilityJob?.cancel()
+        val current = _state.value
+        val bvid = current.bvid.trim()
+        if (!current.isLoggedIn || !current.nominationOpen || bvid.length < 10) {
+            _state.update { it.copy(eligibilityLoading = false) }
+            return
+        }
+
+        eligibilityJob = viewModelScope.launch {
+            delay(500)
+            _state.update {
+                it.copy(eligibilityLoading = true, eligibilityError = null)
+            }
+            repository.checkEdEligibility(campaignId, bvid)
+                .onSuccess { eligibility ->
+                    if (_state.value.bvid.trim() == bvid) {
+                        _state.update {
+                            it.copy(
+                                eligibility = eligibility,
+                                eligibilityLoading = false,
+                            )
+                        }
+                    }
+                }
+                .onFailure { error ->
+                    if (_state.value.bvid.trim() == bvid) {
+                        _state.update {
+                            it.copy(
+                                eligibilityLoading = false,
+                                eligibilityError = error.toUserMessage(),
+                            )
+                        }
+                    }
+                }
+        }
     }
 }

@@ -73,7 +73,7 @@ class AppContainer(context: Context) {
     val bgmRepository = BgmRepository(v3Api, playUrlApi)
     val bgmPlayerController = BgmPlayerController(appContext, bgmRepository)
     val homeRepository = HomeRepository(v3Api, v2Api)
-    val votingRepository = VotingRepository(v3Api)
+    val votingRepository = VotingRepository(v3Api, v2Api)
     val rankingRepository = RankingRepository(v3Api)
     val searchRepository = SearchRepository(v3Api)
     val songDetailRepository = SongDetailRepository(v3Api, v2Api)

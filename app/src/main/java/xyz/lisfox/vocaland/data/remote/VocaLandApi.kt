@@ -1,6 +1,7 @@
 package xyz.lisfox.vocaland.data.remote
 
 import retrofit2.http.Body
+import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
@@ -11,7 +12,13 @@ import xyz.lisfox.vocaland.data.model.BgmVideoDto
 import xyz.lisfox.vocaland.data.model.ComprehensiveSearchResponse
 import xyz.lisfox.vocaland.data.model.DataEnvelope
 import xyz.lisfox.vocaland.data.model.EdCampaignDto
+import xyz.lisfox.vocaland.data.model.EdCandidateDto
+import xyz.lisfox.vocaland.data.model.EdCandidateListResponse
 import xyz.lisfox.vocaland.data.model.EdCastVotesRequest
+import xyz.lisfox.vocaland.data.model.EdEligibilityDto
+import xyz.lisfox.vocaland.data.model.EdResultListResponse
+import xyz.lisfox.vocaland.data.model.EdSubmitNominationRequest
+import xyz.lisfox.vocaland.data.model.EdSubmitNominationResponse
 import xyz.lisfox.vocaland.data.model.EdVoteDto
 import xyz.lisfox.vocaland.data.model.EdVotingCandidatesResponse
 import xyz.lisfox.vocaland.data.model.HeroSlideDto
@@ -31,7 +38,10 @@ import xyz.lisfox.vocaland.data.model.PublicPlaylistListResponse
 import xyz.lisfox.vocaland.data.model.TrendingCampaignDto
 import xyz.lisfox.vocaland.data.model.TrendingCandidateListResponse
 import xyz.lisfox.vocaland.data.model.TrendingCastVotesRequest
+import xyz.lisfox.vocaland.data.model.TrendingHistoryListResponse
 import xyz.lisfox.vocaland.data.model.TrendingMyVotesDto
+import xyz.lisfox.vocaland.data.model.TrendingNominateRequest
+import xyz.lisfox.vocaland.data.model.TrendingResultListResponse
 import xyz.lisfox.vocaland.data.model.TrendingTallyDto
 import xyz.lisfox.vocaland.data.model.UserLitStatsDto
 import xyz.lisfox.vocaland.data.model.VideoBatchRequest
@@ -69,6 +79,32 @@ interface VocaLandApi {
     @GET("ed/campaign/{id}")
     suspend fun edCampaign(@Path("id") id: Int): EdCampaignDto
 
+    @GET("ed/eligibility")
+    suspend fun edEligibility(
+        @Query("campaign_id") campaignId: Int,
+        @Query("bvid") bvid: String,
+    ): EdEligibilityDto
+
+    @GET("ed/candidates")
+    suspend fun edCandidates(
+        @Query("campaign_id") campaignId: Int,
+    ): EdCandidateListResponse
+
+    @GET("ed/my-nomination")
+    suspend fun edMyNomination(
+        @Query("campaign_id") campaignId: Int,
+    ): EdCandidateDto?
+
+    @POST("ed/submit")
+    suspend fun submitEdNomination(
+        @Body request: EdSubmitNominationRequest,
+    ): EdSubmitNominationResponse
+
+    @DELETE("ed/submission/{candidateId}")
+    suspend fun withdrawEdNomination(
+        @Path("candidateId") candidateId: Int,
+    )
+
     @GET("ed/voting/candidates")
     suspend fun edVotingCandidates(
         @Query("campaign_id") campaignId: Int,
@@ -80,11 +116,33 @@ interface VocaLandApi {
     @POST("ed/vote")
     suspend fun castEdVotes(@Body request: EdCastVotesRequest): List<EdVoteDto>
 
+    @GET("ed/results/{id}")
+    suspend fun edResults(@Path("id") id: Int): EdResultListResponse
+
+    @GET("ed/results/{id}/ranking")
+    suspend fun edFullRanking(@Path("id") id: Int): EdResultListResponse
+
     @GET("voting/trending/campaigns")
     suspend fun trendingCampaigns(): DataEnvelope<List<TrendingCampaignDto>>
 
     @GET("voting/trending/campaign")
     suspend fun trendingCampaign(@Query("campaign_id") campaignId: Int): TrendingCampaignDto
+
+    @POST("voting/trending/nominate")
+    suspend fun submitTrendingNomination(
+        @Query("campaign_id") campaignId: Int,
+        @Body request: TrendingNominateRequest,
+    ): TrendingCandidateDto
+
+    @DELETE("voting/trending/candidate")
+    suspend fun withdrawTrendingNomination(
+        @Query("candidate_id") candidateId: Int,
+    )
+
+    @GET("voting/trending/my-nominations")
+    suspend fun trendingMyNominations(
+        @Query("campaign_id") campaignId: Int,
+    ): TrendingCandidateListResponse
 
     @GET("voting/trending/candidates")
     suspend fun trendingCandidates(
@@ -104,6 +162,17 @@ interface VocaLandApi {
         @Query("campaign_id") campaignId: Int,
         @Body request: TrendingCastVotesRequest,
     ): TrendingMyVotesDto
+
+    @GET("voting/trending/results")
+    suspend fun trendingResults(
+        @Query("campaign_id") campaignId: Int,
+    ): TrendingResultListResponse
+
+    @GET("voting/trending/history")
+    suspend fun trendingHistory(
+        @Query("page") page: Int = 1,
+        @Query("page_size") pageSize: Int = 20,
+    ): TrendingHistoryListResponse
 
     @GET("ranking/{board}/latest_issue")
     suspend fun latestIssue(@Path("board") board: String): DataEnvelope<Int>

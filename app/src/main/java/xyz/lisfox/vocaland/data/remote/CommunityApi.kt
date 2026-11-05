@@ -10,8 +10,12 @@ import xyz.lisfox.vocaland.data.model.DataEnvelope
 import xyz.lisfox.vocaland.data.model.RatingDto
 import xyz.lisfox.vocaland.data.model.RatingListResponse
 import xyz.lisfox.vocaland.data.model.RatingSummaryDto
+import xyz.lisfox.vocaland.data.model.WalletDto
 
 interface CommunityApi {
+    @GET("user/me/wallet")
+    suspend fun myWallet(): WalletDto
+
     @GET("ratings/recent")
     suspend fun recentRatings(@Query("limit") limit: Int = 9): DataEnvelope<List<RatingDto>>
 

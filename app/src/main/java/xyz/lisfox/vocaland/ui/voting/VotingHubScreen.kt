@@ -92,12 +92,12 @@ private fun VotingHubContent(
     modifier: Modifier = Modifier,
 ) {
     val ed = data.ed
-        .filter { it.status == "voting" || it.status == "nomination" }
+        .filter { it.status == "voting" || it.status == "nomination" || it.status == "finalized" }
         .sortedWith(
             compareBy<EdCampaignDto> { statusOrder(it.status) }.thenByDescending { it.id },
         )
     val trending = data.trending
-        .filter { it.status == "voting" || it.status == "nomination" }
+        .filter { it.status == "voting" || it.status == "nomination" || it.status == "finalized" }
         .sortedWith(
             compareBy<TrendingCampaignDto> { statusOrder(it.status) }
                 .thenByDescending { it.id },
@@ -150,7 +150,13 @@ private fun EdCampaignRow(
     campaign: EdCampaignDto,
     onClick: () -> Unit,
 ) {
-    val deadline = deadlineText(if (campaign.status == "voting") campaign.voteEnd else campaign.submitEnd)
+    val deadline = deadlineText(
+        when (campaign.status) {
+            "voting" -> campaign.voteEnd
+            "finalized" -> campaign.finalizedAt
+            else -> campaign.submitEnd
+        },
+    )
     CampaignRow(
         title = "${boardLabel(campaign.board)} · 第 ${campaign.issue} 期",
         status = votingStatusLabel(campaign.status),
@@ -168,7 +174,13 @@ private fun TrendingCampaignRow(
     campaign: TrendingCampaignDto,
     onClick: () -> Unit,
 ) {
-    val deadline = deadlineText(if (campaign.status == "voting") campaign.voteEnd else campaign.submitEnd)
+    val deadline = deadlineText(
+        when (campaign.status) {
+            "voting" -> campaign.voteEnd
+            "finalized" -> campaign.finalizedAt
+            else -> campaign.submitEnd
+        },
+    )
     CampaignRow(
         title = "第 ${campaign.issue} 期 · ${trendingEntityKindLabel(campaign.entityKind)}",
         status = votingStatusLabel(campaign.status),
@@ -244,5 +256,6 @@ private fun CampaignRow(
 private fun statusOrder(status: String): Int = when (status) {
     "voting" -> 0
     "nomination" -> 1
-    else -> 2
+    "finalized" -> 2
+    else -> 3
 }
