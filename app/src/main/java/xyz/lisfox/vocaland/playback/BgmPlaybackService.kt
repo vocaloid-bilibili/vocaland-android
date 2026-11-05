@@ -9,6 +9,7 @@ import android.app.Service
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.content.pm.ServiceInfo
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.MediaMetadata
 import android.media.session.MediaSession
@@ -18,6 +19,10 @@ import android.os.IBinder
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.drawable.toBitmap
+import coil.Coil
+import coil.request.ImageRequest
+import coil.request.SuccessResult
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -28,6 +33,7 @@ import xyz.lisfox.vocaland.R
 import xyz.lisfox.vocaland.VocaLandApplication
 import xyz.lisfox.vocaland.data.player.BgmPlayerController
 import xyz.lisfox.vocaland.data.player.BgmPlayerState
+import xyz.lisfox.vocaland.util.toHttps
 
 class BgmPlaybackService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
@@ -36,7 +42,9 @@ class BgmPlaybackService : Service() {
     private lateinit var session: MediaSession
     private var metadataKey: String? = null
     private var notificationKey: String? = null
-    private val largeIcon by lazy {
+    private var coverKey: String? = null
+    private var coverBitmap: Bitmap? = null
+    private val appIcon by lazy {
         BitmapFactory.decodeResource(resources, R.drawable.app_icon)
     }
 
@@ -70,6 +78,7 @@ class BgmPlaybackService : Service() {
 
         val initial = playerController.state.value
         updateSession(initial)
+        updateCover(initial.currentTrack?.cover)
         ServiceCompat.startForeground(
             this,
             NOTIFICATION_ID,
@@ -80,6 +89,7 @@ class BgmPlaybackService : Service() {
         scope.launch {
             playerController.state.collect { state ->
                 updateSession(state)
+                updateCover(state.currentTrack?.cover)
                 updateNotification(state)
             }
         }
@@ -160,6 +170,33 @@ class BgmPlaybackService : Service() {
             .build()
     }
 
+    private fun updateCover(coverUrl: String?) {
+        val resolved = toHttps(coverUrl)
+        if (resolved == coverKey) return
+        coverKey = resolved
+        coverBitmap = null
+        if (resolved == null) {
+            notificationKey = null
+            return
+        }
+        scope.launch {
+            val bitmap = runCatching {
+                val result = Coil.imageLoader(this@BgmPlaybackService).execute(
+                    ImageRequest.Builder(this@BgmPlaybackService)
+                        .data(resolved)
+                        .size(512)
+                        .allowHardware(false)
+                        .build(),
+                )
+                (result as? SuccessResult)?.drawable?.toBitmap()
+            }.getOrNull()
+            if (coverKey != resolved) return@launch
+            coverBitmap = bitmap
+            notificationKey = null
+            updateNotification(playerController.state.value)
+        }
+    }
+
     private fun updateNotification(state: BgmPlayerState) {
         if (
             Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
@@ -189,7 +226,7 @@ class BgmPlaybackService : Service() {
         }
         return Notification.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_stat_vocaland)
-            .setLargeIcon(largeIcon)
+            .setLargeIcon(coverBitmap ?: appIcon)
             .setContentTitle(track?.title ?: DEFAULT_TITLE)
             .setContentText(text)
             .setContentIntent(contentIntent())
