@@ -3,11 +3,14 @@ package xyz.lisfox.vocaland.ui.artist
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import xyz.lisfox.vocaland.data.artist.ArtistExtras
 import xyz.lisfox.vocaland.data.model.ArtistDetailDto
 import xyz.lisfox.vocaland.data.model.ArtistKind
 import xyz.lisfox.vocaland.data.model.ArtistStatsSummaryDto
@@ -19,12 +22,14 @@ import kotlin.math.ceil
 data class ArtistDetailUiState(
     val artist: ArtistDetailDto? = null,
     val stats: ArtistStatsSummaryDto? = null,
+    val extras: ArtistExtras = ArtistExtras(),
     val songs: List<SongDto> = emptyList(),
     val page: Int = 1,
     val total: Int = 0,
     val totalPages: Int = 1,
     val loading: Boolean = true,
     val songsLoading: Boolean = false,
+    val extrasLoading: Boolean = false,
     val error: String? = null,
 )
 
@@ -66,34 +71,61 @@ class ArtistDetailViewModel(
     private fun load() {
         loadJob?.cancel()
         songsJob?.cancel()
-        _state.update { it.copy(loading = true, error = null) }
+        _state.update {
+            it.copy(
+                loading = true,
+                extrasLoading = true,
+                error = null,
+            )
+        }
 
         loadJob = viewModelScope.launch {
-            repository.load(kind, artistId)
-                .onSuccess { content ->
-                    val totalPages = pagesFor(content.songs.total)
+            coroutineScope {
+                val extrasDeferred = async {
+                    repository.loadExtras(kind, artistId)
+                        .getOrDefault(ArtistExtras())
+                }
+                val contentResult = repository.load(kind, artistId)
+
+                contentResult
+                    .onSuccess { content ->
+                        val totalPages = pagesFor(content.songs.total)
+                        _state.update {
+                            it.copy(
+                                artist = content.profile.artist,
+                                stats = content.profile.stats,
+                                songs = content.songs.songs,
+                                page = 1,
+                                total = content.songs.total,
+                                totalPages = totalPages,
+                                loading = false,
+                                songsLoading = false,
+                                extrasLoading = true,
+                                error = null,
+                            )
+                        }
+                    }
+                    .onFailure { error ->
+                        extrasDeferred.cancel()
+                        _state.update {
+                            it.copy(
+                                loading = false,
+                                extrasLoading = false,
+                                error = error.toUserMessage(),
+                            )
+                        }
+                    }
+
+                if (contentResult.isSuccess) {
+                    val extras = extrasDeferred.await()
                     _state.update {
                         it.copy(
-                            artist = content.profile.artist,
-                            stats = content.profile.stats,
-                            songs = content.songs.songs,
-                            page = 1,
-                            total = content.songs.total,
-                            totalPages = totalPages,
-                            loading = false,
-                            songsLoading = false,
-                            error = null,
+                            extras = extras,
+                            extrasLoading = false,
                         )
                     }
                 }
-                .onFailure { error ->
-                    _state.update {
-                        it.copy(
-                            loading = false,
-                            error = error.toUserMessage(),
-                        )
-                    }
-                }
+            }
         }
     }
 
