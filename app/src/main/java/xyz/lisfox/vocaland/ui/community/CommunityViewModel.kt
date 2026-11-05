@@ -86,6 +86,7 @@ class CommunityViewModel(
     private var ratingsJob: Job? = null
     private var myRatingJob: Job? = null
     private var commentsJob: Job? = null
+    private var currentViewerId: Int? = null
 
     init {
         observeSession()
@@ -348,22 +349,25 @@ class CommunityViewModel(
 
         viewModelScope.launch {
             currentSession.state
-                .map { it.isLoggedIn }
+                .map { it.user?.id to it.isLoggedIn }
                 .distinctUntilChanged()
-                .collect { loggedIn ->
-                    handleAuthChange(loggedIn)
+                .collect { (viewerId, loggedIn) ->
+                    handleAuthChange(viewerId, loggedIn)
                 }
         }
     }
 
-    private fun handleAuthChange(loggedIn: Boolean) {
-        val hadRating = _state.value.myRating
+    private fun handleAuthChange(viewerId: Int?, loggedIn: Boolean) {
+        val accountChanged = viewerId != currentViewerId
+        currentViewerId = viewerId
+        val keepViewerData = loggedIn && !accountChanged
+        val hadRating = if (accountChanged) null else _state.value.myRating
         _state.update {
             it.copy(
                 isLoggedIn = loggedIn,
-                myRating = if (loggedIn) it.myRating else null,
+                myRating = if (keepViewerData) it.myRating else null,
                 myRatingLoading = false,
-                ratingDraft = if (loggedIn) it.ratingDraft else RatingDraft(),
+                ratingDraft = if (keepViewerData) it.ratingDraft else RatingDraft(),
                 ratingError = null,
                 ratingNotice = null,
                 commentActionError = null,
