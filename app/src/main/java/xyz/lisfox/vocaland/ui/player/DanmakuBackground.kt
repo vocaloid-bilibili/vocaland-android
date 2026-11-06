@@ -147,7 +147,10 @@ private class DanmakuView(context: Context) : View(context) {
 
         this.playing = playing
         val playheadMs = playheadNanos / 1_000_000L
-        if (trackChanged || !playing || abs(playheadMs - positionMs) > RESYNC_THRESHOLD_MS) {
+        if (
+            trackChanged ||
+            (abs(playheadMs - positionMs) > RESYNC_THRESHOLD_MS && (playing || !wasPlaying))
+        ) {
             playheadNanos = positionMs * 1_000_000L
         }
 
