@@ -1,25 +1,42 @@
 package xyz.lisfox.vocaland.ui.player
 
 import android.content.Context
-import android.graphics.RenderEffect
-import android.graphics.Shader
+import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
 import android.media.MediaPlayer
 import android.net.Uri
-import android.os.Build
+import android.view.MotionEvent
 import android.view.Surface
 import android.view.TextureView
+import android.view.View
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlin.math.abs
 
 private const val VIDEO_SYNC_THRESHOLD_MS = 900L
+private const val FRAME_INTERVAL_MS = 200L
+private const val FRAME_WIDTH = 320
+private const val FRAME_HEIGHT = 180
 
 @Composable
 internal fun VideoBackground(
@@ -29,22 +46,56 @@ internal fun VideoBackground(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
-    val blurRadiusPx = with(LocalDensity.current) { 24.dp.toPx() }
-    val player = remember(context) { VideoBackgroundPlayer(context) }
+    val player = remember(context) { FrameVideoPlayer(context) }
+    var frame by remember { mutableStateOf<ImageBitmap?>(null) }
     DisposableEffect(player) {
         onDispose { player.release() }
     }
-    AndroidView(
-        factory = { player.createView(blurRadiusPx) },
-        update = { player.sync(videoUrl, playing, positionMs) },
-        modifier = modifier,
-    )
+    LaunchedEffect(player, videoUrl) {
+        frame = null
+        if (videoUrl == null) return@LaunchedEffect
+        while (isActive) {
+            val bitmap = player.captureFrame(videoUrl, FRAME_WIDTH, FRAME_HEIGHT)
+            if (bitmap != null) {
+                frame = bitmap.asImageBitmap()
+            }
+            delay(FRAME_INTERVAL_MS)
+        }
+    }
+    Box(modifier = modifier) {
+        Crossfade(
+            targetState = frame,
+            animationSpec = tween(durationMillis = FRAME_INTERVAL_MS.toInt()),
+            label = "videoFrame",
+        ) { bitmap ->
+            if (bitmap != null) {
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .blur(24.dp),
+                )
+            }
+        }
+        AndroidView(
+            factory = { player.createView() },
+            update = { player.sync(videoUrl, playing, positionMs) },
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
 }
 
-private class VideoBackgroundPlayer(context: Context) {
+private class FrameTextureView(context: Context) : TextureView(context) {
+    override fun onTouchEvent(event: MotionEvent): Boolean = false
+}
+
+private class FrameVideoPlayer(context: Context) {
     private val appContext = context.applicationContext
     private val viewContext = context
     private val mediaPlayer = MediaPlayer()
+    private var textureView: FrameTextureView? = null
     private var surface: Surface? = null
     private var currentUrl: String? = null
     private var prepared = false
@@ -52,13 +103,12 @@ private class VideoBackgroundPlayer(context: Context) {
     private var pendingPositionMs = 0L
     private var released = false
 
-    fun createView(blurRadiusPx: Float): TextureView {
-        val view = TextureView(viewContext)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            view.setRenderEffect(
-                RenderEffect.createBlurEffect(blurRadiusPx, blurRadiusPx, Shader.TileMode.CLAMP),
-            )
-        }
+    fun createView(): FrameTextureView {
+        val view = FrameTextureView(viewContext)
+        view.alpha = 0f
+        view.isFocusable = false
+        view.isClickable = false
+        view.importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
         view.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
             override fun onSurfaceTextureAvailable(
                 surfaceTexture: SurfaceTexture,
@@ -81,7 +131,14 @@ private class VideoBackgroundPlayer(context: Context) {
 
             override fun onSurfaceTextureUpdated(surfaceTexture: SurfaceTexture) = Unit
         }
+        textureView = view
         return view
+    }
+
+    fun captureFrame(videoUrl: String, width: Int, height: Int): Bitmap? {
+        if (videoUrl != currentUrl) return null
+        val view = textureView ?: return null
+        return runCatching { view.getBitmap(width, height) }.getOrNull()
     }
 
     fun sync(videoUrl: String?, playing: Boolean, positionMs: Long) {
@@ -166,5 +223,6 @@ private class VideoBackgroundPlayer(context: Context) {
         runCatching { mediaPlayer.release() }
         surface?.release()
         surface = null
+        textureView = null
     }
 }
