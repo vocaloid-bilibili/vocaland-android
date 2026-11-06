@@ -27,7 +27,6 @@ import kotlin.math.exp
 import kotlin.math.ln
 import xyz.lisfox.vocaland.data.model.DanmakuItem
 
-private const val MAX_ACTIVE = 300
 private const val SPEED_PLUS = 0.65f
 private const val SAFE_LEFT_DP = 50f
 private const val SAFE_GAP_DP = 4f
@@ -48,6 +47,7 @@ fun DanmakuBackground(
     cid: Long?,
     playing: Boolean,
     positionMs: Long,
+    maxActive: Int?,
     modifier: Modifier = Modifier,
 ) {
     val density = LocalDensity.current
@@ -134,7 +134,7 @@ fun DanmakuBackground(
                 if (item.timeMs > playheadMs) break
                 val elapsed = playheadMs - item.timeMs
                 if (elapsed > item.durationMs) continue
-                if (drawn >= MAX_ACTIVE) break
+                if (maxActive != null && drawn >= maxActive) break
 
                 val progress = elapsed.toFloat() / item.durationMs.toFloat()
                 val x = item.startX - item.distance * progress

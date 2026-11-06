@@ -53,6 +53,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
@@ -80,6 +81,12 @@ import kotlin.math.roundToInt
 
 private enum class PlayButtonState { Loading, Playing, Paused }
 
+private const val DANMAKU_LIMIT_MIN = 50
+private const val DANMAKU_LIMIT_MAX = 1000
+private const val DANMAKU_LIMIT_STEP = 50
+private const val DANMAKU_LIMIT_DEFAULT = 500
+private const val DANMAKU_LIMIT_UNLIMITED = -1
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PlayerScreen(
@@ -91,6 +98,7 @@ fun PlayerScreen(
     var editingQueue by remember { mutableStateOf(false) }
     var showSettings by rememberSaveable { mutableStateOf(false) }
     var danmakuEnabled by rememberSaveable { mutableStateOf(true) }
+    var danmakuLimit by rememberSaveable { mutableIntStateOf(DANMAKU_LIMIT_DEFAULT) }
     val danmaku by produceState(
         initialValue = emptyList<DanmakuItem>(),
         key1 = state.cid,
@@ -135,6 +143,7 @@ fun PlayerScreen(
                         cid = state.cid,
                         playing = state.playing,
                         positionMs = state.positionMs,
+                        maxActive = danmakuLimit.takeIf { it > 0 },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -215,6 +224,8 @@ fun PlayerScreen(
                     playMode = state.playMode,
                     danmakuEnabled = danmakuEnabled,
                     onDanmakuChange = { danmakuEnabled = it },
+                    danmakuLimit = danmakuLimit,
+                    onDanmakuLimitChange = { danmakuLimit = it },
                     onDismiss = { showSettings = false },
                 )
             }
@@ -441,9 +452,16 @@ private fun PlayerSettingsSheet(
     playMode: PlayMode,
     danmakuEnabled: Boolean,
     onDanmakuChange: (Boolean) -> Unit,
+    danmakuLimit: Int,
+    onDanmakuLimitChange: (Int) -> Unit,
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val limitSliderValue = if (danmakuLimit == DANMAKU_LIMIT_UNLIMITED) {
+        DANMAKU_LIMIT_MAX.toFloat()
+    } else {
+        danmakuLimit.toFloat()
+    }
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
@@ -492,6 +510,51 @@ private fun PlayerSettingsSheet(
                 checked = danmakuEnabled,
                 onCheckedChange = onDanmakuChange,
             )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "显示数量",
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        text = if (danmakuLimit == DANMAKU_LIMIT_UNLIMITED) {
+                            "无限制"
+                        } else {
+                            "$danmakuLimit 条"
+                        },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Slider(
+                    value = limitSliderValue,
+                    onValueChange = { raw ->
+                        val count = raw.roundToInt()
+                        onDanmakuLimitChange(
+                            if (count >= DANMAKU_LIMIT_MAX) {
+                                DANMAKU_LIMIT_UNLIMITED
+                            } else {
+                                count
+                            },
+                        )
+                    },
+                    valueRange = DANMAKU_LIMIT_MIN.toFloat()..DANMAKU_LIMIT_MAX.toFloat(),
+                    steps = (DANMAKU_LIMIT_MAX - DANMAKU_LIMIT_MIN) / DANMAKU_LIMIT_STEP - 1,
+                )
+                Text(
+                    text = "拉到最右为无限制",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             SettingsSwitchRow(
                 title = "播完暂停",
                 subtitle = when (playMode) {
