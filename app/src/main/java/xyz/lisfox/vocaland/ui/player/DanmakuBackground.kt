@@ -168,6 +168,7 @@ private class DanmakuView(context: Context) : View(context) {
 
         val playheadMs = playheadNanos / 1_000_000L
         val startIndex = lowerBound(layout.items, playheadMs - layout.maxDurationMs)
+        val activeLimit = maxActive
         var drawn = 0
 
         for (index in startIndex until layout.items.size) {
@@ -175,7 +176,7 @@ private class DanmakuView(context: Context) : View(context) {
             if (item.timeMs > playheadMs) break
             val elapsed = playheadMs - item.timeMs
             if (elapsed > item.durationMs) continue
-            if (maxActive != null && drawn >= maxActive) break
+            if (activeLimit != null && drawn >= activeLimit) break
 
             val progress = elapsed.toFloat() / item.durationMs.toFloat()
             val x = item.startX - item.distance * progress
