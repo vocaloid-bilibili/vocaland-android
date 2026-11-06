@@ -54,6 +54,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -65,6 +66,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import coil.compose.AsyncImage
+import xyz.lisfox.vocaland.R
 import xyz.lisfox.vocaland.data.repository.AuthRepository
 import xyz.lisfox.vocaland.ui.components.BrandMark
 import xyz.lisfox.vocaland.util.captchaImageModel
@@ -140,13 +142,13 @@ fun LoginScreen(
             BrandMark(size = 66.dp)
             Spacer(Modifier.height(18.dp))
             Text(
-                text = "欢迎回来",
+                text = stringResource(R.string.login_welcome),
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "登录术力口数据库",
+                text = stringResource(R.string.login_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = scheme.onSurfaceVariant,
             )
@@ -168,7 +170,7 @@ fun LoginScreen(
                         value = state.username,
                         onValueChange = viewModel::onUsernameChange,
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("用户名") },
+                        label = { Text(stringResource(R.string.login_username)) },
                         leadingIcon = {
                             Icon(Icons.Filled.Person, contentDescription = null)
                         },
@@ -183,7 +185,7 @@ fun LoginScreen(
                         value = state.password,
                         onValueChange = viewModel::onPasswordChange,
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("密码") },
+                        label = { Text(stringResource(R.string.login_password)) },
                         leadingIcon = {
                             Icon(Icons.Filled.Lock, contentDescription = null)
                         },
@@ -195,7 +197,7 @@ fun LoginScreen(
                                     } else {
                                         Icons.Filled.Visibility
                                     },
-                                    contentDescription = if (state.showPassword) "隐藏密码" else "显示密码",
+                                    contentDescription = if (state.showPassword) stringResource(R.string.login_hide_password) else stringResource(R.string.login_show_password),
                                 )
                             }
                         },
@@ -217,7 +219,7 @@ fun LoginScreen(
                         horizontalArrangement = Arrangement.End,
                     ) {
                         TextButton(onClick = onOpenForgotPassword) {
-                            Text("忘记密码？")
+                            Text(stringResource(R.string.login_forgot_password))
                         }
                     }
 
@@ -230,8 +232,8 @@ fun LoginScreen(
                             value = state.captchaAnswer,
                             onValueChange = viewModel::onCaptchaAnswerChange,
                             modifier = Modifier.weight(1f),
-                            label = { Text("验证码") },
-                            placeholder = { Text("计算结果") },
+                            label = { Text(stringResource(R.string.login_captcha)) },
+                            placeholder = { Text(stringResource(R.string.login_captcha_hint)) },
                             keyboardOptions = KeyboardOptions(
                                 keyboardType = KeyboardType.Number,
                                 imeAction = ImeAction.Done,
@@ -266,7 +268,7 @@ fun LoginScreen(
                                     state.captcha != null -> {
                                         AsyncImage(
                                             model = captchaImageModel(state.captcha!!.image),
-                                            contentDescription = "验证码，点击刷新",
+                                            contentDescription = stringResource(R.string.login_captcha_refresh_desc),
                                             modifier = Modifier
                                                 .fillMaxSize()
                                                 .padding(6.dp),
@@ -277,7 +279,7 @@ fun LoginScreen(
                                     else -> {
                                         Icon(
                                             imageVector = Icons.Filled.Refresh,
-                                            contentDescription = "刷新验证码",
+                                            contentDescription = stringResource(R.string.login_captcha_refresh),
                                             tint = scheme.onSurfaceVariant,
                                         )
                                     }
@@ -325,7 +327,7 @@ fun LoginScreen(
                                 modifier = Modifier.size(19.dp),
                             )
                             Spacer(Modifier.width(8.dp))
-                            Text("登录")
+                            Text(stringResource(R.string.login_submit))
                         }
                     }
                 }
@@ -333,11 +335,11 @@ fun LoginScreen(
 
             Spacer(Modifier.height(12.dp))
             TextButton(onClick = onOpenRegister) {
-                Text("没有账号？立即注册")
+                Text(stringResource(R.string.login_no_account))
             }
             TextButton(onClick = onBack) {
                 Text(
-                    text = "先随便逛逛",
+                    text = stringResource(R.string.login_browse),
                     color = scheme.onSurfaceVariant,
                 )
             }

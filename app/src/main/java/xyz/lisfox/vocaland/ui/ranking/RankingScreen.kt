@@ -29,7 +29,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -61,6 +60,7 @@ import xyz.lisfox.vocaland.data.model.RankingTab
 import xyz.lisfox.vocaland.data.model.rankingIssueDateRange
 import xyz.lisfox.vocaland.data.repository.RankingRepository
 import xyz.lisfox.vocaland.data.session.AuthSession
+import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.NetworkImage
@@ -137,7 +137,7 @@ fun RankingScreen(
 
         if (state.loading || state.tabLoading) {
             item {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                InlineLoading()
             }
         }
 
@@ -786,7 +786,7 @@ private fun ArtistSongPanel(
             )
             Spacer(Modifier.height(8.dp))
             if (loading && pageData == null) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                InlineLoading()
             }
             if (error != null) {
                 InlineError(error, onRetry)

@@ -21,7 +21,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -44,6 +43,7 @@ import xyz.lisfox.vocaland.data.model.SearchEntityDto
 import xyz.lisfox.vocaland.data.remote.toUserMessage
 import xyz.lisfox.vocaland.data.repository.PlaylistRepository
 import xyz.lisfox.vocaland.data.repository.SearchRepository
+import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.util.coverUrl
 import xyz.lisfox.vocaland.util.songArtistLine
@@ -162,7 +162,7 @@ fun AddSongsToPlaylistSheet(
             }
 
             if (loading && results.isEmpty()) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                InlineLoading()
             }
 
             LazyColumn(

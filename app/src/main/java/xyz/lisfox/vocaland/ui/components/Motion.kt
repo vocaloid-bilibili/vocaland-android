@@ -19,8 +19,12 @@ import androidx.compose.ui.graphics.Color
 /** 全应用统一的动画时长。 */
 object MotionDurations {
     const val FAST = 180
+    const val QUICK = 200
     const val MEDIUM = 260
+    const val EMPHASIZED = 320
     const val SLOW = 360
+    const val CAROUSEL_INTERVAL_MS = 5_000L
+    const val SHIMMER = 1_200
 }
 
 /**
@@ -28,7 +32,7 @@ object MotionDurations {
  * 使用方先铺好底色（如 surfaceContainerHighest），再调用本修饰符。
  */
 fun Modifier.shimmer(
-    durationMillis: Int = 1200,
+    durationMillis: Int = MotionDurations.SHIMMER,
     highlightColor: Color? = null,
 ): Modifier = composed {
     val fallback = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.08f)

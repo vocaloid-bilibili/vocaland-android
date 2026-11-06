@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -35,6 +34,7 @@ import xyz.lisfox.vocaland.data.discovery.TagArtistPage
 import xyz.lisfox.vocaland.data.model.ArtistKind
 import xyz.lisfox.vocaland.data.model.TagItemDto
 import xyz.lisfox.vocaland.data.repository.TagDetailRepository
+import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.NetworkImage
@@ -216,7 +216,7 @@ private fun ArtistPager(
 ) {
     Column {
         if (loading) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            InlineLoading()
         }
         if (error != null) {
             Row(

@@ -23,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.data.update.UpdateDownloadSource
 
 @Composable
@@ -125,7 +126,7 @@ private fun DownloadingContent(
             modifier = Modifier.fillMaxWidth(),
         )
     } else {
-        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+        InlineLoading()
     }
     Spacer(Modifier.height(10.dp))
     Row(

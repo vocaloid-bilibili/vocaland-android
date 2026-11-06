@@ -23,7 +23,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -53,6 +52,7 @@ import xyz.lisfox.vocaland.data.customranking.CustomRankingSourceType
 import xyz.lisfox.vocaland.data.customranking.statRank
 import xyz.lisfox.vocaland.data.customranking.statValue
 import xyz.lisfox.vocaland.data.model.PublicPlaylistDto
+import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.MetricGrid
 import xyz.lisfox.vocaland.ui.components.MetricItem
@@ -297,7 +297,7 @@ fun PlaylistPickerDialog(
                     modifier = Modifier.fillMaxWidth(),
                 )
                 if (loading) {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    InlineLoading()
                 }
                 if (playlists.isEmpty() && !loading) {
                     EmptyHint(text = "没有找到歌单")

@@ -1,6 +1,7 @@
 package xyz.lisfox.vocaland.ui.navigation
 
 import android.net.Uri
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Leaderboard
@@ -10,6 +11,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.graphics.vector.ImageVector
 import xyz.lisfox.vocaland.data.collection.CollectionTarget
 import xyz.lisfox.vocaland.data.model.ArtistKind
+import xyz.lisfox.vocaland.R
 import xyz.lisfox.vocaland.data.model.VotingKind
 
 object Routes {
@@ -74,14 +76,14 @@ object Routes {
 
 data class TopLevelDestination(
     val route: String,
-    val label: String,
+    @StringRes val labelRes: Int,
     val icon: ImageVector,
 )
 
 val TOP_LEVEL_DESTINATIONS = listOf(
-    TopLevelDestination(Routes.HOME, "首页", Icons.Filled.Home),
-    TopLevelDestination(Routes.RANKING, "榜单", Icons.Filled.Leaderboard),
-    TopLevelDestination(Routes.PLAYER, "播放器", Icons.Filled.PlayArrow),
-    TopLevelDestination(Routes.SEARCH, "搜索", Icons.Filled.Search),
-    TopLevelDestination(Routes.PROFILE, "我的", Icons.Filled.Person),
+    TopLevelDestination(Routes.HOME, R.string.nav_home, Icons.Filled.Home),
+    TopLevelDestination(Routes.RANKING, R.string.nav_ranking, Icons.Filled.Leaderboard),
+    TopLevelDestination(Routes.PLAYER, R.string.nav_player, Icons.Filled.PlayArrow),
+    TopLevelDestination(Routes.SEARCH, R.string.nav_search, Icons.Filled.Search),
+    TopLevelDestination(Routes.PROFILE, R.string.nav_profile, Icons.Filled.Person),
 )

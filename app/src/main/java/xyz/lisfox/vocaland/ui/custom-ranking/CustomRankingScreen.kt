@@ -17,7 +17,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -42,6 +41,7 @@ import xyz.lisfox.vocaland.data.customranking.CustomRankingRepository
 import xyz.lisfox.vocaland.data.customranking.CustomRankingSourceType
 import xyz.lisfox.vocaland.data.session.AuthSession
 import xyz.lisfox.vocaland.data.stat.StatFilterState
+import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.PagerRow
@@ -216,7 +216,7 @@ fun CustomRankingScreen(
         }
 
         if (state.loading) {
-            item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
+            item { InlineLoading() }
         }
 
         item {

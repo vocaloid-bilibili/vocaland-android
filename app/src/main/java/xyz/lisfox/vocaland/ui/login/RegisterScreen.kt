@@ -33,6 +33,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -42,6 +43,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import xyz.lisfox.vocaland.R
 import xyz.lisfox.vocaland.data.account.AccountAuthRepository
 
 @Composable
@@ -60,8 +62,8 @@ fun RegisterScreen(
     val scheme = MaterialTheme.colorScheme
 
     AuthScaffold(
-        title = if (state.registered) "注册成功" else "创建账号",
-        subtitle = if (state.registered) "账号已创建，请登录后使用" else "注册后可同步收藏、评分与投票",
+        title = if (state.registered) stringResource(R.string.register_success_title) else stringResource(R.string.register_title),
+        subtitle = if (state.registered) stringResource(R.string.register_success_subtitle) else stringResource(R.string.register_subtitle),
         modifier = modifier,
     ) {
         if (state.registered) {
@@ -86,17 +88,17 @@ fun RegisterScreen(
                     )
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        text = "欢迎加入 VocaLand",
+                        text = stringResource(R.string.register_welcome),
                         style = MaterialTheme.typography.titleMedium,
                     )
                     Spacer(Modifier.height(20.dp))
                     Button(onClick = onRegistered) {
-                        Text("前往登录")
+                        Text(stringResource(R.string.register_go_login))
                     }
                 }
             }
             TextButton(onClick = onBack) {
-                Text("返回")
+                Text(stringResource(R.string.action_back))
             }
             return@AuthScaffold
         }
@@ -120,7 +122,7 @@ fun RegisterScreen(
 
         Spacer(Modifier.height(12.dp))
         TextButton(onClick = onBack) {
-            Text("已有账号？返回登录")
+            Text(stringResource(R.string.register_have_account))
         }
     }
 }
@@ -136,8 +138,8 @@ private fun RegisterForm(
         value = state.username,
         onValueChange = viewModel::onUsernameChange,
         modifier = Modifier.fillMaxWidth(),
-        label = { Text("用户名") },
-        placeholder = { Text("至少 3 位") },
+        label = { Text(stringResource(R.string.login_username)) },
+        placeholder = { Text(stringResource(R.string.register_username_hint)) },
         leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
         singleLine = true,
         shape = RoundedCornerShape(16.dp),
@@ -148,7 +150,7 @@ private fun RegisterForm(
         value = state.nickname,
         onValueChange = viewModel::onNicknameChange,
         modifier = Modifier.fillMaxWidth(),
-        label = { Text("昵称") },
+        label = { Text(stringResource(R.string.register_nickname)) },
         leadingIcon = { Icon(Icons.Filled.Person, contentDescription = null) },
         singleLine = true,
         shape = RoundedCornerShape(16.dp),
@@ -159,8 +161,8 @@ private fun RegisterForm(
         value = state.password,
         onValueChange = viewModel::onPasswordChange,
         modifier = Modifier.fillMaxWidth(),
-        label = { Text("密码") },
-        placeholder = { Text("至少 6 位") },
+        label = { Text(stringResource(R.string.login_password)) },
+        placeholder = { Text(stringResource(R.string.register_password_hint)) },
         leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
         trailingIcon = {
             IconButton(onClick = viewModel::togglePasswordVisible) {
@@ -170,7 +172,7 @@ private fun RegisterForm(
                     } else {
                         Icons.Filled.Visibility
                     },
-                    contentDescription = if (state.showPassword) "隐藏密码" else "显示密码",
+                    contentDescription = if (state.showPassword) stringResource(R.string.login_hide_password) else stringResource(R.string.login_show_password),
                 )
             }
         },
@@ -191,7 +193,7 @@ private fun RegisterForm(
         value = state.confirmPassword,
         onValueChange = viewModel::onConfirmPasswordChange,
         modifier = Modifier.fillMaxWidth(),
-        label = { Text("确认密码") },
+        label = { Text(stringResource(R.string.register_confirm_password)) },
         leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
         visualTransformation = if (state.showPassword) {
             VisualTransformation.None
@@ -210,8 +212,8 @@ private fun RegisterForm(
         value = state.email,
         onValueChange = viewModel::onEmailChange,
         modifier = Modifier.fillMaxWidth(),
-        label = { Text("邮箱") },
-        placeholder = { Text("用于接收验证码") },
+        label = { Text(stringResource(R.string.login_email)) },
+        placeholder = { Text(stringResource(R.string.register_email_hint)) },
         leadingIcon = { Icon(Icons.Filled.Mail, contentDescription = null) },
         singleLine = true,
         shape = RoundedCornerShape(16.dp),
@@ -249,9 +251,9 @@ private fun RegisterForm(
         Spacer(Modifier.width(8.dp))
         Text(
             when {
-                state.emailCooldown > 0 -> "${state.emailCooldown}s 后重发"
-                state.emailSent -> "重新发送验证码"
-                else -> "发送邮箱验证码"
+                state.emailCooldown > 0 -> stringResource(R.string.register_resend_countdown, state.emailCooldown)
+                state.emailSent -> stringResource(R.string.register_resend)
+                else -> stringResource(R.string.register_send_code)
             },
         )
     }
@@ -261,8 +263,8 @@ private fun RegisterForm(
             value = state.emailCode,
             onValueChange = viewModel::onEmailCodeChange,
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("邮箱验证码") },
-            placeholder = { Text("请输入邮件中的验证码") },
+            label = { Text(stringResource(R.string.register_email_code)) },
+            placeholder = { Text(stringResource(R.string.register_email_code_hint)) },
             singleLine = true,
             shape = RoundedCornerShape(16.dp),
             keyboardOptions = KeyboardOptions(
@@ -302,7 +304,7 @@ private fun RegisterForm(
                 color = scheme.onPrimary,
             )
         } else {
-            Text("注册")
+            Text(stringResource(R.string.register_submit))
         }
     }
 }

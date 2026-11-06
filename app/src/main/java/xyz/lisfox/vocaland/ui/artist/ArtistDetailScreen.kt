@@ -23,7 +23,6 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -47,6 +46,7 @@ import xyz.lisfox.vocaland.data.model.ArtistStatsSummaryDto
 import xyz.lisfox.vocaland.data.model.SongDto
 import xyz.lisfox.vocaland.data.model.TagItemDto
 import xyz.lisfox.vocaland.data.repository.ArtistDetailRepository
+import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.MetricGrid
@@ -119,7 +119,7 @@ fun ArtistDetailScreen(
 
                 if (state.extrasLoading) {
                     item {
-                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                        InlineLoading()
                     }
                 }
 
@@ -186,7 +186,7 @@ fun ArtistDetailScreen(
 
                 if (state.songsLoading) {
                     item {
-                        LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                        InlineLoading()
                     }
                 }
 

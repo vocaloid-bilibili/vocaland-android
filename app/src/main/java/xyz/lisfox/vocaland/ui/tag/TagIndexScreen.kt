@@ -23,7 +23,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -41,6 +40,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import xyz.lisfox.vocaland.data.model.TagItemDto
 import xyz.lisfox.vocaland.data.discovery.TagIndexRepository
+import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.NetworkImage
@@ -178,7 +178,7 @@ fun TagIndexScreen(
 
         if (state.loading) {
             item {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                InlineLoading()
             }
         }
 

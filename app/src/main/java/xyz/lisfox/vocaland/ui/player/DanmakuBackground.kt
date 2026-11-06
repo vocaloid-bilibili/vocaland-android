@@ -22,6 +22,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.isActive
 import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.ln
@@ -53,7 +54,7 @@ fun DanmakuBackground(
     val density = LocalDensity.current
     val textSizePx = with(density) { 13.sp.toPx() }
     val lightBackground = MaterialTheme.colorScheme.background.luminance() > 0.5f
-    val paint = remember(density) {
+    val paint = remember(density, lightBackground) {
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             textSize = textSizePx
             typeface = Typeface.DEFAULT
@@ -86,7 +87,7 @@ fun DanmakuBackground(
             playheadNanos = positionMs * 1_000_000L
         }
         var previous = withFrameNanos { it }
-        while (true) {
+        while (isActive) {
             withFrameNanos { now ->
                 playheadNanos += now - previous
                 previous = now

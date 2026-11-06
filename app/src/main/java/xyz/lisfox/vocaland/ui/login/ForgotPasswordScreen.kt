@@ -32,6 +32,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -41,6 +42,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import xyz.lisfox.vocaland.R
 import xyz.lisfox.vocaland.data.account.AccountAuthRepository
 
 @Composable
@@ -59,8 +61,8 @@ fun ForgotPasswordScreen(
     val scheme = MaterialTheme.colorScheme
 
     AuthScaffold(
-        title = if (state.success) "密码已重置" else "找回密码",
-        subtitle = if (state.success) "请使用新密码重新登录" else "通过邮箱验证码重置登录密码",
+        title = if (state.success) stringResource(R.string.forgot_success_title) else stringResource(R.string.page_forgot_password),
+        subtitle = if (state.success) stringResource(R.string.forgot_success_subtitle) else stringResource(R.string.forgot_subtitle),
         modifier = modifier,
     ) {
         if (state.success) {
@@ -85,17 +87,17 @@ fun ForgotPasswordScreen(
                     )
                     Spacer(Modifier.height(16.dp))
                     Text(
-                        text = "密码已成功重置",
+                        text = stringResource(R.string.forgot_success_message),
                         style = MaterialTheme.typography.titleMedium,
                     )
                     Spacer(Modifier.height(20.dp))
                     Button(onClick = onFinished) {
-                        Text("前往登录")
+                        Text(stringResource(R.string.register_go_login))
                     }
                 }
             }
             TextButton(onClick = onBack) {
-                Text("返回")
+                Text(stringResource(R.string.action_back))
             }
             return@AuthScaffold
         }
@@ -117,7 +119,7 @@ fun ForgotPasswordScreen(
                     value = state.email,
                     onValueChange = viewModel::onEmailChange,
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("注册邮箱") },
+                    label = { Text(stringResource(R.string.forgot_email)) },
                     leadingIcon = { Icon(Icons.Filled.Mail, contentDescription = null) },
                     singleLine = true,
                     shape = RoundedCornerShape(16.dp),
@@ -155,9 +157,9 @@ fun ForgotPasswordScreen(
                     Spacer(Modifier.width(8.dp))
                     Text(
                         when {
-                            state.emailCooldown > 0 -> "${state.emailCooldown}s 后重发"
-                            state.step == ResetStep.Reset -> "重新发送验证码"
-                            else -> "发送验证码"
+                            state.emailCooldown > 0 -> stringResource(R.string.register_resend_countdown, state.emailCooldown)
+                            state.step == ResetStep.Reset -> stringResource(R.string.register_resend)
+                            else -> stringResource(R.string.forgot_send_code)
                         },
                     )
                 }
@@ -167,7 +169,7 @@ fun ForgotPasswordScreen(
                         value = state.code,
                         onValueChange = viewModel::onCodeChange,
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("邮箱验证码") },
+                        label = { Text(stringResource(R.string.register_email_code)) },
                         singleLine = true,
                         shape = RoundedCornerShape(16.dp),
                         keyboardOptions = KeyboardOptions(
@@ -180,8 +182,8 @@ fun ForgotPasswordScreen(
                         value = state.newPassword,
                         onValueChange = viewModel::onNewPasswordChange,
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("新密码") },
-                        placeholder = { Text("至少 6 位") },
+                        label = { Text(stringResource(R.string.forgot_new_password)) },
+                        placeholder = { Text(stringResource(R.string.register_password_hint)) },
                         leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
                         trailingIcon = {
                             IconButton(onClick = viewModel::togglePasswordVisible) {
@@ -191,7 +193,7 @@ fun ForgotPasswordScreen(
                                     } else {
                                         Icons.Filled.Visibility
                                     },
-                                    contentDescription = if (state.showPassword) "隐藏密码" else "显示密码",
+                                    contentDescription = if (state.showPassword) stringResource(R.string.login_hide_password) else stringResource(R.string.login_show_password),
                                 )
                             }
                         },
@@ -212,7 +214,7 @@ fun ForgotPasswordScreen(
                         value = state.confirmPassword,
                         onValueChange = viewModel::onConfirmPasswordChange,
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("确认新密码") },
+                        label = { Text(stringResource(R.string.forgot_confirm_new_password)) },
                         leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
                         visualTransformation = if (state.showPassword) {
                             VisualTransformation.None
@@ -259,7 +261,7 @@ fun ForgotPasswordScreen(
                                 color = scheme.onPrimary,
                             )
                         } else {
-                            Text("重置密码")
+                            Text(stringResource(R.string.forgot_reset))
                         }
                     }
                 }
@@ -268,7 +270,7 @@ fun ForgotPasswordScreen(
 
         Spacer(Modifier.height(12.dp))
         TextButton(onClick = onBack) {
-            Text("返回登录")
+            Text(stringResource(R.string.forgot_back_login))
         }
     }
 }

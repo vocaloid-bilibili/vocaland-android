@@ -30,7 +30,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
@@ -58,6 +57,7 @@ import xyz.lisfox.vocaland.data.stat.StatFilterState
 import xyz.lisfox.vocaland.data.stat.StatOrderBy
 import xyz.lisfox.vocaland.data.stat.StatRepository
 import xyz.lisfox.vocaland.data.stat.VocaRole
+import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.NetworkImage
@@ -204,7 +204,7 @@ private fun StatContent(
 
         val data = state.data ?: return@LazyColumn
         if (state.loading) {
-            item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
+            item { InlineLoading() }
         }
         if (data.items.isEmpty() && !state.loading) {
             item { EmptyHint(text = "没有符合条件的歌曲") }

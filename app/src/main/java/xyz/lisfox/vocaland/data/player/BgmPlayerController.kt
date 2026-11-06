@@ -1,6 +1,7 @@
 package xyz.lisfox.vocaland.data.player
 
 import android.content.Context
+import androidx.annotation.StringRes
 import android.content.Intent
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import xyz.lisfox.vocaland.data.model.BgmTrack
+import xyz.lisfox.vocaland.R
 import xyz.lisfox.vocaland.data.repository.BgmRepository
 import xyz.lisfox.vocaland.playback.BgmPlaybackService
 
@@ -28,10 +30,10 @@ private val PLAYBACK_AUDIO_ATTRIBUTES = AudioAttributes.Builder()
     .setUsage(AudioAttributes.USAGE_MEDIA)
     .build()
 
-enum class PlayMode(val label: String) {
-    SINGLE("单曲循环"),
-    LIST("列表循环"),
-    SHUFFLE("随机循环"),
+enum class PlayMode(@StringRes val labelRes: Int) {
+    SINGLE(R.string.player_mode_single),
+    LIST(R.string.player_mode_list),
+    SHUFFLE(R.string.player_mode_shuffle),
 }
 
 data class BgmPlayerState(

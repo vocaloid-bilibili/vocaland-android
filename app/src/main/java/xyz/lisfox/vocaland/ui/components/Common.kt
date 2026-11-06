@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,6 +23,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -37,6 +39,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -44,6 +50,9 @@ import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.request.ImageRequest
 import xyz.lisfox.vocaland.R
+import xyz.lisfox.vocaland.ui.theme.ComponentSize
+import xyz.lisfox.vocaland.ui.theme.Corners
+import xyz.lisfox.vocaland.ui.theme.Spacing
 import xyz.lisfox.vocaland.util.toHttps
 
 @Composable
@@ -55,37 +64,39 @@ fun NetworkImage(
     placeholderColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
 ) {
     val resolved = toHttps(url)
-    Box(
+    BoxWithConstraints(
         modifier = modifier.background(placeholderColor),
         contentAlignment = Alignment.Center,
     ) {
+        val useShimmer = maxWidth >= 64.dp && maxHeight >= 64.dp
         if (resolved == null) {
             Icon(
                 imageVector = Icons.Filled.MusicNote,
-                contentDescription = null,
+                contentDescription = contentDescription,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
             )
         } else {
             var imageState by remember { mutableStateOf<AsyncImagePainter.State?>(null) }
             val loading = imageState == null || imageState is AsyncImagePainter.State.Loading
+            val failed = imageState is AsyncImagePainter.State.Error
             AsyncImage(
                 model = ImageRequest.Builder(LocalContext.current)
                     .data(resolved)
                     .crossfade(true)
                     .build(),
-                contentDescription = contentDescription,
+                contentDescription = if (failed) null else contentDescription,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = contentScale,
                 onState = { imageState = it },
             )
-            if (loading) {
+            if (loading && useShimmer) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(placeholderColor)
+                        .background(placeholderColor.copy(alpha = 0.92f))
                         .shimmer(),
                 )
-            } else if (imageState is AsyncImagePainter.State.Error) {
+            } else if (failed) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
@@ -94,7 +105,7 @@ fun NetworkImage(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.ErrorOutline,
-                        contentDescription = null,
+                        contentDescription = contentDescription,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                     )
                 }
@@ -125,12 +136,12 @@ fun BrandTitle(modifier: Modifier = Modifier) {
         Spacer(Modifier.size(10.dp))
         Column {
             Text(
-                text = "VocaLand",
+                text = stringResource(R.string.brand_name),
                 style = MaterialTheme.typography.titleLarge,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                text = "术力口数据库",
+                text = stringResource(R.string.brand_subtitle),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -157,7 +168,7 @@ fun SectionHeader(
                 color = MaterialTheme.colorScheme.onSurface,
             )
             if (!subtitle.isNullOrBlank()) {
-                Spacer(Modifier.height(2.dp))
+                Spacer(Modifier.height(Spacing.xxs))
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
@@ -166,7 +177,7 @@ fun SectionHeader(
             }
         }
         if (action != null) {
-            Spacer(Modifier.size(12.dp))
+            Spacer(Modifier.size(Spacing.md))
             action()
         }
     }
@@ -181,8 +192,10 @@ fun ScreenMessage(
     onAction: (() -> Unit)? = null,
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {},
+        shape = Corners.xxl,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ),
@@ -190,22 +203,24 @@ fun ScreenMessage(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 32.dp),
+                .padding(horizontal = Spacing.xxl, vertical = Spacing.xxxl),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Icon(
                 imageVector = Icons.Filled.ErrorOutline,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(32.dp),
+                modifier = Modifier
+                    .size(32.dp)
+                    .clearAndSetSemantics {},
             )
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(Spacing.md))
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
                 textAlign = TextAlign.Center,
             )
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(Spacing.xs))
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
@@ -213,7 +228,7 @@ fun ScreenMessage(
                 textAlign = TextAlign.Center,
             )
             if (actionLabel != null && onAction != null) {
-                Spacer(Modifier.height(18.dp))
+                Spacer(Modifier.height(Spacing.lg))
                 Button(onClick = onAction) {
                     Text(actionLabel)
                 }
@@ -223,19 +238,41 @@ fun ScreenMessage(
 }
 
 @Composable
-fun LoadingPane(modifier: Modifier = Modifier, text: String = "正在加载…") {
+fun LoadingPane(modifier: Modifier = Modifier, text: String? = null) {
+    val label = text ?: stringResource(R.string.loading)
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(32.dp),
+            .padding(Spacing.xxxl),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
         CircularProgressIndicator()
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(Spacing.lg))
         Text(
-            text = text,
+            text = label,
             style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+fun InlineLoading(modifier: Modifier = Modifier, text: String? = null) {
+    val label = text ?: stringResource(R.string.loading)
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        LinearProgressIndicator(
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics { contentDescription = label },
+        )
+        Spacer(Modifier.height(Spacing.xs))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
@@ -244,21 +281,25 @@ fun LoadingPane(modifier: Modifier = Modifier, text: String = "正在加载…")
 @Composable
 fun EmptyHint(text: String, modifier: Modifier = Modifier) {
     Surface(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {},
+        shape = Corners.md,
         color = MaterialTheme.colorScheme.surfaceContainerLow,
         contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 20.dp),
+            modifier = Modifier.padding(horizontal = Spacing.lg, vertical = Spacing.xl),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 imageVector = Icons.Filled.MusicNote,
                 contentDescription = null,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier
+                    .size(ComponentSize.iconSmall)
+                    .clearAndSetSemantics {},
             )
-            Spacer(Modifier.size(8.dp))
+            Spacer(Modifier.size(Spacing.sm))
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodySmall,

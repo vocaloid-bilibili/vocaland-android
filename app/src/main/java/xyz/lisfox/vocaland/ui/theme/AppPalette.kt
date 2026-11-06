@@ -1,26 +1,28 @@
 package xyz.lisfox.vocaland.ui.theme
 
+import androidx.annotation.StringRes
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import xyz.lisfox.vocaland.R
 
 enum class AppPalette(
-    val label: String,
-    val enName: String,
+    @StringRes val labelRes: Int,
     val hue: Float,
     val saturation: Float,
 ) {
-    DeepPurple("深紫", "Deep Purple", 258f, 0.48f),
-    Violet("紫罗兰", "Violet", 286f, 0.50f),
-    Blue("靛蓝", "Blue", 214f, 0.55f),
-    Cyan("青蓝", "Cyan", 192f, 0.55f),
-    Teal("蓝绿", "Teal", 172f, 0.45f),
-    Green("森林绿", "Green", 142f, 0.42f),
-    Amber("琥珀", "Amber", 40f, 0.75f),
-    Orange("蜜橘", "Orange", 24f, 0.70f),
-    Red("绯红", "Red", 357f, 0.58f),
-    Pink("玫瑰", "Pink", 334f, 0.52f),
+    DeepPurple(R.string.palette_deep_purple, 258f, 0.48f),
+    Violet(R.string.palette_violet, 286f, 0.50f),
+    Blue(R.string.palette_blue, 214f, 0.55f),
+    Cyan(R.string.palette_cyan, 192f, 0.55f),
+    Teal(R.string.palette_teal, 172f, 0.45f),
+    Green(R.string.palette_green, 142f, 0.42f),
+    Amber(R.string.palette_amber, 40f, 0.75f),
+    Orange(R.string.palette_orange, 24f, 0.70f),
+    Red(R.string.palette_red, 357f, 0.58f),
+    Pink(R.string.palette_pink, 334f, 0.52f),
     ;
 
     val previewColor: Color
@@ -31,18 +33,21 @@ enum class AppPalette(
 
     private fun lightScheme(): ColorScheme {
         val secondaryHue = (hue + 58f) % 360f
+        val primaryColor = tone(hue, saturation, 0.42f)
+        val secondaryColor = tone(hue, saturation * 0.32f, 0.42f)
+        val tertiaryColor = tone(secondaryHue, saturation * 0.40f, 0.42f)
         return lightColorScheme(
-            primary = tone(hue, saturation, 0.42f),
-            onPrimary = Color.White,
+            primary = primaryColor,
+            onPrimary = readableOn(primaryColor, hue, saturation),
             primaryContainer = tone(hue, saturation * 0.55f, 0.90f),
             onPrimaryContainer = tone(hue, saturation * 0.65f, 0.14f),
             inversePrimary = tone(hue, saturation * 0.65f, 0.80f),
-            secondary = tone(hue, saturation * 0.32f, 0.42f),
-            onSecondary = Color.White,
+            secondary = secondaryColor,
+            onSecondary = readableOn(secondaryColor, hue, saturation * 0.32f),
             secondaryContainer = tone(hue, saturation * 0.30f, 0.90f),
             onSecondaryContainer = tone(hue, saturation * 0.35f, 0.16f),
-            tertiary = tone(secondaryHue, saturation * 0.40f, 0.42f),
-            onTertiary = Color.White,
+            tertiary = tertiaryColor,
+            onTertiary = readableOn(tertiaryColor, secondaryHue, saturation * 0.40f),
             tertiaryContainer = tone(secondaryHue, saturation * 0.35f, 0.90f),
             onTertiaryContainer = tone(secondaryHue, saturation * 0.42f, 0.16f),
             background = tone(hue, 0.03f, 0.985f),
@@ -50,7 +55,7 @@ enum class AppPalette(
             surface = tone(hue, 0.03f, 0.985f),
             onSurface = tone(hue, 0.06f, 0.12f),
             surfaceVariant = tone(hue, 0.08f, 0.90f),
-            onSurfaceVariant = tone(hue, 0.07f, 0.32f),
+            onSurfaceVariant = tone(hue, 0.07f, 0.28f),
             surfaceTint = tone(hue, saturation, 0.42f),
             inverseSurface = tone(hue, 0.06f, 0.20f),
             inverseOnSurface = tone(hue, 0.03f, 0.95f),
@@ -113,6 +118,13 @@ enum class AppPalette(
         )
     }
 }
+
+private fun readableOn(background: Color, hue: Float, saturation: Float): Color =
+    if (background.luminance() > 0.18f) {
+        tone(hue, saturation * 0.6f, 0.12f)
+    } else {
+        Color.White
+    }
 
 private fun tone(hue: Float, saturation: Float, lightness: Float): Color =
     Color.hsl(

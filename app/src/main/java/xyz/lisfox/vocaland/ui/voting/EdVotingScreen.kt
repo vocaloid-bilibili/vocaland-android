@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.Button
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -36,6 +35,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import xyz.lisfox.vocaland.data.model.EdCampaignDto
 import xyz.lisfox.vocaland.data.repository.VotingRepository
 import xyz.lisfox.vocaland.data.session.AuthSession
+import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
@@ -363,7 +363,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.nominationContent(
         )
     }
     if (state.nominationCandidatesLoading) {
-        item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
+        item { InlineLoading() }
     } else if (
         state.nominationCandidates.isEmpty() &&
         state.nominationCandidatesError.isNullOrBlank()
@@ -448,7 +448,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.votingContent(
         item { VotingInlineMessage(text = error, isError = true) }
     }
     if (state.candidateLoading) {
-        item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
+        item { InlineLoading() }
     } else if (state.candidates.isEmpty() && state.candidateError.isNullOrBlank()) {
         item { EmptyHint(text = "暂无候选") }
     } else {
@@ -494,7 +494,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.resultsContent(
         item { VotingInlineMessage(text = error, isError = true) }
     }
     if (state.resultsLoading) {
-        item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
+        item { InlineLoading() }
     }
 
     val categoryOrder = listOf("weekly", "monthly", "daily")
@@ -598,7 +598,7 @@ private fun EdNominationForm(
             enabled = !state.nominationSubmitting,
         )
         if (state.eligibilityLoading) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            InlineLoading()
         }
         state.eligibilityError?.takeIf { it.isNotBlank() }?.let { error ->
             Text(

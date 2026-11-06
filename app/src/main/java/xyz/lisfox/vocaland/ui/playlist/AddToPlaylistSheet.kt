@@ -19,7 +19,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
@@ -39,6 +38,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.data.model.PlaylistInfoDto
 import xyz.lisfox.vocaland.data.remote.toUserMessage
 import xyz.lisfox.vocaland.data.repository.PlaylistRepository
@@ -169,7 +169,7 @@ fun AddToPlaylistSheet(
                 }
             } else {
                 if (loading && playlists.isEmpty()) {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    InlineLoading()
                 }
 
                 error?.let { message ->

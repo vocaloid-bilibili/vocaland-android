@@ -22,7 +22,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,6 +38,7 @@ import xyz.lisfox.vocaland.data.model.EdCampaignDto
 import xyz.lisfox.vocaland.data.model.TrendingCampaignDto
 import xyz.lisfox.vocaland.data.model.VotingKind
 import xyz.lisfox.vocaland.data.repository.VotingRepository
+import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.PagerRow
@@ -167,7 +167,7 @@ private fun VotingHubContent(
             }
         }
         if (state.edHistoryLoading) {
-            item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
+            item { InlineLoading() }
         }
         state.edHistoryError?.takeIf { it.isNotBlank() }?.let { error ->
             item { EmptyHint(text = error) }
@@ -221,7 +221,7 @@ private fun VotingHubContent(
             )
         }
         if (state.trendingHistoryLoading) {
-            item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
+            item { InlineLoading() }
         }
         state.trendingHistoryError?.takeIf { it.isNotBlank() }?.let { error ->
             item { EmptyHint(text = error) }

@@ -13,7 +13,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -31,6 +30,7 @@ import xyz.lisfox.vocaland.data.model.HomeContent
 import xyz.lisfox.vocaland.data.model.SongListItemDto
 import xyz.lisfox.vocaland.data.model.VotingKind
 import xyz.lisfox.vocaland.data.repository.HomeRepository
+import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
 import xyz.lisfox.vocaland.ui.playlist.PlaylistPreviewSection
@@ -128,7 +128,7 @@ private fun HomeContentList(
     ) {
         if (refreshing) {
             item {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                InlineLoading()
             }
         }
 

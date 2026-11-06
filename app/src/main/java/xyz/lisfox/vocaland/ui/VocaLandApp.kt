@@ -8,6 +8,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
@@ -52,6 +54,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import xyz.lisfox.vocaland.R
+import xyz.lisfox.vocaland.ui.components.MotionDurations
+import xyz.lisfox.vocaland.ui.theme.ComponentSize
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -123,7 +129,7 @@ import xyz.lisfox.vocaland.ui.voting.VotingHubScreen
 import xyz.lisfox.vocaland.util.SiteTarget
 import xyz.lisfox.vocaland.util.parseTargetKey
 
-private val bottomBarRowHeight = 62.dp
+private val bottomBarRowHeight = ComponentSize.bottomBarHeight
 
 @Composable
 fun VocaLandApp(
@@ -256,10 +262,10 @@ fun VocaLandApp(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth(),
-                enter = fadeIn(animationSpec = tween(200)) +
-                    slideInHorizontally(animationSpec = tween(320)) { -it / 5 },
-                exit = fadeOut(animationSpec = tween(220)) +
-                    slideOutHorizontally(animationSpec = tween(320)) { -it / 5 },
+                enter = fadeIn(animationSpec = tween(MotionDurations.QUICK)) +
+                    slideInHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { -it / 5 },
+                exit = fadeOut(animationSpec = tween(MotionDurations.MEDIUM)) +
+                    slideOutHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { -it / 5 },
             ) {
                 CompactBottomBar(
                     currentRoute = currentRoute,
@@ -280,49 +286,61 @@ fun VocaLandApp(
                 enterTransition = {
                     val direction = tabDirection()
                     if (direction != null) {
-                        fadeIn(animationSpec = tween(220)) +
-                            slideInHorizontally(animationSpec = tween(320)) {
+                        fadeIn(animationSpec = tween(MotionDurations.MEDIUM)) +
+                            scaleIn(
+                                initialScale = 0.98f,
+                                animationSpec = tween(MotionDurations.EMPHASIZED),
+                            ) +
+                            slideInHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) {
                                 it * direction
                             }
                     } else {
-                        fadeIn(animationSpec = tween(200)) +
-                            slideInHorizontally(animationSpec = tween(320)) { it }
+                        fadeIn(animationSpec = tween(MotionDurations.QUICK)) +
+                            scaleIn(
+                                initialScale = 0.98f,
+                                animationSpec = tween(MotionDurations.EMPHASIZED),
+                            ) +
+                            slideInHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { it }
                     }
                 },
                 exitTransition = {
                     val direction = tabDirection()
                     if (direction != null) {
-                        fadeOut(animationSpec = tween(220)) +
-                            slideOutHorizontally(animationSpec = tween(320)) {
+                        fadeOut(animationSpec = tween(MotionDurations.MEDIUM)) +
+                            slideOutHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) {
                                 -it * direction
                             }
                     } else {
-                        fadeOut(animationSpec = tween(220)) +
-                            slideOutHorizontally(animationSpec = tween(320)) { -it / 5 }
+                        fadeOut(animationSpec = tween(MotionDurations.MEDIUM)) +
+                            slideOutHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { -it / 5 }
                     }
                 },
                 popEnterTransition = {
                     val direction = tabDirection()
                     if (direction != null) {
-                        fadeIn(animationSpec = tween(220)) +
-                            slideInHorizontally(animationSpec = tween(320)) {
+                        fadeIn(animationSpec = tween(MotionDurations.MEDIUM)) +
+                            scaleIn(
+                                initialScale = 0.98f,
+                                animationSpec = tween(MotionDurations.EMPHASIZED),
+                            ) +
+                            slideInHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) {
                                 it * direction
                             }
                     } else {
-                        fadeIn(animationSpec = tween(200)) +
-                            slideInHorizontally(animationSpec = tween(320)) { -it / 5 }
+                        fadeIn(animationSpec = tween(MotionDurations.QUICK)) +
+                            slideInHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { -it / 5 }
                     }
                 },
                 popExitTransition = {
                     val direction = tabDirection()
                     if (direction != null) {
-                        fadeOut(animationSpec = tween(220)) +
-                            slideOutHorizontally(animationSpec = tween(320)) {
+                        fadeOut(animationSpec = tween(MotionDurations.MEDIUM)) +
+                            slideOutHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) {
                                 -it * direction
                             }
                     } else {
-                        fadeOut(animationSpec = tween(200)) +
-                            slideOutHorizontally(animationSpec = tween(320)) { it }
+                        fadeOut(animationSpec = tween(MotionDurations.QUICK)) +
+                            slideOutHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { it }
                     }
                 },
             ) {
@@ -369,7 +387,7 @@ fun VocaLandApp(
                     }
                 }
                 composable(Routes.RANKING) {
-                    PageScaffold(title = "排行榜") { contentModifier ->
+                    PageScaffold(title = stringResource(R.string.page_ranking)) { contentModifier ->
                         RankingScreen(
                             repository = container.rankingRepository,
                             onOpenSong = { id ->
@@ -388,7 +406,7 @@ fun VocaLandApp(
                     }
                 }
                 composable(Routes.PLAYER) {
-                    PageScaffold(title = "播放器") { contentModifier ->
+                    PageScaffold(title = stringResource(R.string.page_player)) { contentModifier ->
                         PlayerScreen(
                             controller = container.bgmPlayerController,
                             danmakuRepository = container.danmakuRepository,
@@ -397,7 +415,7 @@ fun VocaLandApp(
                     }
                 }
                 composable(Routes.SEARCH) {
-                    PageScaffold(title = "搜索") { contentModifier ->
+                    PageScaffold(title = stringResource(R.string.page_search)) { contentModifier ->
                         SearchScreen(
                             repository = container.searchRepository,
                             onOpenSong = { id ->
@@ -420,7 +438,7 @@ fun VocaLandApp(
                     }
                 }
                 composable(Routes.PROFILE) {
-                    PageScaffold(title = "我的") { contentModifier ->
+                    PageScaffold(title = stringResource(R.string.page_profile)) { contentModifier ->
                         ProfileScreen(
                             session = container.session,
                             authRepository = container.authRepository,
@@ -461,24 +479,28 @@ fun VocaLandApp(
                 composable(
                     route = Routes.LOGIN,
                     enterTransition = {
-                        fadeIn(animationSpec = tween(200)) +
-                            slideInHorizontally(animationSpec = tween(320)) { it }
+                        fadeIn(animationSpec = tween(MotionDurations.QUICK)) +
+                            scaleIn(
+                                initialScale = 0.98f,
+                                animationSpec = tween(MotionDurations.EMPHASIZED),
+                            ) +
+                            slideInHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { it }
                     },
                     exitTransition = {
-                        fadeOut(animationSpec = tween(200)) +
-                            slideOutHorizontally(animationSpec = tween(320)) { -it / 5 }
+                        fadeOut(animationSpec = tween(MotionDurations.QUICK)) +
+                            slideOutHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { -it / 5 }
                     },
                     popEnterTransition = {
-                        fadeIn(animationSpec = tween(200)) +
-                            slideInHorizontally(animationSpec = tween(320)) { -it / 5 }
+                        fadeIn(animationSpec = tween(MotionDurations.QUICK)) +
+                            slideInHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { -it / 5 }
                     },
                     popExitTransition = {
-                        fadeOut(animationSpec = tween(200)) +
-                            slideOutHorizontally(animationSpec = tween(320)) { it }
+                        fadeOut(animationSpec = tween(MotionDurations.QUICK)) +
+                            slideOutHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { it }
                     },
                 ) {
                     PageScaffold(
-                        title = "登录",
+                        title = stringResource(R.string.page_login),
                         onBack = { navController.popBackStack() },
                     ) { contentModifier ->
                         LoginScreen(
@@ -514,12 +536,12 @@ fun VocaLandApp(
                 ) { entry ->
                     val songId = entry.arguments?.getInt("songId") ?: 0
                     PageScaffold(
-                        title = "歌曲",
+                        title = stringResource(R.string.page_song),
                         onBack = { navController.popBackStack() },
                     ) { contentModifier ->
                         if (songId <= 0) {
                             FeatureScreen(
-                                title = "无效的歌曲",
+                                title = stringResource(R.string.page_invalid_song),
                                 modifier = contentModifier,
                             )
                         } else {
@@ -572,12 +594,12 @@ fun VocaLandApp(
                 ) { entry ->
                     val userId = entry.arguments?.getInt("userId") ?: 0
                     PageScaffold(
-                        title = "用户",
+                        title = stringResource(R.string.page_user),
                         onBack = { navController.popBackStack() },
                     ) { contentModifier ->
                         if (userId <= 0) {
                             FeatureScreen(
-                                title = "无效的用户",
+                                title = stringResource(R.string.page_invalid_user),
                                 modifier = contentModifier,
                             )
                         } else {
@@ -606,7 +628,7 @@ fun VocaLandApp(
                 }
                 composable(Routes.PLAYLISTS) {
                     PageScaffold(
-                        title = "歌单广场",
+                        title = stringResource(R.string.page_playlists),
                         onBack = { navController.popBackStack() },
                     ) { contentModifier ->
                         PlaylistScreen(
@@ -633,12 +655,12 @@ fun VocaLandApp(
                 ) { entry ->
                     val playlistId = entry.arguments?.getInt("playlistId") ?: 0
                     PageScaffold(
-                        title = "歌单",
+                        title = stringResource(R.string.page_playlist),
                         onBack = { navController.popBackStack() },
                     ) { contentModifier ->
                         if (playlistId <= 0) {
                             FeatureScreen(
-                                title = "无效的歌单",
+                                title = stringResource(R.string.page_invalid_playlist),
                                 modifier = contentModifier,
                             )
                         } else {
@@ -702,7 +724,7 @@ fun VocaLandApp(
                     ) { contentModifier ->
                         if (kind == null || artistId <= 0) {
                             FeatureScreen(
-                                title = "无效的艺人",
+                                title = stringResource(R.string.page_invalid_artist),
                                 modifier = contentModifier,
                             )
                         } else {
@@ -737,7 +759,7 @@ fun VocaLandApp(
                                             }
                                         },
                                         showComments = false,
-                                        title = "评分",
+                                        title = stringResource(R.string.page_ratings),
                                     )
                                 },
                                 comments = {
@@ -752,7 +774,7 @@ fun VocaLandApp(
                                             }
                                         },
                                         showRatings = false,
-                                        title = "评论",
+                                        title = stringResource(R.string.page_comments),
                                     )
                                 },
                                 modifier = contentModifier,
@@ -768,12 +790,12 @@ fun VocaLandApp(
                 ) { entry ->
                     val tagId = entry.arguments?.getInt("tagId") ?: 0
                     PageScaffold(
-                        title = "标签",
+                        title = stringResource(R.string.page_tag),
                         onBack = { navController.popBackStack() },
                     ) { contentModifier ->
                         if (tagId <= 0) {
                             FeatureScreen(
-                                title = "无效的标签",
+                                title = stringResource(R.string.page_invalid_tag),
                                 modifier = contentModifier,
                             )
                         } else {
@@ -810,7 +832,7 @@ fun VocaLandApp(
                 }
                 composable(Routes.VOTINGS) {
                     PageScaffold(
-                        title = "投票",
+                        title = stringResource(R.string.page_votings),
                         onBack = { navController.popBackStack() },
                     ) { contentModifier ->
                         VotingHubScreen(
@@ -849,7 +871,7 @@ fun VocaLandApp(
                     ) { contentModifier ->
                         if (kind == null || campaignId <= 0) {
                             FeatureScreen(
-                                title = "无效的投票",
+                                title = stringResource(R.string.page_invalid_voting),
                                 modifier = contentModifier,
                             )
                         } else {
@@ -891,7 +913,7 @@ fun VocaLandApp(
                 }
                 composable(Routes.REGISTER) {
                     PageScaffold(
-                        title = "注册",
+                        title = stringResource(R.string.page_register),
                         onBack = { navController.popBackStack() },
                     ) { contentModifier ->
                         RegisterScreen(
@@ -910,7 +932,7 @@ fun VocaLandApp(
                 }
                 composable(Routes.FORGOT_PASSWORD) {
                     PageScaffold(
-                        title = "找回密码",
+                        title = stringResource(R.string.page_forgot_password),
                         onBack = { navController.popBackStack() },
                     ) { contentModifier ->
                         ForgotPasswordScreen(
@@ -929,7 +951,7 @@ fun VocaLandApp(
                 }
                 composable(Routes.SETTINGS) {
                     PageScaffold(
-                        title = "账号设置",
+                        title = stringResource(R.string.page_settings),
                         onBack = { navController.popBackStack() },
                     ) { contentModifier ->
                         SettingsScreen(
@@ -949,7 +971,7 @@ fun VocaLandApp(
                 }
                 composable(Routes.NOTIFICATIONS) {
                     PageScaffold(
-                        title = "通知中心",
+                        title = stringResource(R.string.page_notifications),
                         onBack = { navController.popBackStack() },
                     ) { contentModifier ->
                         NotificationsScreen(
@@ -971,7 +993,7 @@ fun VocaLandApp(
                 }
                 composable(Routes.SHOP) {
                     PageScaffold(
-                        title = "商城",
+                        title = stringResource(R.string.page_shop),
                         onBack = { navController.popBackStack() },
                     ) { contentModifier ->
                         ShopScreen(
@@ -985,7 +1007,7 @@ fun VocaLandApp(
                 }
                 composable(Routes.WALLET) {
                     PageScaffold(
-                        title = "我的钱包",
+                        title = stringResource(R.string.page_wallet),
                         onBack = { navController.popBackStack() },
                     ) { contentModifier ->
                         WalletScreen(
@@ -1000,7 +1022,7 @@ fun VocaLandApp(
                 }
                 composable(Routes.MY_PLAYLISTS) {
                     PageScaffold(
-                        title = "我的歌单",
+                        title = stringResource(R.string.page_my_playlists),
                         onBack = { navController.popBackStack() },
                     ) { contentModifier ->
                         MyPlaylistsScreen(
@@ -1018,7 +1040,7 @@ fun VocaLandApp(
                 }
                 composable(Routes.TAG_INDEX) {
                     PageScaffold(
-                        title = "标签图鉴",
+                        title = stringResource(R.string.page_tag_index),
                         onBack = { navController.popBackStack() },
                     ) { contentModifier ->
                         TagIndexScreen(
@@ -1034,7 +1056,7 @@ fun VocaLandApp(
                 }
                 composable(Routes.STAT) {
                     PageScaffold(
-                        title = "数据统计",
+                        title = stringResource(R.string.page_stat),
                         onBack = { navController.popBackStack() },
                     ) { contentModifier ->
                         StatScreen(
@@ -1053,7 +1075,7 @@ fun VocaLandApp(
                 }
                 composable(Routes.CUSTOM_RANKING) {
                     PageScaffold(
-                        title = "自定义排行榜",
+                        title = stringResource(R.string.page_custom_ranking),
                         onBack = { navController.popBackStack() },
                     ) { contentModifier ->
                         CustomRankingScreen(
@@ -1072,7 +1094,7 @@ fun VocaLandApp(
                 }
                 composable(Routes.COLLECTION_LIST) {
                     PageScaffold(
-                        title = "收藏册",
+                        title = stringResource(R.string.page_collections),
                         onBack = { navController.popBackStack() },
                     ) { contentModifier ->
                         CollectionListScreen(
@@ -1095,7 +1117,7 @@ fun VocaLandApp(
                     val collectionId = entry.arguments?.getInt("collectionId") ?: 0
                     if (collectionId <= 0) {
                         PageScaffold(
-                            title = "收藏册",
+                            title = stringResource(R.string.page_collections),
                             onBack = { navController.popBackStack() },
                         ) { contentModifier ->
                             FeatureScreen("无效的收藏册", modifier = contentModifier)
@@ -1124,7 +1146,7 @@ fun VocaLandApp(
                     val entityType = LitEntityType.fromKey(entry.arguments?.getString("entityType"))
                     if (kind == null || sourceId <= 0) {
                         PageScaffold(
-                            title = "收藏册",
+                            title = stringResource(R.string.page_collections),
                             onBack = { navController.popBackStack() },
                         ) { contentModifier ->
                             FeatureScreen("无效的收藏册", modifier = contentModifier)
@@ -1146,7 +1168,7 @@ fun VocaLandApp(
                     val collectionId = entry.arguments?.getInt("collectionId") ?: 0
                     if (collectionId <= 0) {
                         PageScaffold(
-                            title = "分享卡",
+                            title = stringResource(R.string.page_share_card),
                             onBack = { navController.popBackStack() },
                         ) { contentModifier ->
                             FeatureScreen("无效的收藏册", modifier = contentModifier)
@@ -1174,7 +1196,7 @@ fun VocaLandApp(
                     val entityType = LitEntityType.fromKey(entry.arguments?.getString("entityType"))
                     if (kind == null || sourceId <= 0) {
                         PageScaffold(
-                            title = "分享卡",
+                            title = stringResource(R.string.page_share_card),
                             onBack = { navController.popBackStack() },
                         ) { contentModifier ->
                             FeatureScreen("无效的收藏册", modifier = contentModifier)
@@ -1286,7 +1308,7 @@ private fun CollectionRouteContent(
     navController: NavHostController,
 ) {
     PageScaffold(
-        title = "收藏册",
+        title = stringResource(R.string.page_collections),
         onBack = { navController.popBackStack() },
     ) { contentModifier ->
         CollectionDetailScreen(
@@ -1319,7 +1341,7 @@ private fun CollectionShareRouteContent(
     navController: NavHostController,
 ) {
     PageScaffold(
-        title = "分享卡",
+        title = stringResource(R.string.page_share_card),
         onBack = { navController.popBackStack() },
     ) { contentModifier ->
         CollectionShareScreen(
@@ -1351,13 +1373,14 @@ private fun CompactBottomBar(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(bottomBarRowHeight)
+                    .heightIn(min = bottomBarRowHeight)
                     .selectableGroup(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 TOP_LEVEL_DESTINATIONS.forEach { destination ->
                     val selected = currentRoute == destination.route
                     val isPlayer = destination.route == Routes.PLAYER
+                    val label = stringResource(destination.labelRes)
                     Column(
                         modifier = Modifier
                             .weight(1f)
@@ -1374,7 +1397,7 @@ private fun CompactBottomBar(
                         if (isPlayer) {
                             Box(
                                 modifier = Modifier
-                                    .size(34.dp)
+                                    .size(44.dp)
                                     .clip(CircleShape)
                                     .background(
                                         if (selected) scheme.primary else scheme.primaryContainer,
@@ -1383,7 +1406,7 @@ private fun CompactBottomBar(
                             ) {
                                 Icon(
                                     imageVector = destination.icon,
-                                    contentDescription = destination.label,
+                                    contentDescription = null,
                                     modifier = Modifier.size(22.dp),
                                     tint = if (selected) scheme.onPrimary else scheme.onPrimaryContainer,
                                 )
@@ -1392,14 +1415,14 @@ private fun CompactBottomBar(
                         } else {
                             Icon(
                                 imageVector = destination.icon,
-                                contentDescription = destination.label,
+                                contentDescription = null,
                                 modifier = Modifier.size(23.dp),
                                 tint = if (selected) scheme.primary else scheme.onSurfaceVariant,
                             )
                             Spacer(Modifier.height(2.dp))
                         }
                         Text(
-                            text = destination.label,
+                            text = label,
                             style = MaterialTheme.typography.labelSmall,
                             color = if (selected) scheme.primary else scheme.onSurfaceVariant,
                             maxLines = 1,
@@ -1435,7 +1458,7 @@ private fun PageScaffold(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp),
+                .heightIn(min = 48.dp),
             color = MaterialTheme.colorScheme.surface,
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
@@ -1446,7 +1469,7 @@ private fun PageScaffold(
                     ) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "返回",
+                            contentDescription = stringResource(R.string.action_back),
                         )
                     }
                 }

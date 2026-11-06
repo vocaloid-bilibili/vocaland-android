@@ -32,7 +32,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -57,6 +56,7 @@ import xyz.lisfox.vocaland.data.model.SearchEntityDto
 import xyz.lisfox.vocaland.data.model.SearchGroupDto
 import xyz.lisfox.vocaland.data.model.searchTargetLabel
 import xyz.lisfox.vocaland.data.repository.SearchRepository
+import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.NetworkImage
@@ -178,7 +178,7 @@ fun SearchScreen(
                 ) {
                     if (state.loading) {
                         item {
-                            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                            InlineLoading()
                         }
                     }
                     if (state.error != null) {

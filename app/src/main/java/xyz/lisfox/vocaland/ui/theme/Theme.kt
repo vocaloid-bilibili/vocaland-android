@@ -1,6 +1,8 @@
 package xyz.lisfox.vocaland.ui.theme
 
 import android.app.Activity
+import android.graphics.drawable.ColorDrawable
+import androidx.annotation.StringRes
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -8,13 +10,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import xyz.lisfox.vocaland.R
 
-enum class ThemeMode(val label: String) {
-    System("跟随系统"),
-    Light("浅色"),
-    Dark("深色"),
+enum class ThemeMode(@StringRes val labelRes: Int) {
+    System(R.string.theme_follow_system),
+    Light(R.string.theme_light),
+    Dark(R.string.theme_dark),
 }
 
 data class ThemeSettings(
@@ -42,6 +46,8 @@ fun VocaLandTheme(
     if (!view.isInEditMode) {
         SideEffect {
             val window = (view.context as Activity).window
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+            window.setBackgroundDrawable(ColorDrawable(colorScheme.background.toArgb()))
             WindowCompat.getInsetsController(window, view).apply {
                 isAppearanceLightStatusBars = !darkTheme
                 isAppearanceLightNavigationBars = !darkTheme

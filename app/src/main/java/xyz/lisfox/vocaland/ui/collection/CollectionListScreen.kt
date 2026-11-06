@@ -19,7 +19,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -40,6 +39,7 @@ import xyz.lisfox.vocaland.data.collection.CollectionRepository
 import xyz.lisfox.vocaland.data.collection.CollectionTarget
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
+import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
 
 @Composable
@@ -119,9 +119,7 @@ fun CollectionListScreen(
                     ) {
                         if (state.loading) {
                             item {
-                                LinearProgressIndicator(
-                                    modifier = Modifier.fillMaxWidth(),
-                                )
+                                InlineLoading()
                             }
                         }
 

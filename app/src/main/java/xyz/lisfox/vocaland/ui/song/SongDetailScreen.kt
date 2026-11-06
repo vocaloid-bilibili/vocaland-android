@@ -35,7 +35,6 @@ import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -74,6 +73,7 @@ import xyz.lisfox.vocaland.data.songactions.SongActionsRepository
 import xyz.lisfox.vocaland.data.songactions.SongListenStatus
 import xyz.lisfox.vocaland.data.songactions.songVideoTrack
 import xyz.lisfox.vocaland.data.songactions.sortSongVideos
+import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.MetricGrid
@@ -584,7 +584,7 @@ private fun SongRankingSection(
             }
 
             if (state.rankingLoading) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                InlineLoading()
             }
 
             when {
@@ -767,7 +767,7 @@ private fun SongRatingsSection(
         }
 
         if (state.ratingsLoading && state.ratings.isEmpty()) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            InlineLoading()
         }
 
         when {
@@ -932,7 +932,7 @@ private fun SongCommentsSection(
             )
         } else {
             if (state.commentsLoading && state.comments.isEmpty()) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                InlineLoading()
             }
 
             when {
@@ -1174,7 +1174,7 @@ private fun SongActionSection(
         }
 
         if (state.listenLoading || state.listenUpdating) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            InlineLoading()
         }
 
         when {

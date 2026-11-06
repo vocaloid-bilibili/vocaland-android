@@ -56,16 +56,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.launch
 import xyz.lisfox.vocaland.BuildConfig
+import xyz.lisfox.vocaland.R
 import xyz.lisfox.vocaland.data.model.CachedUserDto
 import xyz.lisfox.vocaland.data.preferences.ThemePreferences
 import xyz.lisfox.vocaland.data.repository.AuthRepository
 import xyz.lisfox.vocaland.data.session.AuthSession
 import xyz.lisfox.vocaland.ui.account.roleLabel
+import xyz.lisfox.vocaland.ui.components.MotionDurations
 import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.SectionHeader
 import xyz.lisfox.vocaland.ui.components.StatusPill
@@ -92,12 +97,25 @@ fun ProfileScreen(
     val sessionState by session.state.collectAsStateWithLifecycle()
     val themeSettings by themePreferences.settings.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
-    val openNotifications = onOpenNotifications ?: { onOpenFeature("通知中心") }
-    val openSettings = onOpenSettings ?: { onOpenFeature("账号设置") }
-    val openWallet = onOpenWallet ?: { onOpenFeature("我的钱包") }
-    val openShop = onOpenShop ?: { onOpenFeature("商城") }
-    val openCheckIn = onOpenCheckIn ?: { onOpenFeature("每日签到") }
-    val checkUpdate = onCheckUpdate ?: { onOpenFeature("检查更新") }
+    val notificationsLabel = stringResource(R.string.profile_notifications)
+    val settingsLabel = stringResource(R.string.profile_settings)
+    val walletLabel = stringResource(R.string.profile_wallet)
+    val shopLabel = stringResource(R.string.profile_shop)
+    val checkInLabel = stringResource(R.string.profile_check_in)
+    val updateLabel = stringResource(R.string.profile_check_update)
+    val tagIndexLabel = stringResource(R.string.profile_tag_index)
+    val statLabel = stringResource(R.string.profile_stat)
+    val customRankingLabel = stringResource(R.string.profile_custom_ranking)
+    val favoritesLabel = stringResource(R.string.profile_favorites)
+    val ratingsLabel = stringResource(R.string.profile_ratings)
+    val playlistsLabel = stringResource(R.string.profile_playlists)
+    val userDetailLabel = stringResource(R.string.profile_user_detail)
+    val openNotifications = onOpenNotifications ?: { onOpenFeature(notificationsLabel) }
+    val openSettings = onOpenSettings ?: { onOpenFeature(settingsLabel) }
+    val openWallet = onOpenWallet ?: { onOpenFeature(walletLabel) }
+    val openShop = onOpenShop ?: { onOpenFeature(shopLabel) }
+    val openCheckIn = onOpenCheckIn ?: { onOpenFeature(checkInLabel) }
+    val checkUpdate = onCheckUpdate ?: { onOpenFeature(updateLabel) }
 
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
@@ -107,7 +125,7 @@ fun ProfileScreen(
         item {
             Crossfade(
                 targetState = sessionState.user,
-                animationSpec = tween(260),
+                animationSpec = tween(MotionDurations.MEDIUM),
                 label = "profileHeader",
             ) { user ->
                 if (user == null) {
@@ -120,14 +138,14 @@ fun ProfileScreen(
 
         item {
             Column {
-                SectionHeader(title = "外观模式")
+                SectionHeader(title = stringResource(R.string.profile_appearance))
                 Spacer(Modifier.height(10.dp))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     ThemeMode.entries.forEach { mode ->
                         FilterChip(
                             selected = themeSettings.mode == mode,
                             onClick = { themePreferences.setMode(mode) },
-                            label = { Text(mode.label) },
+                            label = { Text(stringResource(mode.labelRes)) },
                             leadingIcon = {
                                 Icon(
                                     imageVector = when (mode) {
@@ -136,7 +154,7 @@ fun ProfileScreen(
                                         ThemeMode.Dark -> Icons.Filled.DarkMode
                                     },
                                     contentDescription = null,
-                                    modifier = Modifier.size(17.dp),
+                                    modifier = Modifier.size(20.dp),
                                 )
                             },
                         )
@@ -147,18 +165,21 @@ fun ProfileScreen(
 
         item {
             Column {
-                SectionHeader(title = "配色方案", subtitle = "选择一套种子色，明暗主题自动生成")
+                SectionHeader(
+                    title = stringResource(R.string.profile_palette),
+                    subtitle = stringResource(R.string.profile_palette_hint),
+                )
                 Spacer(Modifier.height(10.dp))
                 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     AppPalette.entries.forEach { palette ->
                         FilterChip(
                             selected = themeSettings.palette == palette,
                             onClick = { themePreferences.setPalette(palette) },
-                            label = { Text(palette.label) },
+                            label = { Text(stringResource(palette.labelRes)) },
                             leadingIcon = {
                                 Box(
                                     modifier = Modifier
-                                        .size(14.dp)
+                                        .size(18.dp)
                                         .clip(CircleShape)
                                         .background(palette.previewColor),
                                 )
@@ -171,7 +192,7 @@ fun ProfileScreen(
 
         item {
             Column {
-                SectionHeader(title = "账号与资产")
+                SectionHeader(title = stringResource(R.string.profile_account_section))
                 Spacer(Modifier.height(10.dp))
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -183,7 +204,7 @@ fun ProfileScreen(
                     Column {
                         ProfileMenuItem(
                             icon = { Icon(Icons.Filled.Notifications, contentDescription = null) },
-                            title = "通知中心",
+                            title = notificationsLabel,
                             onClick = openNotifications,
                         )
                         HorizontalDivider(
@@ -192,7 +213,7 @@ fun ProfileScreen(
                         )
                         ProfileMenuItem(
                             icon = { Icon(Icons.Filled.AccountBalanceWallet, contentDescription = null) },
-                            title = "我的钱包",
+                            title = walletLabel,
                             onClick = openWallet,
                         )
                         HorizontalDivider(
@@ -201,7 +222,7 @@ fun ProfileScreen(
                         )
                         ProfileMenuItem(
                             icon = { Icon(Icons.Filled.CalendarMonth, contentDescription = null) },
-                            title = "每日签到",
+                            title = checkInLabel,
                             onClick = openCheckIn,
                         )
                         HorizontalDivider(
@@ -210,7 +231,7 @@ fun ProfileScreen(
                         )
                         ProfileMenuItem(
                             icon = { Icon(Icons.Filled.ShoppingBag, contentDescription = null) },
-                            title = "商城",
+                            title = shopLabel,
                             onClick = openShop,
                         )
                         HorizontalDivider(
@@ -219,7 +240,7 @@ fun ProfileScreen(
                         )
                         ProfileMenuItem(
                             icon = { Icon(Icons.Filled.Settings, contentDescription = null) },
-                            title = "账号设置",
+                            title = settingsLabel,
                             onClick = openSettings,
                         )
                         HorizontalDivider(
@@ -228,7 +249,7 @@ fun ProfileScreen(
                         )
                         ProfileMenuItem(
                             icon = { Icon(Icons.Filled.Refresh, contentDescription = null) },
-                            title = "检查更新",
+                            title = updateLabel,
                             onClick = checkUpdate,
                         )
                     }
@@ -238,7 +259,7 @@ fun ProfileScreen(
 
         item {
             Column {
-                SectionHeader(title = "探索工具")
+                SectionHeader(title = stringResource(R.string.profile_tools_section))
                 Spacer(Modifier.height(10.dp))
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -250,8 +271,8 @@ fun ProfileScreen(
                     Column {
                         ProfileMenuItem(
                             icon = { Icon(Icons.Filled.Search, contentDescription = null) },
-                            title = "标签图鉴",
-                            onClick = { onOpenFeature("标签图鉴") },
+                            title = tagIndexLabel,
+                            onClick = { onOpenFeature(tagIndexLabel) },
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),
@@ -259,8 +280,8 @@ fun ProfileScreen(
                         )
                         ProfileMenuItem(
                             icon = { Icon(Icons.Filled.Leaderboard, contentDescription = null) },
-                            title = "数据统计",
-                            onClick = { onOpenFeature("数据统计") },
+                            title = statLabel,
+                            onClick = { onOpenFeature(statLabel) },
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),
@@ -268,8 +289,8 @@ fun ProfileScreen(
                         )
                         ProfileMenuItem(
                             icon = { Icon(Icons.Filled.Star, contentDescription = null) },
-                            title = "自定义排行榜",
-                            onClick = { onOpenFeature("自定义排行榜") },
+                            title = customRankingLabel,
+                            onClick = { onOpenFeature(customRankingLabel) },
                         )
                     }
                 }
@@ -278,7 +299,7 @@ fun ProfileScreen(
 
         item {
             Column {
-                SectionHeader(title = "我的内容")
+                SectionHeader(title = stringResource(R.string.profile_content_section))
                 Spacer(Modifier.height(10.dp))
                 Card(
                     modifier = Modifier.fillMaxWidth(),
@@ -290,8 +311,8 @@ fun ProfileScreen(
                     Column {
                         ProfileMenuItem(
                             icon = { Icon(Icons.Filled.Favorite, contentDescription = null) },
-                            title = "我的收藏",
-                            onClick = { onOpenFeature("我的收藏") },
+                            title = favoritesLabel,
+                            onClick = { onOpenFeature(favoritesLabel) },
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),
@@ -299,8 +320,8 @@ fun ProfileScreen(
                         )
                         ProfileMenuItem(
                             icon = { Icon(Icons.Filled.Star, contentDescription = null) },
-                            title = "我的评分",
-                            onClick = { onOpenFeature("我的评分") },
+                            title = ratingsLabel,
+                            onClick = { onOpenFeature(ratingsLabel) },
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),
@@ -308,8 +329,8 @@ fun ProfileScreen(
                         )
                         ProfileMenuItem(
                             icon = { Icon(Icons.Filled.PlaylistPlay, contentDescription = null) },
-                            title = "我的歌单",
-                            onClick = { onOpenFeature("我的歌单") },
+                            title = playlistsLabel,
+                            onClick = { onOpenFeature(playlistsLabel) },
                         )
                         HorizontalDivider(
                             modifier = Modifier.padding(horizontal = 16.dp),
@@ -317,8 +338,8 @@ fun ProfileScreen(
                         )
                         ProfileMenuItem(
                             icon = { Icon(Icons.Filled.Person, contentDescription = null) },
-                            title = "个人资料",
-                            onClick = { onOpenFeature("个人资料") },
+                            title = userDetailLabel,
+                            onClick = { onOpenFeature(userDetailLabel) },
                         )
                     }
                 }
@@ -335,14 +356,14 @@ fun ProfileScreen(
                 ) {
                     Icon(Icons.Filled.Logout, contentDescription = null)
                     Spacer(Modifier.size(8.dp))
-                    Text("退出登录")
+                    Text(stringResource(R.string.profile_logout))
                 }
             }
         }
 
         item {
             Text(
-                text = "VocaLand · 术力口数据库 Android · v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                text = stringResource(R.string.profile_version_format, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
                 modifier = Modifier.fillMaxWidth(),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
@@ -377,19 +398,19 @@ private fun GuestHeader(onLogin: () -> Unit) {
                     modifier = Modifier.size(34.dp),
                 )
                 Text(
-                    text = "登录 VocaLand",
+                    text = stringResource(R.string.profile_login_title),
                     style = MaterialTheme.typography.headlineSmall,
                     color = scheme.onPrimaryContainer,
                 )
                 Text(
-                    text = "同步收藏、评分与歌单，参与投票和社区讨论。",
+                    text = stringResource(R.string.profile_login_subtitle),
                     style = MaterialTheme.typography.bodyMedium,
                     color = scheme.onPrimaryContainer.copy(alpha = 0.82f),
                 )
                 Button(onClick = onLogin) {
                     Icon(Icons.Filled.Login, contentDescription = null)
                     Spacer(Modifier.size(8.dp))
-                    Text("登录 / 注册")
+                    Text(stringResource(R.string.profile_login_register))
                 }
             }
         }
@@ -462,11 +483,11 @@ private fun UserHeader(user: CachedUserDto) {
                     .padding(vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                UserStat(value = formatNumber(user.totalExp.toLong()), label = "经验值")
-                UserStat(value = user.level.toString(), label = "等级")
+                UserStat(value = formatNumber(user.totalExp.toLong()), label = stringResource(R.string.profile_exp))
+                UserStat(value = user.level.toString(), label = stringResource(R.string.profile_level))
                 UserStat(
-                    value = if (user.isBanned) "受限" else "正常",
-                    label = "账号状态",
+                    value = if (user.isBanned) stringResource(R.string.profile_status_restricted) else stringResource(R.string.profile_status_normal),
+                    label = stringResource(R.string.profile_account_status),
                 )
             }
         }
@@ -499,6 +520,7 @@ private fun ProfileMenuItem(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
+            .semantics(mergeDescendants = true) {}
             .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -525,6 +547,7 @@ private fun ProfileMenuItem(
         Icon(
             imageVector = Icons.Filled.ChevronRight,
             contentDescription = null,
+            modifier = Modifier.clearAndSetSemantics {},
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }

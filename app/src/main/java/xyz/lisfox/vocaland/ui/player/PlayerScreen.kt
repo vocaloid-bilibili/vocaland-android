@@ -61,6 +61,10 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import xyz.lisfox.vocaland.R
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -127,9 +131,9 @@ fun PlayerScreen(
         state.tracks.isEmpty() -> {
             Box(modifier = modifier.padding(16.dp)) {
                 ScreenMessage(
-                    title = "播放列表为空",
-                    message = state.error ?: "暂时没有可播放的曲目",
-                    actionLabel = "重试",
+                    title = stringResource(R.string.player_empty_title),
+                    message = state.error ?: stringResource(R.string.player_empty_message),
+                    actionLabel = stringResource(R.string.action_retry),
                     onAction = controller::retry,
                 )
             }
@@ -185,11 +189,11 @@ fun PlayerScreen(
 
                     item {
                         SectionHeader(
-                            title = "播放列表",
-                            subtitle = "共 ${state.tracks.size} 首",
+                            title = stringResource(R.string.player_queue_title),
+                            subtitle = stringResource(R.string.player_queue_count, state.tracks.size),
                             action = {
                                 TextButton(onClick = { editingQueue = !editingQueue }) {
-                                    Text(if (editingQueue) "完成" else "编辑")
+                                    Text(stringResource(if (editingQueue) R.string.player_queue_done else R.string.player_queue_edit))
                                 }
                             },
                         )
@@ -265,7 +269,7 @@ private fun PlayerHero(track: BgmTrack?) {
 
         Spacer(Modifier.height(18.dp))
         Text(
-            text = track?.title ?: "未选择曲目",
+            text = track?.title ?: stringResource(R.string.player_empty_message),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             textAlign = TextAlign.Center,
@@ -296,6 +300,7 @@ private fun PlayerControls(
     onOpenSettings: () -> Unit,
 ) {
     val duration = durationMs.coerceAtLeast(1L)
+    val progressLabel = stringResource(R.string.player_progress)
     var dragging by remember { mutableStateOf(false) }
     var dragPosition by remember { mutableFloatStateOf(0f) }
 
@@ -321,6 +326,7 @@ private fun PlayerControls(
             },
             valueRange = 0f..duration.toFloat(),
             enabled = hasTrack && durationMs > 0,
+            modifier = Modifier.semantics { contentDescription = progressLabel },
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -352,7 +358,7 @@ private fun PlayerControls(
             ) {
                 Icon(
                     imageVector = Icons.Filled.SkipPrevious,
-                    contentDescription = "上一首",
+                    contentDescription = stringResource(R.string.player_previous),
                     modifier = Modifier.size(34.dp),
                 )
             }
@@ -380,13 +386,13 @@ private fun PlayerControls(
 
                         PlayButtonState.Playing -> Icon(
                             imageVector = Icons.Filled.Pause,
-                            contentDescription = "暂停",
+                            contentDescription = stringResource(R.string.player_pause),
                             modifier = Modifier.size(36.dp),
                         )
 
                         PlayButtonState.Paused -> Icon(
                             imageVector = Icons.Filled.PlayArrow,
-                            contentDescription = "播放",
+                            contentDescription = stringResource(R.string.player_play),
                             modifier = Modifier.size(36.dp),
                         )
                     }
@@ -399,7 +405,7 @@ private fun PlayerControls(
             ) {
                 Icon(
                     imageVector = Icons.Filled.SkipNext,
-                    contentDescription = "下一首",
+                    contentDescription = stringResource(R.string.player_next),
                     modifier = Modifier.size(34.dp),
                 )
             }
@@ -428,7 +434,7 @@ private fun PlayerControls(
                     modifier = Modifier.size(20.dp),
                 )
                 Spacer(Modifier.width(6.dp))
-                Text(playMode.label)
+                Text(stringResource(playMode.labelRes))
             }
             TextButton(onClick = onOpenSettings) {
                 Icon(
@@ -437,7 +443,7 @@ private fun PlayerControls(
                     modifier = Modifier.size(20.dp),
                 )
                 Spacer(Modifier.width(6.dp))
-                Text("设置")
+                Text(stringResource(R.string.player_settings))
             }
         }
     }
@@ -457,6 +463,8 @@ private fun PlayerSettingsSheet(
     onDismiss: () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val volumeLabel = stringResource(R.string.player_volume)
+    val danmakuCountLabel = stringResource(R.string.player_danmaku_count)
     val limitSliderValue = if (danmakuLimit == DANMAKU_LIMIT_UNLIMITED) {
         DANMAKU_LIMIT_MAX.toFloat()
     } else {
@@ -473,7 +481,7 @@ private fun PlayerSettingsSheet(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = "播放设置",
+                text = stringResource(R.string.player_settings_title),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
             )
@@ -493,7 +501,9 @@ private fun PlayerSettingsSheet(
                     value = volume,
                     onValueChange = controller::setVolume,
                     valueRange = 0f..1f,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier
+                        .weight(1f)
+                        .semantics { contentDescription = volumeLabel },
                 )
                 Text(
                     text = "${(volume * 100).roundToInt()}%",
@@ -505,8 +515,8 @@ private fun PlayerSettingsSheet(
             }
 
             SettingsSwitchRow(
-                title = "弹幕",
-                subtitle = "在播放器背景显示弹幕",
+                title = stringResource(R.string.player_danmaku),
+                subtitle = stringResource(R.string.player_danmaku_subtitle),
                 checked = danmakuEnabled,
                 onCheckedChange = onDanmakuChange,
             )
@@ -521,14 +531,14 @@ private fun PlayerSettingsSheet(
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(
-                        text = "显示数量",
+                        text = stringResource(R.string.player_danmaku_count),
                         style = MaterialTheme.typography.titleMedium,
                     )
                     Text(
                         text = if (danmakuLimit == DANMAKU_LIMIT_UNLIMITED) {
-                            "无限制"
+                            stringResource(R.string.player_danmaku_unlimited)
                         } else {
-                            "$danmakuLimit 条"
+                            stringResource(R.string.player_danmaku_count_value, danmakuLimit)
                         },
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -549,19 +559,20 @@ private fun PlayerSettingsSheet(
                     valueRange = DANMAKU_LIMIT_MIN.toFloat()..DANMAKU_LIMIT_MAX.toFloat(),
                     steps = (DANMAKU_LIMIT_MAX - DANMAKU_LIMIT_MIN) / DANMAKU_LIMIT_STEP - 1,
                     enabled = danmakuEnabled,
+                    modifier = Modifier.semantics { contentDescription = danmakuCountLabel },
                 )
                 Text(
-                    text = "拉到最右为无限制",
+                    text = stringResource(R.string.player_danmaku_unlimited_hint),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             SettingsSwitchRow(
-                title = "播完暂停",
+                title = stringResource(R.string.player_pause_when_finished),
                 subtitle = when (playMode) {
-                    PlayMode.SINGLE -> "单曲播放结束后暂停"
-                    PlayMode.LIST -> "列表最后一首播放结束后暂停"
-                    PlayMode.SHUFFLE -> "一轮随机播放结束后暂停"
+                    PlayMode.SINGLE -> stringResource(R.string.player_pause_when_finished_single)
+                    PlayMode.LIST -> stringResource(R.string.player_pause_when_finished_list)
+                    PlayMode.SHUFFLE -> stringResource(R.string.player_pause_when_finished_shuffle)
                 },
                 checked = pauseWhenFinished,
                 onCheckedChange = controller::setPauseWhenFinished,
@@ -679,7 +690,7 @@ private fun TrackRow(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.ArrowUpward,
-                        contentDescription = "上移",
+                        contentDescription = stringResource(R.string.player_queue_move_up),
                         modifier = Modifier.size(18.dp),
                         tint = if (selected) scheme.onPrimaryContainer else scheme.onSurfaceVariant,
                     )
@@ -691,7 +702,7 @@ private fun TrackRow(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.ArrowDownward,
-                        contentDescription = "下移",
+                        contentDescription = stringResource(R.string.player_queue_move_down),
                         modifier = Modifier.size(18.dp),
                         tint = if (selected) scheme.onPrimaryContainer else scheme.onSurfaceVariant,
                     )
@@ -702,7 +713,7 @@ private fun TrackRow(
                 ) {
                     Icon(
                         imageVector = Icons.Filled.DeleteOutline,
-                        contentDescription = "从队列移除",
+                        contentDescription = stringResource(R.string.player_queue_remove),
                         modifier = Modifier.size(18.dp),
                         tint = scheme.error,
                     )

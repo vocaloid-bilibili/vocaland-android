@@ -31,10 +31,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import xyz.lisfox.vocaland.R
 import xyz.lisfox.vocaland.data.model.RatingDto
 import xyz.lisfox.vocaland.data.model.RatingSummaryDto
 import xyz.lisfox.vocaland.ui.components.EmptyHint
@@ -308,6 +312,7 @@ private fun MyRatingEditor(
             }
 
             val score = draft.score.coerceIn(COMMUNITY_RATING_MIN, COMMUNITY_RATING_MAX)
+            val ratingLabel = stringResource(R.string.community_rating_slider)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -326,6 +331,7 @@ private fun MyRatingEditor(
                         onValueChange = { onScore(it.roundToInt()) },
                         valueRange = COMMUNITY_RATING_MIN.toFloat()..COMMUNITY_RATING_MAX.toFloat(),
                         steps = COMMUNITY_RATING_MAX - COMMUNITY_RATING_MIN - 1,
+                        modifier = Modifier.semantics { contentDescription = ratingLabel },
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),

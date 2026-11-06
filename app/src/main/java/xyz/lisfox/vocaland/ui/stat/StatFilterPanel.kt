@@ -22,7 +22,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.InputChip
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -44,6 +43,7 @@ import xyz.lisfox.vocaland.data.stat.StatArtistRef
 import xyz.lisfox.vocaland.data.stat.StatFilterState
 import xyz.lisfox.vocaland.data.stat.StatRange
 import xyz.lisfox.vocaland.data.stat.StatVocalistRule
+import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
 import xyz.lisfox.vocaland.util.songDisplayName
@@ -781,7 +781,7 @@ private fun ArtistFilterField(
             modifier = Modifier.fillMaxWidth(),
         )
         if (searching) {
-            LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            InlineLoading()
         }
         if (results.isNotEmpty()) {
             Column {

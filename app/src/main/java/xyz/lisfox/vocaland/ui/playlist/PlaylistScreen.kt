@@ -18,7 +18,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -33,6 +32,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import xyz.lisfox.vocaland.data.repository.PlaylistRepository
+import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.PagerRow
@@ -150,7 +150,7 @@ fun PlaylistScreen(
                     ) {
                         if (state.loading) {
                             item {
-                                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                                InlineLoading()
                             }
                         }
                         items(state.items, key = { it.id }) { playlist ->

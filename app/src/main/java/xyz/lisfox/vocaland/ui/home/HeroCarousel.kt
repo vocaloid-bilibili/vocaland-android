@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -34,15 +35,25 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.currentStateAsState
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import xyz.lisfox.vocaland.R
 import xyz.lisfox.vocaland.data.model.HeroSlideDto
 import xyz.lisfox.vocaland.ui.components.MotionDurations
 import xyz.lisfox.vocaland.ui.components.NetworkImage
@@ -66,10 +77,18 @@ fun HeroCarousel(
             pagerState.isScrollInProgress || pagerState.currentPageOffsetFraction != 0f
         }
     }
-    LaunchedEffect(slides.size, userInteracting) {
-        if (slides.size <= 1 || userInteracting) return@LaunchedEffect
-        while (true) {
-            delay(5_000)
+    val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
+    val scope = rememberCoroutineScope()
+    LaunchedEffect(slides.size, userInteracting, lifecycleState) {
+        if (
+            slides.size <= 1 ||
+            userInteracting ||
+            lifecycleState != Lifecycle.State.RESUMED
+        ) {
+            return@LaunchedEffect
+        }
+        while (isActive) {
+            delay(MotionDurations.CAROUSEL_INTERVAL_MS)
             val next = (pagerState.currentPage + 1) % slides.size
             pagerState.animateScrollToPage(next)
         }
@@ -131,13 +150,17 @@ fun HeroCarousel(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(end = 14.dp, bottom = 14.dp),
-                horizontalArrangement = Arrangement.spacedBy(5.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 repeat(slides.size) { index ->
                     val selected = pagerState.currentPage == index
+                    val pageDescription = stringResource(
+                        R.string.carousel_page_format,
+                        index + 1,
+                        slides.size,
+                    )
                     val dotWidth by animateDpAsState(
-                        targetValue = if (selected) 16.dp else 6.dp,
+                        targetValue = if (selected) 18.dp else 8.dp,
                         animationSpec = tween(
                             durationMillis = MotionDurations.MEDIUM,
                             easing = FastOutSlowInEasing,
@@ -151,11 +174,25 @@ fun HeroCarousel(
                     )
                     Box(
                         modifier = Modifier
-                            .width(dotWidth)
-                            .height(6.dp)
+                            .size(40.dp)
+                            .minimumInteractiveComponentSize()
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = dotAlpha)),
-                    )
+                            .clickable {
+                                scope.launch {
+                                    pagerState.animateScrollToPage(index)
+                                }
+                            }
+                            .semantics { contentDescription = pageDescription },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(dotWidth)
+                                .height(8.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = dotAlpha)),
+                        )
+                    }
                 }
             }
         }

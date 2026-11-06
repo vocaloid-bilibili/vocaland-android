@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -29,6 +28,7 @@ import xyz.lisfox.vocaland.data.model.TrendingCampaignDto
 import xyz.lisfox.vocaland.data.model.TrendingCandidateDto
 import xyz.lisfox.vocaland.data.repository.VotingRepository
 import xyz.lisfox.vocaland.data.session.AuthSession
+import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
@@ -206,7 +206,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.nominationContent(
             )
         }
         if (state.nominationsLoading) {
-            item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
+            item { InlineLoading() }
         } else if (state.myNominations.isEmpty()) {
             item { EmptyHint(text = "还没有提名") }
         } else {
@@ -251,7 +251,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.nominationContent(
                     )
                 }
                 if (state.entitySearchLoading) {
-                    item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
+                    item { InlineLoading() }
                 }
                 state.entitySearchError?.takeIf { it.isNotBlank() }?.let { error ->
                     item { VotingInlineMessage(text = error, isError = true) }
@@ -304,7 +304,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.nominationContent(
         )
     }
     if (state.nominationsLoading) {
-        item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
+        item { InlineLoading() }
     } else if (others.isEmpty()) {
         item { EmptyHint(text = "暂无提名候选") }
     } else {
@@ -365,7 +365,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.votingContent(
         item { VotingInlineMessage(text = error, isError = true) }
     }
     if (state.candidateLoading) {
-        item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
+        item { InlineLoading() }
     } else {
         val candidates = state.candidates.sortedWith(
             compareByDescending<TrendingCandidateDto> { state.tally[it.id] ?: 0 }
@@ -408,7 +408,7 @@ private fun androidx.compose.foundation.lazy.LazyListScope.resultsContent(
         item { VotingInlineMessage(text = error, isError = true) }
     }
     if (state.resultsLoading) {
-        item { LinearProgressIndicator(modifier = Modifier.fillMaxWidth()) }
+        item { InlineLoading() }
     }
     if (state.results.isEmpty() && !state.resultsLoading) {
         item { EmptyHint(text = "暂无结果") }

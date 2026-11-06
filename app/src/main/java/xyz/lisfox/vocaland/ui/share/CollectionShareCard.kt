@@ -38,6 +38,7 @@ import xyz.lisfox.vocaland.data.share.ShareCardSong
 import xyz.lisfox.vocaland.ui.components.BrandMark
 import xyz.lisfox.vocaland.ui.components.NetworkImage
 
+// 分享卡固定使用这套颜色，不跟随主题，保证预览与导出图一致。
 private val SharePaper = Color(0xFFF7F3EA)
 private val SharePaperDeep = Color(0xFFEDE7DA)
 private val ShareInk = Color(0xFF22201C)
