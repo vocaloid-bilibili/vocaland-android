@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import xyz.lisfox.vocaland.ui.theme.Spacing
 
 @Composable
 fun SongCoverCard(
@@ -48,7 +49,7 @@ fun SongCoverCard(
                 .aspectRatio(16f / 9f)
                 .clip(RoundedCornerShape(16.dp)),
         )
-        Spacer(Modifier.height(7.dp))
+        Spacer(Modifier.height(Spacing.sm))
         Text(
             text = title,
             style = MaterialTheme.typography.titleSmall,

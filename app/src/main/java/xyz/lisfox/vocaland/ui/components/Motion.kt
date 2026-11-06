@@ -22,7 +22,6 @@ object MotionDurations {
     const val QUICK = 200
     const val MEDIUM = 260
     const val EMPHASIZED = 320
-    const val SLOW = 360
     const val CAROUSEL_INTERVAL_MS = 5_000L
     const val SHIMMER = 1_200
 }
