@@ -20,6 +20,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Login
+import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.BrightnessAuto
 import androidx.compose.material.icons.filled.CalendarMonth
@@ -29,12 +32,9 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.LightMode
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Login
-import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.PlaylistPlay
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingBag
@@ -328,7 +328,7 @@ fun ProfileScreen(
                             color = MaterialTheme.colorScheme.outlineVariant,
                         )
                         ProfileMenuItem(
-                            icon = { Icon(Icons.Filled.PlaylistPlay, contentDescription = null) },
+                            icon = { Icon(Icons.AutoMirrored.Filled.PlaylistPlay, contentDescription = null) },
                             title = playlistsLabel,
                             onClick = { onOpenFeature(playlistsLabel) },
                         )
@@ -354,7 +354,7 @@ fun ProfileScreen(
                     },
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Icon(Icons.Filled.Logout, contentDescription = null)
+                    Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = null)
                     Spacer(Modifier.size(8.dp))
                     Text(stringResource(R.string.profile_logout))
                 }
@@ -408,7 +408,7 @@ private fun GuestHeader(onLogin: () -> Unit) {
                     color = scheme.onPrimaryContainer.copy(alpha = 0.82f),
                 )
                 Button(onClick = onLogin) {
-                    Icon(Icons.Filled.Login, contentDescription = null)
+                    Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null)
                     Spacer(Modifier.size(8.dp))
                     Text(stringResource(R.string.profile_login_register))
                 }
