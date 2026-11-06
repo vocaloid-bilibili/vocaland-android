@@ -49,6 +49,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -58,6 +59,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import xyz.lisfox.vocaland.R
 import xyz.lisfox.vocaland.data.account.AccountAuthRepository
 import xyz.lisfox.vocaland.data.account.AccountRepository
 import xyz.lisfox.vocaland.data.account.UserPrivateDto
@@ -108,18 +110,21 @@ fun SettingsScreen(
         if (uri == null) return@rememberLauncherForActivityResult
         val mime = context.contentResolver.getType(uri) ?: "image/jpeg"
         if (mime !in AVATAR_TYPES) {
-            avatarError = "仅支持 JPG / PNG / WebP / GIF"
+            avatarError = context.getString(R.string.settings_avatar_unsupported_type)
             return@rememberLauncherForActivityResult
         }
         val bytes = runCatching {
             context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
         }.getOrNull()
         if (bytes == null || bytes.isEmpty()) {
-            avatarError = "读取图片失败"
+            avatarError = context.getString(R.string.settings_avatar_read_failed)
             return@rememberLauncherForActivityResult
         }
         if (bytes.size > AVATAR_MAX_BYTES) {
-            avatarError = "文件不能超过 10MB"
+            avatarError = context.getString(
+                R.string.settings_avatar_too_large_format,
+                AVATAR_MAX_BYTES / (1024 * 1024),
+            )
             return@rememberLauncherForActivityResult
         }
         avatarError = null
@@ -138,15 +143,15 @@ fun SettingsScreen(
 
     when {
         state.me == null && state.loading -> {
-            LoadingPane(modifier = modifier, text = "正在读取账号资料")
+            LoadingPane(modifier = modifier, text = stringResource(R.string.settings_profile_loading))
         }
 
         state.me == null -> {
             ScreenMessage(
-                title = "登录后管理账号",
-                message = state.error ?: "账号资料需要登录后才能查看与修改。",
+                title = stringResource(R.string.settings_login_required_title),
+                message = state.error ?: stringResource(R.string.settings_login_required_message),
                 modifier = modifier,
-                actionLabel = if (onLogin != null) "去登录" else null,
+                actionLabel = if (onLogin != null) stringResource(R.string.action_login) else null,
                 onAction = onLogin,
             )
         }
@@ -173,7 +178,10 @@ fun SettingsScreen(
                 }
 
                 item {
-                    SettingsCard(title = "通知设置", description = "控制站内消息中心接收哪些类型") {
+                    SettingsCard(
+                        title = stringResource(R.string.settings_notifications_title),
+                        description = stringResource(R.string.settings_notifications_desc),
+                    ) {
                         NotificationPreferencesSection(
                             state = state,
                             onToggle = viewModel::setPreference,
@@ -182,7 +190,10 @@ fun SettingsScreen(
                 }
 
                 item {
-                    SettingsCard(title = "邮箱管理", description = "验证、设置或更换绑定邮箱") {
+                    SettingsCard(
+                        title = stringResource(R.string.settings_email_title),
+                        description = stringResource(R.string.settings_email_desc),
+                    ) {
                         EmailSettingsSection(
                             me = me,
                             repository = accountAuthRepository,
@@ -192,7 +203,10 @@ fun SettingsScreen(
                 }
 
                 item {
-                    SettingsCard(title = "修改密码", description = "更换账号登录密码") {
+                    SettingsCard(
+                        title = stringResource(R.string.settings_password_title),
+                        description = stringResource(R.string.settings_password_desc),
+                    ) {
                         PasswordSection(
                             saving = state.passwordSaving,
                             message = state.passwordMessage,
@@ -203,7 +217,10 @@ fun SettingsScreen(
                 }
 
                 item {
-                    SettingsCard(title = "赞助", description = "赞助状态与爱发电订单兑换") {
+                    SettingsCard(
+                        title = stringResource(R.string.wallet_sponsor_title),
+                        description = stringResource(R.string.settings_sponsor_desc),
+                    ) {
                         SponsorSection(
                             me = me,
                             claiming = state.sponsorClaiming,
@@ -222,7 +239,7 @@ fun SettingsScreen(
                         ) {
                             Icon(Icons.Filled.Logout, contentDescription = null)
                             Spacer(Modifier.size(8.dp))
-                            Text("退出登录", color = scheme.error)
+                            Text(stringResource(R.string.profile_logout), color = scheme.error)
                         }
                     }
                 }
@@ -234,12 +251,12 @@ fun SettingsScreen(
         var value by remember(initial) { mutableStateOf(initial) }
         AlertDialog(
             onDismissRequest = { nicknameEditor = null },
-            title = { Text("修改昵称") },
+            title = { Text(stringResource(R.string.settings_nickname_dialog_title)) },
             text = {
                 OutlinedTextField(
                     value = value,
                     onValueChange = { value = it },
-                    label = { Text("昵称") },
+                    label = { Text(stringResource(R.string.register_nickname)) },
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
                 )
@@ -252,12 +269,12 @@ fun SettingsScreen(
                     },
                     enabled = value.isNotBlank() && !state.savingNickname,
                 ) {
-                    Text("保存")
+                    Text(stringResource(R.string.action_save))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { nicknameEditor = null }) {
-                    Text("取消")
+                    Text(stringResource(R.string.action_cancel))
                 }
             },
         )
@@ -324,7 +341,7 @@ private fun ProfileSection(
                         ) {
                             Icon(
                                 imageVector = Icons.Filled.CameraAlt,
-                                contentDescription = "更换头像",
+                                contentDescription = stringResource(R.string.settings_change_avatar),
                                 tint = scheme.onPrimary,
                             )
                         }
@@ -345,7 +362,7 @@ private fun ProfileSection(
                             onClick = onEditNickname,
                             enabled = !me.isBanned && !savingNickname,
                         ) {
-                            Icon(Icons.Filled.Edit, contentDescription = "修改昵称")
+                            Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.settings_nickname_dialog_title))
                         }
                     }
                     Text(
@@ -363,28 +380,28 @@ private fun ProfileSection(
 
             HorizontalDivider(color = scheme.outlineVariant)
 
-            InfoRow(label = "邮箱", value = me.email ?: "未设置")
+            InfoRow(label = stringResource(R.string.login_email), value = me.email ?: stringResource(R.string.settings_value_not_set))
             InfoRow(
-                label = "邮箱状态",
+                label = stringResource(R.string.settings_email_status),
                 value = when {
-                    me.email == null -> "未设置"
-                    me.emailVerified -> "已验证"
-                    else -> "未验证"
+                    me.email == null -> stringResource(R.string.settings_value_not_set)
+                    me.emailVerified -> stringResource(R.string.settings_email_verified)
+                    else -> stringResource(R.string.settings_email_unverified)
                 },
             )
-            InfoRow(label = "经验值", value = me.totalExp.toString())
+            InfoRow(label = stringResource(R.string.profile_exp), value = me.totalExp.toString())
             InfoRow(
-                label = "赞助",
+                label = stringResource(R.string.wallet_sponsor_title),
                 value = if (me.sponsorActive) {
-                    "有效，剩余 ${me.sponsorRemainingDays} 天"
+                    stringResource(R.string.settings_sponsor_remaining_format, me.sponsorRemainingDays)
                 } else {
-                    "非赞助用户"
+                    stringResource(R.string.settings_sponsor_inactive)
                 },
             )
 
             if (me.isBanned) {
                 Text(
-                    text = "账号已被封禁，无法修改昵称、头像和邮箱。",
+                    text = stringResource(R.string.settings_banned_profile),
                     style = MaterialTheme.typography.bodySmall,
                     color = scheme.error,
                 )
@@ -401,7 +418,7 @@ private fun ProfileSection(
                         modifier = Modifier.size(16.dp),
                     )
                     Spacer(Modifier.size(6.dp))
-                    Text("删除头像，恢复默认")
+                    Text(stringResource(R.string.settings_delete_avatar))
                 }
             }
 
@@ -457,7 +474,7 @@ private fun NotificationPreferencesSection(
 
         prefs == null -> {
             Text(
-                text = state.preferencesError ?: "通知偏好读取失败",
+                text = state.preferencesError ?: stringResource(R.string.settings_notifications_load_failed),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
             )
@@ -513,6 +530,9 @@ private fun PasswordSection(
     var newPassword by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var localError by remember { mutableStateOf<String?>(null) }
+    val oldPasswordRequired = stringResource(R.string.settings_old_password_required)
+    val passwordTooShort = stringResource(R.string.settings_password_too_short)
+    val passwordMismatch = stringResource(R.string.settings_password_mismatch)
 
     LaunchedEffect(message) {
         if (!message.isNullOrBlank()) {
@@ -527,7 +547,7 @@ private fun PasswordSection(
             value = oldPassword,
             onValueChange = { oldPassword = it; localError = null },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("原密码") },
+            label = { Text(stringResource(R.string.settings_old_password)) },
             leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
             visualTransformation = PasswordVisualTransformation(),
             singleLine = true,
@@ -541,8 +561,8 @@ private fun PasswordSection(
             value = newPassword,
             onValueChange = { newPassword = it; localError = null },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("新密码") },
-            placeholder = { Text("至少 6 位") },
+            label = { Text(stringResource(R.string.forgot_new_password)) },
+            placeholder = { Text(stringResource(R.string.register_password_hint)) },
             leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
             visualTransformation = PasswordVisualTransformation(),
             singleLine = true,
@@ -556,7 +576,7 @@ private fun PasswordSection(
             value = confirmPassword,
             onValueChange = { confirmPassword = it; localError = null },
             modifier = Modifier.fillMaxWidth(),
-            label = { Text("确认新密码") },
+            label = { Text(stringResource(R.string.forgot_confirm_new_password)) },
             leadingIcon = { Icon(Icons.Filled.Lock, contentDescription = null) },
             visualTransformation = PasswordVisualTransformation(),
             singleLine = true,
@@ -568,17 +588,17 @@ private fun PasswordSection(
         )
 
         val validationError = localError ?: when {
-            newPassword.isNotEmpty() && newPassword.length < 6 -> "新密码至少 6 位"
-            confirmPassword.isNotEmpty() && newPassword != confirmPassword -> "两次输入的密码不一致"
+            newPassword.isNotEmpty() && newPassword.length < 6 -> passwordTooShort
+            confirmPassword.isNotEmpty() && newPassword != confirmPassword -> passwordMismatch
             else -> null
         }
 
         Button(
             onClick = {
                 when {
-                    oldPassword.isBlank() -> localError = "请输入原密码"
-                    newPassword.length < 6 -> localError = "新密码至少 6 位"
-                    newPassword != confirmPassword -> localError = "两次输入的密码不一致"
+                    oldPassword.isBlank() -> localError = oldPasswordRequired
+                    newPassword.length < 6 -> localError = passwordTooShort
+                    newPassword != confirmPassword -> localError = passwordMismatch
                     else -> onSubmit(oldPassword, newPassword)
                 }
             },
@@ -592,7 +612,7 @@ private fun PasswordSection(
                     color = MaterialTheme.colorScheme.onPrimary,
                 )
             } else {
-                Text("修改密码")
+                Text(stringResource(R.string.settings_password_title))
             }
         }
 
@@ -637,15 +657,15 @@ private fun SponsorSection(
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = if (me.sponsorActive) {
-                "赞助有效，剩余 ${me.sponsorRemainingDays} 天"
+                stringResource(R.string.settings_sponsor_active_format, me.sponsorRemainingDays)
             } else {
-                "非赞助用户"
+                stringResource(R.string.settings_sponsor_inactive)
             },
             style = MaterialTheme.typography.bodyMedium,
         )
         if (me.sponsorExpiresAt != null) {
             Text(
-                text = "到期时间：${me.sponsorExpiresAt}",
+                text = stringResource(R.string.settings_sponsor_expires_format, me.sponsorExpiresAt),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -661,7 +681,7 @@ private fun SponsorSection(
                 modifier = Modifier
                     .weight(1f)
                     .height(56.dp),
-                label = { Text("爱发电订单号") },
+                label = { Text(stringResource(R.string.wallet_sponsor_order_label)) },
                 singleLine = true,
                 shape = RoundedCornerShape(14.dp),
             )
@@ -677,13 +697,13 @@ private fun SponsorSection(
                         color = MaterialTheme.colorScheme.onPrimary,
                     )
                 } else {
-                    Text("兑换")
+                    Text(stringResource(R.string.wallet_sponsor_claim))
                 }
             }
         }
         if (me.isBanned) {
             Text(
-                text = "账号已被封禁，无法兑换",
+                text = stringResource(R.string.settings_banned_sponsor),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
             )
