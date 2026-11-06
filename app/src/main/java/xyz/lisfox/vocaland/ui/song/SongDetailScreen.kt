@@ -1,6 +1,9 @@
+@file:OptIn(ExperimentalSharedTransitionApi::class)
+
 package xyz.lisfox.vocaland.ui.song
 
 import android.widget.Toast
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -76,6 +79,8 @@ import xyz.lisfox.vocaland.data.songactions.sortSongVideos
 import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
+import xyz.lisfox.vocaland.ui.components.LocalSharedElementVisibilityScope
+import xyz.lisfox.vocaland.ui.components.LocalSharedTransitionScope
 import xyz.lisfox.vocaland.ui.components.MetricGrid
 import xyz.lisfox.vocaland.ui.components.MetricItem
 import xyz.lisfox.vocaland.ui.components.NetworkImage
@@ -395,11 +400,23 @@ private fun SongDetailContent(
 
 @Composable
 private fun SongHero(song: SongDto) {
+    val sharedScope = LocalSharedTransitionScope.current
+    val visibilityScope = LocalSharedElementVisibilityScope.current
+    val coverModifier = if (sharedScope != null && visibilityScope != null) {
+        with(sharedScope) {
+            Modifier.sharedElement(
+                state = rememberSharedContentState("song-cover-${song.id}"),
+                animatedVisibilityScope = visibilityScope,
+            )
+        }
+    } else {
+        Modifier
+    }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         NetworkImage(
             url = song.coverUrl(),
             contentDescription = songDisplayName(song),
-            modifier = Modifier
+            modifier = coverModifier
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)
                 .clip(RoundedCornerShape(24.dp)),

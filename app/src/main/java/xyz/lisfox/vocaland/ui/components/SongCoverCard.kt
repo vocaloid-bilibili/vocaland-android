@@ -1,5 +1,8 @@
+@file:OptIn(ExperimentalSharedTransitionApi::class)
+
 package xyz.lisfox.vocaland.ui.components
 
+import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -22,12 +25,25 @@ fun SongCoverCard(
     thumbnail: String?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    sharedKey: Any? = null,
 ) {
+    val sharedScope = LocalSharedTransitionScope.current
+    val visibilityScope = LocalSharedElementVisibilityScope.current
+    val sharedModifier = if (sharedKey != null && sharedScope != null && visibilityScope != null) {
+        with(sharedScope) {
+            Modifier.sharedElement(
+                state = rememberSharedContentState(sharedKey),
+                animatedVisibilityScope = visibilityScope,
+            )
+        }
+    } else {
+        Modifier
+    }
     Column(modifier = modifier.clickable(onClick = onClick)) {
         NetworkImage(
             url = thumbnail,
             contentDescription = title,
-            modifier = Modifier
+            modifier = sharedModifier
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)
                 .clip(RoundedCornerShape(16.dp)),

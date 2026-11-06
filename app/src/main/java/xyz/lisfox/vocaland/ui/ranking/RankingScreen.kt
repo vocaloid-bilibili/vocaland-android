@@ -194,6 +194,7 @@ fun RankingScreen(
                                             ?: item.song.thumbnail,
                                         onClick = { onOpenSong(item.song.id) },
                                         modifier = Modifier.weight(1f),
+                                        sharedKey = "song-cover-${item.song.id}",
                                     )
                                 }
                                 if (row.size == 1) {

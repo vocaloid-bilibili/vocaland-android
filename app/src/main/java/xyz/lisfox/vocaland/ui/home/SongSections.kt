@@ -182,6 +182,7 @@ private fun LatestSongCard(
         thumbnail = song.thumbnail,
         onClick = onClick,
         modifier = modifier,
+        sharedKey = "song-cover-${song.id}",
     )
 }
 

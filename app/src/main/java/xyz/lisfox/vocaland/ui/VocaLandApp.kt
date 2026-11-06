@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalSharedTransitionApi::class)
+
 package xyz.lisfox.vocaland.ui
 
 import android.widget.Toast
@@ -5,6 +7,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -43,6 +48,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -56,6 +62,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import xyz.lisfox.vocaland.R
+import xyz.lisfox.vocaland.ui.components.LocalSharedElementVisibilityScope
+import xyz.lisfox.vocaland.ui.components.LocalSharedTransitionScope
 import xyz.lisfox.vocaland.ui.components.MotionDurations
 import xyz.lisfox.vocaland.ui.theme.ComponentSize
 import androidx.compose.ui.semantics.Role
@@ -273,6 +281,7 @@ fun VocaLandApp(
                     enabled = isTopLevel,
                 )
             }
+            SharedTransitionLayout { CompositionLocalProvider(LocalSharedTransitionScope provides this@SharedTransitionLayout) {
             NavHost(
                 navController = navController,
                 startDestination = Routes.HOME,
@@ -345,7 +354,7 @@ fun VocaLandApp(
                 },
             ) {
                 composable(Routes.HOME) {
-                    PageScaffold(title = null) { contentModifier ->
+                    PageScaffold(title = null, sharedElementScope = this) { contentModifier ->
                         HomeScreen(
                             repository = container.homeRepository,
                             onOpenFeature = { title ->
@@ -387,7 +396,7 @@ fun VocaLandApp(
                     }
                 }
                 composable(Routes.RANKING) {
-                    PageScaffold(title = stringResource(R.string.page_ranking)) { contentModifier ->
+                    PageScaffold(title = stringResource(R.string.page_ranking), sharedElementScope = this) { contentModifier ->
                         RankingScreen(
                             repository = container.rankingRepository,
                             onOpenSong = { id ->
@@ -415,7 +424,7 @@ fun VocaLandApp(
                     }
                 }
                 composable(Routes.SEARCH) {
-                    PageScaffold(title = stringResource(R.string.page_search)) { contentModifier ->
+                    PageScaffold(title = stringResource(R.string.page_search), sharedElementScope = this) { contentModifier ->
                         SearchScreen(
                             repository = container.searchRepository,
                             onOpenSong = { id ->
@@ -538,6 +547,7 @@ fun VocaLandApp(
                     PageScaffold(
                         title = stringResource(R.string.page_song),
                         onBack = { navController.popBackStack() },
+                        sharedElementScope = this,
                     ) { contentModifier ->
                         if (songId <= 0) {
                             FeatureScreen(
@@ -721,6 +731,7 @@ fun VocaLandApp(
                     PageScaffold(
                         title = kind?.label ?: "艺人",
                         onBack = { navController.popBackStack() },
+                        sharedElementScope = this,
                     ) { contentModifier ->
                         if (kind == null || artistId <= 0) {
                             FeatureScreen(
@@ -1227,6 +1238,8 @@ fun VocaLandApp(
                     }
                 }
             }
+            }
+            }
             addToPlaylistSongId?.let { songId ->
                 AddToPlaylistSheet(
                     repository = container.playlistRepository,
@@ -1438,6 +1451,7 @@ private fun CompactBottomBar(
 private fun PageScaffold(
     title: String?,
     onBack: (() -> Unit)? = null,
+    sharedElementScope: AnimatedVisibilityScope? = null,
     content: @Composable (Modifier) -> Unit,
 ) {
     val topLevelBottomInset = if (onBack == null) {
@@ -1508,7 +1522,9 @@ private fun PageScaffold(
                     },
                 ),
         ) {
-            content(Modifier.fillMaxSize())
+            CompositionLocalProvider(LocalSharedElementVisibilityScope provides sharedElementScope) {
+                content(Modifier.fillMaxSize())
+            }
         }
     }
 }

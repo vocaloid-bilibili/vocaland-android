@@ -348,6 +348,7 @@ private fun SongStrip(
                     thumbnail = song.coverUrl(),
                     onClick = { onOpenSong(song.id) },
                     modifier = Modifier.width(220.dp),
+                    sharedKey = "song-cover-${song.id}",
                 )
             }
         }

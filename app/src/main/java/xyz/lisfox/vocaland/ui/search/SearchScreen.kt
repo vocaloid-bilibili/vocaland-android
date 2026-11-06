@@ -240,6 +240,7 @@ fun SearchScreen(
                                                     ?.let(onOpenSong)
                                             },
                                             modifier = Modifier.weight(1f),
+                                            sharedKey = "song-cover-${entity.song?.id ?: entity.id}",
                                         )
                                     }
                                     if (row.size == 1) {
