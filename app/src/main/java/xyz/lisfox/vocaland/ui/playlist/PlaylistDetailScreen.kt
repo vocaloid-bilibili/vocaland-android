@@ -83,7 +83,6 @@ fun PlaylistDetailScreen(
     session: AuthSession? = null,
     onLogin: () -> Unit = {},
     onPlaylistDeleted: () -> Unit = {},
-    onOpenMyPlaylists: (() -> Unit)? = null,
     communitySlot: (@Composable () -> Unit)? = null,
 ) {
     val viewModel: PlaylistDetailViewModel = viewModel(
@@ -147,7 +146,6 @@ fun PlaylistDetailScreen(
                 onOpenSong = onOpenSong,
                 onOpenUser = onOpenUser,
                 onPlayPlaylist = onPlayPlaylist,
-                onOpenMyPlaylists = onOpenMyPlaylists,
                 communitySlot = communitySlot,
                 onLogin = onLogin,
                 loggedIn = viewer != null,
@@ -260,7 +258,6 @@ private fun PlaylistDetailContent(
     onOpenSong: (Int) -> Unit,
     onOpenUser: (Int) -> Unit,
     onPlayPlaylist: (List<BgmTrack>) -> Unit,
-    onOpenMyPlaylists: (() -> Unit)?,
     communitySlot: (@Composable () -> Unit)?,
     onLogin: () -> Unit,
     loggedIn: Boolean,
@@ -402,12 +399,6 @@ private fun PlaylistDetailContent(
                 if (!loggedIn) {
                     TextButton(onClick = onLogin) {
                         Text("登录后可编辑歌单")
-                    }
-                }
-
-                onOpenMyPlaylists?.let { open ->
-                    TextButton(onClick = open) {
-                        Text("我的歌单")
                     }
                 }
             }

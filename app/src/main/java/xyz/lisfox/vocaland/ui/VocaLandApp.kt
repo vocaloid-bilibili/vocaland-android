@@ -695,11 +695,6 @@ fun VocaLandApp(
                                 session = container.session,
                                 onLogin = { navController.navigate(Routes.LOGIN) },
                                 onPlaylistDeleted = { navController.popBackStack() },
-                                onOpenMyPlaylists = {
-                                    navController.navigate(Routes.MY_PLAYLISTS) {
-                                        launchSingleTop = true
-                                    }
-                                },
                                 communitySlot = {
                                     CommunityPanel(
                                         repository = container.communityRepository,
