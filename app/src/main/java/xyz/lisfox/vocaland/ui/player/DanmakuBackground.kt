@@ -1,28 +1,24 @@
 package xyz.lisfox.vocaland.ui.player
 
+import android.content.Context
+import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Typeface
-import androidx.compose.foundation.Canvas
+import android.view.Choreographer
+import android.view.View
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.isActive
+import androidx.compose.ui.viewinterop.AndroidView
 import kotlin.math.abs
 import kotlin.math.exp
 import kotlin.math.ln
@@ -72,45 +68,6 @@ fun DanmakuBackground(
         }
     }
 
-    var playheadNanos by remember { mutableLongStateOf(positionMs * 1_000_000L) }
-    var wasPlaying by remember { mutableStateOf(playing) }
-    var lastPausedPositionMs by remember { mutableLongStateOf(positionMs) }
-
-    LaunchedEffect(cid) {
-        playheadNanos = positionMs * 1_000_000L
-        lastPausedPositionMs = positionMs
-    }
-
-    LaunchedEffect(playing) {
-        if (!playing) return@LaunchedEffect
-        if (abs(playheadNanos / 1_000_000L - positionMs) > RESYNC_THRESHOLD_MS) {
-            playheadNanos = positionMs * 1_000_000L
-        }
-        var previous = withFrameNanos { it }
-        while (isActive) {
-            withFrameNanos { now ->
-                playheadNanos += now - previous
-                previous = now
-            }
-        }
-    }
-
-    LaunchedEffect(positionMs, playing) {
-        val playheadMs = playheadNanos / 1_000_000L
-        if (playing) {
-            wasPlaying = true
-            if (abs(playheadMs - positionMs) > RESYNC_THRESHOLD_MS) {
-                playheadNanos = positionMs * 1_000_000L
-            }
-        } else if (wasPlaying) {
-            wasPlaying = false
-            lastPausedPositionMs = positionMs
-        } else if (positionMs != lastPausedPositionMs) {
-            playheadNanos = positionMs * 1_000_000L
-            lastPausedPositionMs = positionMs
-        }
-    }
-
     BoxWithConstraints(modifier = modifier) {
         val widthPx = if (constraints.hasBoundedWidth) constraints.maxWidth.toFloat() else 0f
         val heightPx = if (constraints.hasBoundedHeight) constraints.maxHeight.toFloat() else 0f
@@ -124,28 +81,115 @@ fun DanmakuBackground(
             )
         }
 
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            if (layout.items.isEmpty() || size.width <= 0f || size.height <= 0f) return@Canvas
-            val playheadMs = playheadNanos / 1_000_000L
-            val startIndex = lowerBound(layout.items, playheadMs - layout.maxDurationMs)
-            var drawn = 0
+        AndroidView(
+            factory = { context -> DanmakuView(context) },
+            update = { view ->
+                view.update(
+                    layout = layout,
+                    cid = cid,
+                    playing = playing,
+                    positionMs = positionMs,
+                    lightBackground = lightBackground,
+                    maxActive = maxActive,
+                    textSizePx = textSizePx,
+                )
+            },
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
+}
 
-            for (index in startIndex until layout.items.size) {
-                val item = layout.items[index]
-                if (item.timeMs > playheadMs) break
-                val elapsed = playheadMs - item.timeMs
-                if (elapsed > item.durationMs) continue
-                if (maxActive != null && drawn >= maxActive) break
+private class DanmakuView(context: Context) : View(context) {
+    private val choreographer = Choreographer.getInstance()
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        typeface = Typeface.DEFAULT
+        setShadowLayer(2.5f, 0f, 1f, Color.argb(70, 0, 0, 0))
+    }
 
-                val progress = elapsed.toFloat() / item.durationMs.toFloat()
-                val x = item.startX - item.distance * progress
+    private var layout: DanmakuLayout? = null
+    private var cid: Long? = null
+    private var playing = false
+    private var playheadNanos = 0L
+    private var lastFrameNanos = 0L
+    private var lightBackground = false
+    private var maxActive: Int? = null
 
-                paint.color = lighten(item.color, 0.28f)
-                paint.alpha = if (lightBackground) 135 else 115
-                drawContext.canvas.nativeCanvas.drawText(item.text, x, item.baseline, paint)
-                drawn++
+    private val frameCallback = object : Choreographer.FrameCallback {
+        override fun doFrame(frameTimeNanos: Long) {
+            if (!playing) return
+            if (lastFrameNanos != 0L) {
+                playheadNanos += frameTimeNanos - lastFrameNanos
             }
+            lastFrameNanos = frameTimeNanos
+            invalidate()
+            choreographer.postFrameCallback(this)
         }
+    }
+
+    fun update(
+        layout: DanmakuLayout,
+        cid: Long?,
+        playing: Boolean,
+        positionMs: Long,
+        lightBackground: Boolean,
+        maxActive: Int?,
+        textSizePx: Float,
+    ) {
+        val trackChanged = this.cid != cid
+        val wasPlaying = this.playing
+        this.cid = cid
+        this.layout = layout
+        this.lightBackground = lightBackground
+        this.maxActive = maxActive
+        if (paint.textSize != textSizePx) {
+            paint.textSize = textSizePx
+        }
+
+        this.playing = playing
+        val playheadMs = playheadNanos / 1_000_000L
+        if (trackChanged || !playing || abs(playheadMs - positionMs) > RESYNC_THRESHOLD_MS) {
+            playheadNanos = positionMs * 1_000_000L
+        }
+
+        if (playing && !wasPlaying) {
+            lastFrameNanos = 0L
+            choreographer.postFrameCallback(frameCallback)
+        } else if (!playing && wasPlaying) {
+            choreographer.removeFrameCallback(frameCallback)
+            lastFrameNanos = 0L
+        }
+        invalidate()
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        val layout = layout ?: return
+        if (layout.items.isEmpty() || width <= 0 || height <= 0) return
+
+        val playheadMs = playheadNanos / 1_000_000L
+        val startIndex = lowerBound(layout.items, playheadMs - layout.maxDurationMs)
+        var drawn = 0
+
+        for (index in startIndex until layout.items.size) {
+            val item = layout.items[index]
+            if (item.timeMs > playheadMs) break
+            val elapsed = playheadMs - item.timeMs
+            if (elapsed > item.durationMs) continue
+            if (maxActive != null && drawn >= maxActive) break
+
+            val progress = elapsed.toFloat() / item.durationMs.toFloat()
+            val x = item.startX - item.distance * progress
+
+            paint.color = lighten(item.color, 0.28f)
+            paint.alpha = if (lightBackground) 135 else 115
+            canvas.drawText(item.text, x, item.baseline, paint)
+            drawn++
+        }
+    }
+
+    override fun onDetachedFromWindow() {
+        choreographer.removeFrameCallback(frameCallback)
+        super.onDetachedFromWindow()
     }
 }
 
