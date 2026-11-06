@@ -548,6 +548,7 @@ private fun PlayerSettingsSheet(
                     },
                     valueRange = DANMAKU_LIMIT_MIN.toFloat()..DANMAKU_LIMIT_MAX.toFloat(),
                     steps = (DANMAKU_LIMIT_MAX - DANMAKU_LIMIT_MIN) / DANMAKU_LIMIT_STEP - 1,
+                    enabled = danmakuEnabled,
                 )
                 Text(
                     text = "拉到最右为无限制",
