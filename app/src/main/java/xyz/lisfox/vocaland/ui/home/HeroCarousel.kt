@@ -7,7 +7,8 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.material3.minimumInteractiveComponentSize
+import androidx.compose.material.ripple.ripple
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,7 +33,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -50,9 +50,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.currentStateAsState
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.runtime.snapshotFlow
 import xyz.lisfox.vocaland.R
 import xyz.lisfox.vocaland.data.model.HeroSlideDto
 import xyz.lisfox.vocaland.ui.components.MotionDurations
@@ -71,27 +74,25 @@ fun HeroCarousel(
 
     val pagerState = rememberPagerState(pageCount = { slides.size })
 
-    // 用户手动滑动 / 页面被按下时暂停自动轮播，松手后继续
-    val userInteracting by remember {
-        derivedStateOf {
-            pagerState.isScrollInProgress || pagerState.currentPageOffsetFraction != 0f
-        }
-    }
+    // 用户手动滑动时暂停自动轮播，松手后继续
+    // 注意：只监听 isScrollInProgress 这种离散状态，避免依赖每帧变化的 offset
+    // 导致 LaunchedEffect 反复重启
     val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
     val scope = rememberCoroutineScope()
-    LaunchedEffect(slides.size, userInteracting, lifecycleState) {
-        if (
-            slides.size <= 1 ||
-            userInteracting ||
-            lifecycleState != Lifecycle.State.RESUMED
-        ) {
+    LaunchedEffect(slides.size, lifecycleState) {
+        if (slides.size <= 1 || lifecycleState != Lifecycle.State.RESUMED) {
             return@LaunchedEffect
         }
-        while (isActive) {
-            delay(MotionDurations.CAROUSEL_INTERVAL_MS)
-            val next = (pagerState.currentPage + 1) % slides.size
-            pagerState.animateScrollToPage(next)
-        }
+        snapshotFlow { pagerState.isScrollInProgress }
+            .collectLatest { scrolling ->
+                if (scrolling) return@collectLatest
+                while (currentCoroutineContext().isActive) {
+                    delay(MotionDurations.CAROUSEL_INTERVAL_MS)
+                    if (pagerState.isScrollInProgress) break
+                    val next = (pagerState.currentPage + 1) % slides.size
+                    pagerState.animateScrollToPage(next)
+                }
+            }
     }
 
     Card(
@@ -173,22 +174,30 @@ fun HeroCarousel(
                         animationSpec = tween(MotionDurations.MEDIUM),
                         label = "heroIndicatorAlpha",
                     )
+                    // 触摸热区保持 >= 32dp，视觉圆点仍为 6dp
                     Box(
                         modifier = Modifier
-                            .width(dotWidth)
-                            .height(6.dp)
+                            .minimumInteractiveComponentSize()
                             .clip(CircleShape)
-                            .background(Color.White.copy(alpha = dotAlpha))
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
-                                indication = null,
+                                indication = ripple(bounded = false, radius = 16.dp),
                             ) {
                                 scope.launch {
                                     pagerState.animateScrollToPage(index)
                                 }
                             }
                             .semantics { contentDescription = pageDescription },
-                    )
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .width(dotWidth)
+                                .height(6.dp)
+                                .clip(CircleShape)
+                                .background(Color.White.copy(alpha = dotAlpha)),
+                        )
+                    }
                 }
             }
         }

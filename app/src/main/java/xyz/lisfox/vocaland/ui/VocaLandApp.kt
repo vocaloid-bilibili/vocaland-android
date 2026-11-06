@@ -11,6 +11,7 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
@@ -270,9 +271,9 @@ fun VocaLandApp(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth(),
-                enter = fadeIn(animationSpec = tween(MotionDurations.QUICK)) +
+                enter = fadeIn(animationSpec = tween(MotionDurations.EMPHASIZED)) +
                     slideInHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { -it / 5 },
-                exit = fadeOut(animationSpec = tween(MotionDurations.MEDIUM)) +
+                exit = fadeOut(animationSpec = tween(MotionDurations.EMPHASIZED)) +
                     slideOutHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { -it / 5 },
             ) {
                 CompactBottomBar(
@@ -295,7 +296,7 @@ fun VocaLandApp(
                 enterTransition = {
                     val direction = tabDirection()
                     if (direction != null) {
-                        fadeIn(animationSpec = tween(MotionDurations.MEDIUM)) +
+                        fadeIn(animationSpec = tween(MotionDurations.EMPHASIZED)) +
                             scaleIn(
                                 initialScale = 0.98f,
                                 animationSpec = tween(MotionDurations.EMPHASIZED),
@@ -304,7 +305,7 @@ fun VocaLandApp(
                                 it * direction
                             }
                     } else {
-                        fadeIn(animationSpec = tween(MotionDurations.QUICK)) +
+                        fadeIn(animationSpec = tween(MotionDurations.EMPHASIZED)) +
                             scaleIn(
                                 initialScale = 0.98f,
                                 animationSpec = tween(MotionDurations.EMPHASIZED),
@@ -315,19 +316,19 @@ fun VocaLandApp(
                 exitTransition = {
                     val direction = tabDirection()
                     if (direction != null) {
-                        fadeOut(animationSpec = tween(MotionDurations.MEDIUM)) +
+                        fadeOut(animationSpec = tween(MotionDurations.EMPHASIZED)) +
                             slideOutHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) {
                                 -it * direction
                             }
                     } else {
-                        fadeOut(animationSpec = tween(MotionDurations.MEDIUM)) +
+                        fadeOut(animationSpec = tween(MotionDurations.EMPHASIZED)) +
                             slideOutHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { -it / 5 }
                     }
                 },
                 popEnterTransition = {
                     val direction = tabDirection()
                     if (direction != null) {
-                        fadeIn(animationSpec = tween(MotionDurations.MEDIUM)) +
+                        fadeIn(animationSpec = tween(MotionDurations.EMPHASIZED)) +
                             scaleIn(
                                 initialScale = 0.98f,
                                 animationSpec = tween(MotionDurations.EMPHASIZED),
@@ -336,19 +337,19 @@ fun VocaLandApp(
                                 it * direction
                             }
                     } else {
-                        fadeIn(animationSpec = tween(MotionDurations.QUICK)) +
+                        fadeIn(animationSpec = tween(MotionDurations.EMPHASIZED)) +
                             slideInHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { -it / 5 }
                     }
                 },
                 popExitTransition = {
                     val direction = tabDirection()
                     if (direction != null) {
-                        fadeOut(animationSpec = tween(MotionDurations.MEDIUM)) +
+                        fadeOut(animationSpec = tween(MotionDurations.EMPHASIZED)) +
                             slideOutHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) {
                                 -it * direction
                             }
                     } else {
-                        fadeOut(animationSpec = tween(MotionDurations.QUICK)) +
+                        fadeOut(animationSpec = tween(MotionDurations.EMPHASIZED)) +
                             slideOutHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { it }
                     }
                 },
@@ -488,26 +489,6 @@ fun VocaLandApp(
                 }
                 composable(
                     route = Routes.LOGIN,
-                    enterTransition = {
-                        fadeIn(animationSpec = tween(MotionDurations.QUICK)) +
-                            scaleIn(
-                                initialScale = 0.98f,
-                                animationSpec = tween(MotionDurations.EMPHASIZED),
-                            ) +
-                            slideInHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { it }
-                    },
-                    exitTransition = {
-                        fadeOut(animationSpec = tween(MotionDurations.QUICK)) +
-                            slideOutHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { -it / 5 }
-                    },
-                    popEnterTransition = {
-                        fadeIn(animationSpec = tween(MotionDurations.QUICK)) +
-                            slideInHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { -it / 5 }
-                    },
-                    popExitTransition = {
-                        fadeOut(animationSpec = tween(MotionDurations.QUICK)) +
-                            slideOutHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { it }
-                    },
                 ) {
                     PageScaffold(
                         title = stringResource(R.string.page_login),
@@ -1390,6 +1371,21 @@ private fun CompactBottomBar(
                     val selected = currentRoute == destination.route
                     val isPlayer = destination.route == Routes.PLAYER
                     val label = stringResource(destination.labelRes)
+                    val contentColor by animateColorAsState(
+                        targetValue = if (selected) scheme.primary else scheme.onSurfaceVariant,
+                        animationSpec = tween(MotionDurations.FAST),
+                        label = "bottomBarContentColor",
+                    )
+                    val playerContainerColor by animateColorAsState(
+                        targetValue = if (selected) scheme.primary else scheme.primaryContainer,
+                        animationSpec = tween(MotionDurations.FAST),
+                        label = "bottomBarPlayerContainer",
+                    )
+                    val playerContentColor by animateColorAsState(
+                        targetValue = if (selected) scheme.onPrimary else scheme.onPrimaryContainer,
+                        animationSpec = tween(MotionDurations.FAST),
+                        label = "bottomBarPlayerContent",
+                    )
                     Column(
                         modifier = Modifier
                             .weight(1f)
@@ -1408,16 +1404,14 @@ private fun CompactBottomBar(
                                 modifier = Modifier
                                     .size(36.dp)
                                     .clip(CircleShape)
-                                    .background(
-                                        if (selected) scheme.primary else scheme.primaryContainer,
-                                    ),
+                                    .background(playerContainerColor),
                                 contentAlignment = Alignment.Center,
                             ) {
                                 Icon(
                                     imageVector = destination.icon,
                                     contentDescription = null,
                                     modifier = Modifier.size(18.dp),
-                                    tint = if (selected) scheme.onPrimary else scheme.onPrimaryContainer,
+                                    tint = playerContentColor,
                                 )
                             }
                             Spacer(Modifier.height(2.dp))
@@ -1426,15 +1420,16 @@ private fun CompactBottomBar(
                                 imageVector = destination.icon,
                                 contentDescription = null,
                                 modifier = Modifier.size(23.dp),
-                                tint = if (selected) scheme.primary else scheme.onSurfaceVariant,
+                                tint = contentColor,
                             )
                             Spacer(Modifier.height(2.dp))
                         }
                         Text(
                             text = label,
                             style = MaterialTheme.typography.labelSmall,
-                            color = if (selected) scheme.primary else scheme.onSurfaceVariant,
+                            color = contentColor,
                             maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
                         )
                     }
                 }

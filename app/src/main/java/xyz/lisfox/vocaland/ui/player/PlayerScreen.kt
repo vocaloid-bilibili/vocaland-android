@@ -50,6 +50,7 @@ import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -221,8 +222,9 @@ fun PlayerScreen(
                         key = { _, track -> track.bvid },
                         contentType = { _, _ -> "track" },
                     ) { index, track ->
+                        // animateItem 开销较大，仅在编辑模式（有增删/移动）时启用
                         TrackRow(
-                            modifier = Modifier.animateItem(),
+                            modifier = if (editingQueue) Modifier.animateItem() else Modifier,
                             index = index,
                             track = track,
                             selected = index == state.currentIndex,
@@ -809,7 +811,7 @@ private fun TrackRow(
                 IconButton(
                     onClick = onMoveUp,
                     enabled = canMoveUp,
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(40.dp).minimumInteractiveComponentSize(),
                 ) {
                     Icon(
                         imageVector = Icons.Filled.ArrowUpward,
@@ -821,7 +823,7 @@ private fun TrackRow(
                 IconButton(
                     onClick = onMoveDown,
                     enabled = canMoveDown,
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(40.dp).minimumInteractiveComponentSize(),
                 ) {
                     Icon(
                         imageVector = Icons.Filled.ArrowDownward,
@@ -832,7 +834,7 @@ private fun TrackRow(
                 }
                 IconButton(
                     onClick = onRemove,
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(40.dp).minimumInteractiveComponentSize(),
                 ) {
                     Icon(
                         imageVector = Icons.Filled.DeleteOutline,

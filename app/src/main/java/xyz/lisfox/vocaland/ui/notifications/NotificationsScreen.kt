@@ -234,7 +234,7 @@ private fun NotificationCard(
         } else {
             scheme.primaryContainer.copy(alpha = 0.45f)
         },
-        animationSpec = tween(MotionDurations.MEDIUM),
+        animationSpec = tween(MotionDurations.FAST),
         label = "notificationContainer",
     )
 
