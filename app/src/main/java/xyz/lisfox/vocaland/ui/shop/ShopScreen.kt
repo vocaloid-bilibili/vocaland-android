@@ -40,6 +40,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -47,6 +50,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import xyz.lisfox.vocaland.R
 import xyz.lisfox.vocaland.data.shop.ShopItemDto
 import xyz.lisfox.vocaland.data.shop.ShopRepository
 import xyz.lisfox.vocaland.ui.components.EmptyHint
@@ -57,10 +61,11 @@ import xyz.lisfox.vocaland.util.formatNumber
 
 private val CATEGORY_ORDER = listOf("ticket", "sponsor", "other")
 
+@Composable
 private fun categoryLabel(category: String): String = when (category) {
-    "ticket" -> "道具"
-    "sponsor" -> "会员"
-    else -> "其他"
+    "ticket" -> stringResource(R.string.shop_category_ticket)
+    "sponsor" -> stringResource(R.string.shop_category_sponsor)
+    else -> stringResource(R.string.shop_category_other)
 }
 
 private fun categoryIcon(category: String) = when (category) {
@@ -69,12 +74,13 @@ private fun categoryIcon(category: String) = when (category) {
     else -> Icons.Filled.Storefront
 }
 
+@Composable
 private fun itemSubtitle(item: ShopItemDto): String? = when {
     item.category == "sponsor" && (item.durationDays ?: 0) > 0 ->
-        "${item.durationDays} 天会员时长"
+        stringResource(R.string.shop_item_member_duration_format, item.durationDays ?: 0)
 
     item.category == "ticket" && (item.ticketCount ?: 0) > 0 ->
-        "每份 ${item.ticketCount} 张"
+        stringResource(R.string.shop_item_ticket_count_format, item.ticketCount ?: 0)
 
     else -> null
 }
@@ -137,18 +143,18 @@ fun ShopScreen(
                         Spacer(Modifier.size(10.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = "商城",
+                                text = stringResource(R.string.page_shop),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                             )
                             Text(
-                                text = "用 V币兑换道具与会员时长",
+                                text = stringResource(R.string.shop_subtitle),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
                         IconButton(onClick = { viewModel.load(includeWallet = isLoggedIn) }) {
-                            Icon(Icons.Filled.Refresh, contentDescription = "刷新")
+                            Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.action_refresh))
                         }
                     }
 
@@ -161,7 +167,7 @@ fun ShopScreen(
                         )
                         Spacer(Modifier.size(6.dp))
                         Text(
-                            text = "V币余额",
+                            text = stringResource(R.string.shop_balance_label),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -169,7 +175,7 @@ fun ShopScreen(
                         when {
                             !isLoggedIn -> {
                                 TextButton(onClick = { onLogin?.invoke() }) {
-                                    Text("登录后查看")
+                                    Text(stringResource(R.string.shop_login_to_view))
                                 }
                             }
 
@@ -182,7 +188,7 @@ fun ShopScreen(
 
                             state.walletError != null -> {
                                 Text(
-                                    text = "获取失败",
+                                    text = stringResource(R.string.shop_wallet_fetch_failed),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.error,
                                 )
@@ -209,7 +215,7 @@ fun ShopScreen(
                                 modifier = Modifier.size(18.dp),
                             )
                             Spacer(Modifier.size(8.dp))
-                            Text("查看钱包与签到")
+                            Text(stringResource(R.string.shop_action_open_wallet))
                         }
                     }
                 }
@@ -238,7 +244,7 @@ fun ShopScreen(
                 item {
                     LoadingPane(
                         modifier = Modifier.height(240.dp),
-                        text = "正在加载商品",
+                        text = stringResource(R.string.shop_loading),
                     )
                 }
             }
@@ -246,9 +252,9 @@ fun ShopScreen(
             state.error != null && state.items.isEmpty() -> {
                 item {
                     ScreenMessage(
-                        title = "商品加载失败",
+                        title = stringResource(R.string.shop_load_failed_title),
                         message = state.error!!,
-                        actionLabel = "重试",
+                        actionLabel = stringResource(R.string.action_retry),
                         onAction = { viewModel.load(includeWallet = isLoggedIn) },
                     )
                 }
@@ -256,7 +262,7 @@ fun ShopScreen(
 
             state.items.none { it.isActive } -> {
                 item {
-                    EmptyHint(text = "商城暂时没有上架商品")
+                    EmptyHint(text = stringResource(R.string.shop_empty))
                 }
             }
 
@@ -270,7 +276,7 @@ fun ShopScreen(
                         item(key = "header-$category") {
                             SectionHeader(
                                 title = categoryLabel(category),
-                                subtitle = "${group.size} 件商品",
+                                subtitle = stringResource(R.string.shop_section_count_format, group.size),
                             )
                         }
                         group.chunked(2).forEach { rowItems ->
@@ -360,7 +366,7 @@ private fun ShopItemCard(
                 )
                 if (held > 0) {
                     Text(
-                        text = "持有 $held",
+                        text = stringResource(R.string.shop_item_held_format, held),
                         style = MaterialTheme.typography.labelSmall,
                         color = scheme.onSurfaceVariant,
                     )
@@ -421,6 +427,8 @@ private fun PurchaseDialog(
     onConfirm: (Int) -> Unit,
 ) {
     var quantity by remember(item.id) { mutableIntStateOf(1) }
+    val decreaseLabel = stringResource(R.string.shop_quantity_decrease)
+    val increaseLabel = stringResource(R.string.shop_quantity_increase)
     val total = item.price * quantity
     val affordable = balance >= total
     val subtitle = itemSubtitle(item)
@@ -432,7 +440,7 @@ private fun PurchaseDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("购买「${item.name}」") },
+        title = { Text(stringResource(R.string.shop_purchase_dialog_title_format, item.name)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 if (!item.description.isNullOrBlank()) {
@@ -452,7 +460,7 @@ private fun PurchaseDialog(
 
                 if (!isLoggedIn) {
                     Text(
-                        text = "购买需要登录。登录后可查看 V币余额并下单。",
+                        text = stringResource(R.string.shop_purchase_login_required),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 } else {
@@ -465,7 +473,12 @@ private fun PurchaseDialog(
                             onClick = { if (quantity > 1) quantity -= 1 },
                             enabled = !purchasing && quantity > 1,
                         ) {
-                            Text("-")
+                            Text(
+                                text = "-",
+                                modifier = Modifier.clearAndSetSemantics {
+                                    contentDescription = decreaseLabel
+                                },
+                            )
                         }
                         Text(
                             text = quantity.toString(),
@@ -478,26 +491,34 @@ private fun PurchaseDialog(
                             },
                             enabled = !purchasing && quantity < ShopRepository.MAX_QUANTITY,
                         ) {
-                            Text("+")
+                            Text(
+                                text = "+",
+                                modifier = Modifier.clearAndSetSemantics {
+                                    contentDescription = increaseLabel
+                                },
+                            )
                         }
                     }
 
                     Text(
-                        text = "单价 ${item.price} V币 · 合计 $total V币",
+                        text = stringResource(R.string.shop_purchase_price_format, item.price, total),
                         style = MaterialTheme.typography.bodySmall,
                     )
                     if (delivered > 0) {
                         Text(
-                            text = "本次到账 $delivered 张（当前持有 $held 张）",
+                            text = stringResource(R.string.shop_purchase_delivered_format, delivered, held),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                     Text(
                         text = when {
-                            walletLoading -> "正在读取余额"
-                            walletError != null -> "余额读取失败，请稍后重试"
-                            else -> "当前余额 ${formatNumber(balance.toLong())} V币"
+                            walletLoading -> stringResource(R.string.shop_balance_loading)
+                            walletError != null -> stringResource(R.string.shop_balance_load_failed)
+                            else -> stringResource(
+                                R.string.shop_balance_format,
+                                formatNumber(balance.toLong()),
+                            )
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = if (!walletLoading && walletError == null && !affordable) {
@@ -532,7 +553,7 @@ private fun PurchaseDialog(
                             color = MaterialTheme.colorScheme.onPrimary,
                         )
                     } else {
-                        Text("确认购买")
+                        Text(stringResource(R.string.shop_confirm_purchase))
                     }
                 }
             } else if (onLogin != null) {
@@ -542,13 +563,13 @@ private fun PurchaseDialog(
                         onLogin()
                     },
                 ) {
-                    Text("去登录")
+                    Text(stringResource(R.string.action_login))
                 }
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("关闭")
+                Text(stringResource(R.string.action_close))
             }
         },
     )
