@@ -91,6 +91,51 @@ import kotlin.math.roundToInt
 
 private enum class PlayButtonState { Loading, Playing, Paused }
 
+@Composable
+private fun PlayButtonContent(state: PlayButtonState) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        AnimatedVisibility(
+            visible = state == PlayButtonState.Loading,
+            enter = fadeIn(tween(MotionDurations.FAST)),
+            exit = fadeOut(tween(MotionDurations.FAST)),
+        ) {
+            val loadingLabel = stringResource(R.string.loading)
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .size(26.dp)
+                    .semantics { contentDescription = loadingLabel },
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.onPrimary,
+            )
+        }
+        AnimatedVisibility(
+            visible = state == PlayButtonState.Playing,
+            enter = fadeIn(tween(MotionDurations.FAST)),
+            exit = fadeOut(tween(MotionDurations.FAST)),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Pause,
+                contentDescription = stringResource(R.string.player_pause),
+                modifier = Modifier.size(36.dp),
+            )
+        }
+        AnimatedVisibility(
+            visible = state == PlayButtonState.Paused,
+            enter = fadeIn(tween(MotionDurations.FAST)),
+            exit = fadeOut(tween(MotionDurations.FAST)),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.PlayArrow,
+                contentDescription = stringResource(R.string.player_play),
+                modifier = Modifier.size(36.dp),
+            )
+        }
+    }
+}
+
 private const val DANMAKU_LIMIT_MIN = 50
 private const val DANMAKU_LIMIT_MAX = 1000
 private const val DANMAKU_LIMIT_STEP = 50
@@ -395,52 +440,13 @@ private fun PlayerControls(
                 modifier = Modifier.size(66.dp),
                 enabled = hasTrack && !loadingTrack,
             ) {
-                val buttonState = when {
-                    loadingTrack -> PlayButtonState.Loading
-                    playing -> PlayButtonState.Playing
-                    else -> PlayButtonState.Paused
-                }
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    AnimatedVisibility(
-                        visible = buttonState == PlayButtonState.Loading,
-                        enter = fadeIn(tween(MotionDurations.FAST)),
-                        exit = fadeOut(tween(MotionDurations.FAST)),
-                    ) {
-                        val loadingLabel = stringResource(R.string.loading)
-                        CircularProgressIndicator(
-                            modifier = Modifier
-                                .size(26.dp)
-                                .semantics { contentDescription = loadingLabel },
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                        )
-                    }
-                    AnimatedVisibility(
-                        visible = buttonState == PlayButtonState.Playing,
-                        enter = fadeIn(tween(MotionDurations.FAST)),
-                        exit = fadeOut(tween(MotionDurations.FAST)),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Pause,
-                            contentDescription = stringResource(R.string.player_pause),
-                            modifier = Modifier.size(36.dp),
-                        )
-                    }
-                    AnimatedVisibility(
-                        visible = buttonState == PlayButtonState.Paused,
-                        enter = fadeIn(tween(MotionDurations.FAST)),
-                        exit = fadeOut(tween(MotionDurations.FAST)),
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.PlayArrow,
-                            contentDescription = stringResource(R.string.player_play),
-                            modifier = Modifier.size(36.dp),
-                        )
-                    }
-                }
+                PlayButtonContent(
+                    state = when {
+                        loadingTrack -> PlayButtonState.Loading
+                        playing -> PlayButtonState.Playing
+                        else -> PlayButtonState.Paused
+                    },
+                )
             }
             Spacer(Modifier.width(20.dp))
             IconButton(
