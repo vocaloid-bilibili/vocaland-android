@@ -101,6 +101,7 @@ fun PlayerScreen(
     val state by controller.state.collectAsStateWithLifecycle()
     var editingQueue by remember { mutableStateOf(false) }
     var showSettings by rememberSaveable { mutableStateOf(false) }
+    var videoBackgroundEnabled by rememberSaveable { mutableStateOf(true) }
     var danmakuEnabled by rememberSaveable { mutableStateOf(true) }
     var danmakuLimit by rememberSaveable { mutableIntStateOf(DANMAKU_LIMIT_DEFAULT) }
     val danmaku by produceState(
@@ -141,6 +142,19 @@ fun PlayerScreen(
 
         else -> {
             Box(modifier = modifier.fillMaxSize()) {
+                if (videoBackgroundEnabled && state.videoUrl != null) {
+                    VideoBackground(
+                        videoUrl = state.videoUrl,
+                        playing = state.playing,
+                        positionMs = state.positionMs,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.55f)),
+                    )
+                }
                 if (danmakuEnabled) {
                     DanmakuBackground(
                         danmaku = danmaku,
@@ -226,6 +240,8 @@ fun PlayerScreen(
                     volume = state.volume,
                     pauseWhenFinished = state.pauseWhenFinished,
                     playMode = state.playMode,
+                    videoBackgroundEnabled = videoBackgroundEnabled,
+                    onVideoBackgroundChange = { videoBackgroundEnabled = it },
                     danmakuEnabled = danmakuEnabled,
                     onDanmakuChange = { danmakuEnabled = it },
                     danmakuLimit = danmakuLimit,
@@ -461,6 +477,8 @@ private fun PlayerSettingsSheet(
     volume: Float,
     pauseWhenFinished: Boolean,
     playMode: PlayMode,
+    videoBackgroundEnabled: Boolean,
+    onVideoBackgroundChange: (Boolean) -> Unit,
     danmakuEnabled: Boolean,
     onDanmakuChange: (Boolean) -> Unit,
     danmakuLimit: Int,
@@ -519,6 +537,12 @@ private fun PlayerSettingsSheet(
                 )
             }
 
+            SettingsSwitchRow(
+                title = stringResource(R.string.player_video_background),
+                subtitle = stringResource(R.string.player_video_background_subtitle),
+                checked = videoBackgroundEnabled,
+                onCheckedChange = onVideoBackgroundChange,
+            )
             SettingsSwitchRow(
                 title = stringResource(R.string.player_danmaku),
                 subtitle = stringResource(R.string.player_danmaku_subtitle),

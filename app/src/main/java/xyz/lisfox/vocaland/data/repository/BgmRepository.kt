@@ -3,6 +3,7 @@ package xyz.lisfox.vocaland.data.repository
 import xyz.lisfox.vocaland.data.model.BgmTrack
 import xyz.lisfox.vocaland.data.model.BgmVideoDto
 import xyz.lisfox.vocaland.data.model.PlayUrlRequest
+import xyz.lisfox.vocaland.data.model.PlayUrlResponse
 import xyz.lisfox.vocaland.data.model.ResolvedBgmAudio
 import xyz.lisfox.vocaland.data.model.VideoBatchRequest
 import xyz.lisfox.vocaland.data.remote.PlayUrlApi
@@ -36,7 +37,24 @@ class BgmRepository(
             ?.baseUrl
             ?.takeIf { it.isNotBlank() }
             ?: error("暂无可用音轨")
-        ResolvedBgmAudio(url = url, cid = response.cid?.takeIf { it > 0 })
+        ResolvedBgmAudio(
+            url = url,
+            cid = response.cid?.takeIf { it > 0 },
+            videoUrl = response.bestVideoUrl(),
+        )
+    }
+
+    private fun PlayUrlResponse.bestVideoUrl(): String? {
+        val videos = videos.orEmpty()
+        val mp4 = videos.firstOrNull { video ->
+            video.format.equals("mp4", ignoreCase = true) &&
+                (!video.baseUrl.isNullOrBlank() || !video.backupUrl.isNullOrEmpty())
+        }
+        val selected = mp4 ?: videos.firstOrNull { video ->
+            !video.baseUrl.isNullOrBlank() || !video.backupUrl.isNullOrEmpty()
+        }
+        return selected?.baseUrl?.takeIf { it.isNotBlank() }
+            ?: selected?.backupUrl?.firstOrNull { it.isNotBlank() }
     }
 
     private fun BgmVideoDto.toTrack(): BgmTrack? {

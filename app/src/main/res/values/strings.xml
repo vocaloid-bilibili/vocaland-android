@@ -98,6 +98,8 @@
     <string name="player_progress">播放进度</string>
     <string name="player_settings_title">播放设置</string>
     <string name="player_volume">音量</string>
+    <string name="player_video_background">视频背景</string>
+    <string name="player_video_background_subtitle">模糊显示当前歌曲的视频画面</string>
     <string name="player_danmaku">弹幕</string>
     <string name="player_danmaku_subtitle">在播放器背景显示弹幕</string>
     <string name="player_danmaku_count">显示数量</string>

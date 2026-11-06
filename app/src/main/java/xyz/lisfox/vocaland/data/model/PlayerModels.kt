@@ -25,7 +25,15 @@ data class PlayUrlRequest(
 @Serializable
 data class PlayUrlResponse(
     val cid: Long? = null,
+    val videos: List<PlayUrlVideoDto>? = null,
     val audios: List<PlayUrlAudioDto>? = null,
+)
+
+@Serializable
+data class PlayUrlVideoDto(
+    val format: String? = null,
+    val baseUrl: String? = null,
+    val backupUrl: List<String>? = null,
 )
 
 @Serializable
@@ -36,6 +44,7 @@ data class PlayUrlAudioDto(
 data class ResolvedBgmAudio(
     val url: String,
     val cid: Long?,
+    val videoUrl: String?,
 )
 
 @Serializable

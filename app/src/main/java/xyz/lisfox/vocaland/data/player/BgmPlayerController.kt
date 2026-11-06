@@ -49,6 +49,7 @@ data class BgmPlayerState(
     val positionMs: Long = 0,
     val durationMs: Long = 0,
     val cid: Long? = null,
+    val videoUrl: String? = null,
     val error: String? = null,
     val playMode: PlayMode = PlayMode.LIST,
     val pauseWhenFinished: Boolean = false,
@@ -159,6 +160,7 @@ class BgmPlayerController(
                             currentIndex = index,
                             loadingPlaylist = false,
                             durationMs = merged.getOrNull(index)?.durationSeconds?.times(1000L) ?: 0,
+                            videoUrl = null,
                             error = null,
                         )
                     }
@@ -214,6 +216,7 @@ class BgmPlayerController(
                 playing = false,
                 positionMs = 0,
                 cid = null,
+                videoUrl = null,
                 durationMs = merged.getOrNull(index)?.durationSeconds?.times(1000L) ?: 0,
                 error = null,
             )
@@ -255,6 +258,7 @@ class BgmPlayerController(
                 playing = false,
                 positionMs = 0,
                 cid = null,
+                videoUrl = null,
                 durationMs = tracks[startIndex].durationSeconds * 1000L,
                 error = null,
             )
@@ -333,6 +337,7 @@ class BgmPlayerController(
                     playing = false,
                     positionMs = 0,
                     cid = null,
+                    videoUrl = null,
                     durationMs = 0,
                     error = null,
                 )
@@ -359,6 +364,7 @@ class BgmPlayerController(
                     playing = false,
                     positionMs = 0,
                     cid = null,
+                    videoUrl = null,
                     durationMs = nextTracks[nextIndex].durationSeconds * 1000L,
                 )
             }
@@ -425,6 +431,7 @@ class BgmPlayerController(
                 playing = false,
                 positionMs = 0,
                 cid = null,
+                videoUrl = null,
                 durationMs = track.durationSeconds * 1000L,
                 error = null,
             )
@@ -437,7 +444,7 @@ class BgmPlayerController(
             result
                 .onSuccess { audio ->
                     if (!isActive) return@onSuccess
-                    _state.update { it.copy(cid = audio.cid) }
+                    _state.update { it.copy(cid = audio.cid, videoUrl = audio.videoUrl) }
                     runCatching { preparePlayer(audio.url, track) }
                         .onFailure { error ->
                             releasePlayer()
@@ -446,6 +453,7 @@ class BgmPlayerController(
                                     loadingTrack = false,
                                     playing = false,
                                     cid = null,
+                                    videoUrl = null,
                                     error = error.message ?: "播放失败",
                                 )
                             }
@@ -496,7 +504,13 @@ class BgmPlayerController(
             prepareJob?.cancel()
             releasePlayer()
             _state.update {
-                it.copy(loadingTrack = false, playing = false, positionMs = 0, cid = null)
+                it.copy(
+                    loadingTrack = false,
+                    playing = false,
+                    positionMs = 0,
+                    cid = null,
+                    videoUrl = null,
+                )
             }
             return
         }
@@ -689,6 +703,7 @@ class BgmPlayerController(
                         loadingTrack = false,
                         playing = false,
                         cid = null,
+                        videoUrl = null,
                         error = "播放失败",
                     )
                 }
