@@ -1,7 +1,9 @@
 package xyz.lisfox.vocaland.ui.profile
 
-import androidx.compose.animation.Crossfade
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -123,15 +125,20 @@ fun ProfileScreen(
         verticalArrangement = Arrangement.spacedBy(22.dp),
     ) {
         item {
-            Crossfade(
-                targetState = sessionState.user,
-                animationSpec = tween(MotionDurations.MEDIUM),
-                label = "profileHeader",
-            ) { user ->
-                if (user == null) {
+            Box {
+                AnimatedVisibility(
+                    visible = sessionState.user == null,
+                    enter = fadeIn(tween(MotionDurations.MEDIUM)),
+                    exit = fadeOut(tween(MotionDurations.MEDIUM)),
+                ) {
                     GuestHeader(onLogin = onLogin)
-                } else {
-                    UserHeader(user = user)
+                }
+                AnimatedVisibility(
+                    visible = sessionState.user != null,
+                    enter = fadeIn(tween(MotionDurations.MEDIUM)),
+                    exit = fadeOut(tween(MotionDurations.MEDIUM)),
+                ) {
+                    sessionState.user?.let { UserHeader(user = it) }
                 }
             }
         }

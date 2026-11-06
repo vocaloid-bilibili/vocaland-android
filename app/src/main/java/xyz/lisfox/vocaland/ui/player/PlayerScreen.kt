@@ -1,8 +1,10 @@
 package xyz.lisfox.vocaland.ui.player
 
-import androidx.compose.animation.Crossfade
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -393,34 +395,46 @@ private fun PlayerControls(
                 modifier = Modifier.size(66.dp),
                 enabled = hasTrack && !loadingTrack,
             ) {
-                Crossfade(
-                    targetState = when {
-                        loadingTrack -> PlayButtonState.Loading
-                        playing -> PlayButtonState.Playing
-                        else -> PlayButtonState.Paused
-                    },
-                    animationSpec = tween(MotionDurations.FAST),
-                    label = "playPauseCrossfade",
-                ) { buttonState ->
-                    when (buttonState) {
-                        PlayButtonState.Loading -> {
-                            val loadingLabel = stringResource(R.string.loading)
-                            CircularProgressIndicator(
-                                modifier = Modifier
-                                    .size(26.dp)
-                                    .semantics { contentDescription = loadingLabel },
-                                strokeWidth = 2.dp,
-                                color = MaterialTheme.colorScheme.onPrimary,
-                            )
-                        }
-
-                        PlayButtonState.Playing -> Icon(
+                val buttonState = when {
+                    loadingTrack -> PlayButtonState.Loading
+                    playing -> PlayButtonState.Playing
+                    else -> PlayButtonState.Paused
+                }
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    AnimatedVisibility(
+                        visible = buttonState == PlayButtonState.Loading,
+                        enter = fadeIn(tween(MotionDurations.FAST)),
+                        exit = fadeOut(tween(MotionDurations.FAST)),
+                    ) {
+                        val loadingLabel = stringResource(R.string.loading)
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(26.dp)
+                                .semantics { contentDescription = loadingLabel },
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                        )
+                    }
+                    AnimatedVisibility(
+                        visible = buttonState == PlayButtonState.Playing,
+                        enter = fadeIn(tween(MotionDurations.FAST)),
+                        exit = fadeOut(tween(MotionDurations.FAST)),
+                    ) {
+                        Icon(
                             imageVector = Icons.Filled.Pause,
                             contentDescription = stringResource(R.string.player_pause),
                             modifier = Modifier.size(36.dp),
                         )
-
-                        PlayButtonState.Paused -> Icon(
+                    }
+                    AnimatedVisibility(
+                        visible = buttonState == PlayButtonState.Paused,
+                        enter = fadeIn(tween(MotionDurations.FAST)),
+                        exit = fadeOut(tween(MotionDurations.FAST)),
+                    ) {
+                        Icon(
                             imageVector = Icons.Filled.PlayArrow,
                             contentDescription = stringResource(R.string.player_play),
                             modifier = Modifier.size(36.dp),
