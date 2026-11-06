@@ -6,6 +6,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,7 +19,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.minimumInteractiveComponentSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
@@ -150,6 +150,7 @@ fun HeroCarousel(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(end = 14.dp, bottom = 14.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 repeat(slides.size) { index ->
@@ -174,10 +175,11 @@ fun HeroCarousel(
                     )
                     Box(
                         modifier = Modifier
-                            .size(40.dp)
-                            .minimumInteractiveComponentSize()
-                            .clip(CircleShape)
-                            .clickable {
+                            .size(32.dp)
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                            ) {
                                 scope.launch {
                                     pagerState.animateScrollToPage(index)
                                 }
@@ -188,7 +190,7 @@ fun HeroCarousel(
                         Box(
                             modifier = Modifier
                                 .width(dotWidth)
-                                .height(8.dp)
+                                .height(6.dp)
                                 .clip(CircleShape)
                                 .background(Color.White.copy(alpha = dotAlpha)),
                         )
