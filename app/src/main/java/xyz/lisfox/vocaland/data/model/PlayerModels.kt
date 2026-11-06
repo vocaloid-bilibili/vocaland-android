@@ -38,6 +38,7 @@ data class ResolvedBgmAudio(
     val cid: Long?,
 )
 
+@Serializable
 data class BgmTrack(
     val songId: Int,
     val bvid: String,

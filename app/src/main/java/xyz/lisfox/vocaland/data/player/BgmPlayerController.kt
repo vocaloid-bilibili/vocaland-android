@@ -17,11 +17,15 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import xyz.lisfox.vocaland.data.model.BgmTrack
 import xyz.lisfox.vocaland.R
+import xyz.lisfox.vocaland.data.preferences.PlayerQueuePreferences
+import xyz.lisfox.vocaland.data.preferences.SavedPlayerQueue
 import xyz.lisfox.vocaland.data.repository.BgmRepository
 import xyz.lisfox.vocaland.playback.BgmPlaybackService
 
@@ -61,6 +65,7 @@ class BgmPlayerController(
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val _state = MutableStateFlow(BgmPlayerState())
     val state: StateFlow<BgmPlayerState> = _state.asStateFlow()
+    private val queuePreferences = PlayerQueuePreferences(context)
 
     private val audioManager =
         context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
@@ -93,10 +98,33 @@ class BgmPlayerController(
     private var pendingPlay: BgmTrack? = null
     private val shuffleQueue = ArrayDeque<Int>()
 
+    init {
+        scope.launch {
+            state
+                .map { it.tracks to it.currentIndex }
+                .distinctUntilChanged()
+                .collect { (tracks, index) ->
+                    if (loaded) {
+                        queuePreferences.save(
+                            tracks = tracks,
+                            currentBvid = tracks.getOrNull(index)?.bvid,
+                            currentIndex = index,
+                        )
+                    }
+                }
+        }
+    }
+
     fun ensureLoaded() {
         if (loaded || loadJob?.isActive == true) return
         _state.update { it.copy(loadingPlaylist = true, error = null) }
         loadJob = scope.launch {
+            val savedQueue = queuePreferences.load()
+            if (!isActive) return@launch
+            if (savedQueue != null) {
+                restoreSavedQueue(savedQueue)
+                return@launch
+            }
             val result = repository.loadTracks()
             if (!isActive) return@launch
             result
@@ -150,6 +178,52 @@ class BgmPlayerController(
                     }
                 }
         }
+    }
+
+    private fun restoreSavedQueue(saved: SavedPlayerQueue) {
+        val merged = saved.tracks.toMutableList()
+        pendingQueueAdds.forEach { pending ->
+            if (merged.none { it.bvid == pending.bvid }) merged.add(pending)
+        }
+        pendingQueueAdds.clear()
+
+        var index = saved.currentBvid
+            ?.let { bvid -> merged.indexOfFirst { it.bvid == bvid } }
+            ?.takeIf { it >= 0 }
+            ?: saved.currentIndex.coerceIn(0, merged.lastIndex.coerceAtLeast(0))
+
+        val playTarget = pendingPlay
+        pendingPlay = null
+        if (playTarget != null) {
+            val existing = merged.indexOfFirst { it.bvid == playTarget.bvid }
+            index = if (existing >= 0) {
+                existing
+            } else {
+                merged.add(playTarget)
+                merged.lastIndex
+            }
+        }
+
+        loaded = true
+        _state.update {
+            it.copy(
+                tracks = merged,
+                currentIndex = index,
+                loadingPlaylist = false,
+                loadingTrack = false,
+                playing = false,
+                positionMs = 0,
+                cid = null,
+                durationMs = merged.getOrNull(index)?.durationSeconds?.times(1000L) ?: 0,
+                error = null,
+            )
+        }
+        if (_state.value.playMode == PlayMode.SHUFFLE) {
+            resetShuffleQueue(index, merged)
+        } else {
+            shuffleQueue.clear()
+        }
+        if (playTarget != null) playAt(index)
     }
 
     fun retry() {
