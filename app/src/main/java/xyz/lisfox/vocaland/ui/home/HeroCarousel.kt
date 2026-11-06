@@ -150,7 +150,7 @@ fun HeroCarousel(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(end = 14.dp, bottom = 14.dp),
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 repeat(slides.size) { index ->
@@ -161,7 +161,7 @@ fun HeroCarousel(
                         slides.size,
                     )
                     val dotWidth by animateDpAsState(
-                        targetValue = if (selected) 18.dp else 8.dp,
+                        targetValue = if (selected) 16.dp else 6.dp,
                         animationSpec = tween(
                             durationMillis = MotionDurations.MEDIUM,
                             easing = FastOutSlowInEasing,
@@ -175,7 +175,10 @@ fun HeroCarousel(
                     )
                     Box(
                         modifier = Modifier
-                            .size(32.dp)
+                            .width(dotWidth)
+                            .height(6.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = dotAlpha))
                             .clickable(
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
@@ -185,16 +188,7 @@ fun HeroCarousel(
                                 }
                             }
                             .semantics { contentDescription = pageDescription },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .width(dotWidth)
-                                .height(6.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = dotAlpha)),
-                        )
-                    }
+                    )
                 }
             }
         }
