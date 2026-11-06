@@ -1410,7 +1410,7 @@ private fun CompactBottomBar(
                         if (isPlayer) {
                             Box(
                                 modifier = Modifier
-                                    .size(44.dp)
+                                    .size(40.dp)
                                     .clip(CircleShape)
                                     .background(
                                         if (selected) scheme.primary else scheme.primaryContainer,
@@ -1420,7 +1420,7 @@ private fun CompactBottomBar(
                                 Icon(
                                     imageVector = destination.icon,
                                     contentDescription = null,
-                                    modifier = Modifier.size(22.dp),
+                                    modifier = Modifier.size(20.dp),
                                     tint = if (selected) scheme.onPrimary else scheme.onPrimaryContainer,
                                 )
                             }
