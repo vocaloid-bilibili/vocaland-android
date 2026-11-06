@@ -21,7 +21,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
@@ -76,6 +78,7 @@ import xyz.lisfox.vocaland.data.model.BgmTrack
 import xyz.lisfox.vocaland.data.model.DanmakuItem
 import xyz.lisfox.vocaland.data.player.BgmPlayerController
 import xyz.lisfox.vocaland.data.player.PlayMode
+import xyz.lisfox.vocaland.data.preferences.PlayerVideoPreferences
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.MotionDurations
 import xyz.lisfox.vocaland.ui.components.NetworkImage
@@ -90,15 +93,18 @@ private const val DANMAKU_LIMIT_MAX = 1000
 private const val DANMAKU_LIMIT_STEP = 50
 private const val DANMAKU_LIMIT_DEFAULT = 500
 private const val DANMAKU_LIMIT_UNLIMITED = -1
+private const val VIDEO_FADE_PERCENT_STEP = 5
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun PlayerScreen(
     controller: BgmPlayerController,
     danmakuRepository: DanmakuRepository,
+    videoPreferences: PlayerVideoPreferences,
     modifier: Modifier = Modifier,
 ) {
     val state by controller.state.collectAsStateWithLifecycle()
+    val videoSettings by videoPreferences.settings.collectAsStateWithLifecycle()
     var editingQueue by remember { mutableStateOf(false) }
     var showSettings by rememberSaveable { mutableStateOf(false) }
     var videoBackgroundEnabled by rememberSaveable { mutableStateOf(true) }
@@ -147,6 +153,8 @@ fun PlayerScreen(
                         videoUrl = state.videoUrl,
                         playing = state.playing,
                         positionMs = state.positionMs,
+                        frameRate = videoSettings.frameRate,
+                        fadePercent = videoSettings.fadePercent,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -237,6 +245,10 @@ fun PlayerScreen(
                     playMode = state.playMode,
                     videoBackgroundEnabled = videoBackgroundEnabled,
                     onVideoBackgroundChange = { videoBackgroundEnabled = it },
+                    videoFrameRate = videoSettings.frameRate,
+                    onVideoFrameRateChange = videoPreferences::setFrameRate,
+                    videoFadePercent = videoSettings.fadePercent,
+                    onVideoFadePercentChange = videoPreferences::setFadePercent,
                     danmakuEnabled = danmakuEnabled,
                     onDanmakuChange = { danmakuEnabled = it },
                     danmakuLimit = danmakuLimit,
@@ -474,6 +486,10 @@ private fun PlayerSettingsSheet(
     playMode: PlayMode,
     videoBackgroundEnabled: Boolean,
     onVideoBackgroundChange: (Boolean) -> Unit,
+    videoFrameRate: Int,
+    onVideoFrameRateChange: (Int) -> Unit,
+    videoFadePercent: Int,
+    onVideoFadePercentChange: (Int) -> Unit,
     danmakuEnabled: Boolean,
     onDanmakuChange: (Boolean) -> Unit,
     danmakuLimit: Int,
@@ -482,6 +498,18 @@ private fun PlayerSettingsSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     val volumeLabel = stringResource(R.string.player_volume)
+    val videoFrameRateLabel = stringResource(R.string.player_video_frame_rate)
+    val videoFadePercentLabel = stringResource(R.string.player_video_fade_percent)
+    val videoFrameRateRange = PlayerVideoPreferences.FRAME_RATE_MIN.toFloat().rangeTo(
+        PlayerVideoPreferences.FRAME_RATE_MAX.toFloat(),
+    )
+    val videoFrameRateSteps = PlayerVideoPreferences.FRAME_RATE_MAX -
+        PlayerVideoPreferences.FRAME_RATE_MIN - 1
+    val videoFadePercentRange = PlayerVideoPreferences.FADE_PERCENT_MIN.toFloat().rangeTo(
+        PlayerVideoPreferences.FADE_PERCENT_MAX.toFloat(),
+    )
+    val videoFadePercentSteps = (PlayerVideoPreferences.FADE_PERCENT_MAX -
+        PlayerVideoPreferences.FADE_PERCENT_MIN) / VIDEO_FADE_PERCENT_STEP - 1
     val danmakuCountLabel = stringResource(R.string.player_danmaku_count)
     val limitSliderValue = if (danmakuLimit == DANMAKU_LIMIT_UNLIMITED) {
         DANMAKU_LIMIT_MAX.toFloat()
@@ -495,6 +523,7 @@ private fun PlayerSettingsSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 20.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
@@ -538,6 +567,72 @@ private fun PlayerSettingsSheet(
                 checked = videoBackgroundEnabled,
                 onCheckedChange = onVideoBackgroundChange,
             )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = videoFrameRateLabel,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        text = stringResource(R.string.player_video_frame_rate_value, videoFrameRate),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Slider(
+                    value = videoFrameRate.toFloat(),
+                    onValueChange = { onVideoFrameRateChange(it.roundToInt()) },
+                    valueRange = videoFrameRateRange,
+                    steps = videoFrameRateSteps,
+                    enabled = videoBackgroundEnabled,
+                    modifier = Modifier.semantics { contentDescription = videoFrameRateLabel },
+                )
+            }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = videoFadePercentLabel,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.player_video_fade_percent_value,
+                            videoFadePercent,
+                        ),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Slider(
+                    value = videoFadePercent.toFloat(),
+                    onValueChange = { onVideoFadePercentChange(it.roundToInt()) },
+                    valueRange = videoFadePercentRange,
+                    steps = videoFadePercentSteps,
+                    enabled = videoBackgroundEnabled,
+                    modifier = Modifier.semantics { contentDescription = videoFadePercentLabel },
+                )
+                Text(
+                    text = stringResource(R.string.player_video_fade_percent_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             SettingsSwitchRow(
                 title = stringResource(R.string.player_danmaku),
                 subtitle = stringResource(R.string.player_danmaku_subtitle),

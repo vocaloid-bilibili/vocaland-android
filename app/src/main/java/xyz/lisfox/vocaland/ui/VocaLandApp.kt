@@ -419,6 +419,7 @@ fun VocaLandApp(
                         PlayerScreen(
                             controller = container.bgmPlayerController,
                             danmakuRepository = container.danmakuRepository,
+                            videoPreferences = container.playerVideoPreferences,
                             modifier = contentModifier,
                         )
                     }

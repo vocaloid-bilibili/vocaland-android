@@ -39,8 +39,6 @@ import kotlinx.coroutines.isActive
 import kotlin.math.abs
 
 private const val VIDEO_SYNC_THRESHOLD_MS = 900L
-private const val FRAME_INTERVAL_MS = 1_000L
-private const val FRAME_FADE_MS = 500
 private const val FRAME_WIDTH = 320
 private const val FRAME_HEIGHT = 180
 
@@ -49,8 +47,13 @@ internal fun VideoBackground(
     videoUrl: String?,
     playing: Boolean,
     positionMs: Long,
+    frameRate: Int,
+    fadePercent: Int,
     modifier: Modifier = Modifier,
 ) {
+    val frameIntervalMs = (1_000L / frameRate.coerceAtLeast(1)).coerceAtLeast(1L)
+    val fadeDurationMs =
+        (frameIntervalMs * fadePercent.coerceIn(0, 100) / 100).toInt()
     val context = LocalContext.current
     val player = remember(context) { FrameVideoPlayer(context) }
     var previousFrame by remember { mutableStateOf<ImageBitmap?>(null) }
@@ -58,6 +61,8 @@ internal fun VideoBackground(
     val fade = remember { Animatable(1f) }
     val videoUrlState by rememberUpdatedState(videoUrl)
     val playingState by rememberUpdatedState(playing)
+    val frameIntervalState by rememberUpdatedState(frameIntervalMs)
+    val fadeDurationState by rememberUpdatedState(fadeDurationMs)
     DisposableEffect(player) {
         onDispose { player.release() }
     }
@@ -70,19 +75,21 @@ internal fun VideoBackground(
                 if (bitmap != null) {
                     val nextFrame = bitmap.asImageBitmap()
                     val hasPrevious = currentFrame != null
+                    val fadeMillis = fadeDurationState
                     previousFrame = currentFrame
                     currentFrame = nextFrame
-                    if (hasPrevious) {
+                    if (hasPrevious && fadeMillis > 0) {
                         fade.snapTo(0f)
-                        fade.animateTo(1f, tween(durationMillis = FRAME_FADE_MS))
+                        fade.animateTo(1f, tween(durationMillis = fadeMillis))
                         previousFrame = null
                     } else {
                         fade.snapTo(1f)
+                        previousFrame = null
                     }
                 }
             }
             val elapsed = SystemClock.elapsedRealtime() - startedAt
-            delay((FRAME_INTERVAL_MS - elapsed).coerceAtLeast(0L))
+            delay((frameIntervalState - elapsed).coerceAtLeast(0L))
         }
     }
     Box(modifier = modifier) {

@@ -26,6 +26,7 @@ import xyz.lisfox.vocaland.data.discovery.TagIndexRepository
 import xyz.lisfox.vocaland.data.notification.NotificationApi
 import xyz.lisfox.vocaland.data.notification.NotificationRepository
 import xyz.lisfox.vocaland.data.player.BgmPlayerController
+import xyz.lisfox.vocaland.data.preferences.PlayerVideoPreferences
 import xyz.lisfox.vocaland.data.preferences.ThemePreferences
 import xyz.lisfox.vocaland.data.remote.AppJson
 import xyz.lisfox.vocaland.data.remote.AuthApi
@@ -159,6 +160,7 @@ class AppContainer(context: Context) {
     )
     val updateDownloader = UpdateDownloader(appContext)
     val themePreferences = ThemePreferences(appContext)
+    val playerVideoPreferences = PlayerVideoPreferences(appContext)
 
     private fun retrofit(
         baseUrl: String,

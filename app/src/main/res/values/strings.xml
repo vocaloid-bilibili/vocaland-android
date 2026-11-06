@@ -100,6 +100,11 @@
     <string name="player_volume">音量</string>
     <string name="player_video_background">视频背景</string>
     <string name="player_video_background_subtitle">模糊显示当前歌曲的视频画面</string>
+    <string name="player_video_frame_rate">每秒帧数</string>
+    <string name="player_video_frame_rate_value">%1$d 帧/秒</string>
+    <string name="player_video_fade_percent">渐变速度</string>
+    <string name="player_video_fade_percent_value">%1$d%%</string>
+    <string name="player_video_fade_percent_hint">100% 表示用满一个帧间隔完成渐变，50% 表示用一半时间</string>
     <string name="player_danmaku">弹幕</string>
     <string name="player_danmaku_subtitle">在播放器背景显示弹幕</string>
     <string name="player_danmaku_count">显示数量</string>
