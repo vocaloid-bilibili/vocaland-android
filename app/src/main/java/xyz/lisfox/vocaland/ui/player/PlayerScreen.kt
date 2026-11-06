@@ -9,8 +9,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -31,19 +29,26 @@ import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.RepeatOne
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.VolumeOff
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -51,6 +56,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -83,16 +89,21 @@ fun PlayerScreen(
 ) {
     val state by controller.state.collectAsStateWithLifecycle()
     var editingQueue by remember { mutableStateOf(false) }
+    var showSettings by rememberSaveable { mutableStateOf(false) }
+    var danmakuEnabled by rememberSaveable { mutableStateOf(true) }
     val danmaku by produceState(
         initialValue = emptyList<DanmakuItem>(),
         key1 = state.cid,
+        key2 = danmakuEnabled,
     ) {
         val cid = state.cid
-        if (cid != null) {
+        if (danmakuEnabled && cid != null) {
             val loaded = danmakuRepository.load(cid).getOrDefault(emptyList())
             if (cid == state.cid) {
                 value = loaded
             }
+        } else {
+            value = emptyList()
         }
     }
 
@@ -118,13 +129,15 @@ fun PlayerScreen(
 
         else -> {
             Box(modifier = modifier.fillMaxSize()) {
-                DanmakuBackground(
-                    danmaku = danmaku,
-                    cid = state.cid,
-                    playing = state.playing,
-                    positionMs = state.positionMs,
-                    modifier = Modifier.fillMaxSize(),
-                )
+                if (danmakuEnabled) {
+                    DanmakuBackground(
+                        danmaku = danmaku,
+                        cid = state.cid,
+                        playing = state.playing,
+                        positionMs = state.positionMs,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
@@ -143,7 +156,7 @@ fun PlayerScreen(
                             durationMs = state.durationMs,
                             hasTrack = state.currentTrack != null,
                             playMode = state.playMode,
-                            volume = state.volume,
+                            onOpenSettings = { showSettings = true },
                         )
                     }
 
@@ -193,6 +206,17 @@ fun PlayerScreen(
                         )
                     }
                 }
+            }
+            if (showSettings) {
+                PlayerSettingsSheet(
+                    controller = controller,
+                    volume = state.volume,
+                    pauseWhenFinished = state.pauseWhenFinished,
+                    playMode = state.playMode,
+                    danmakuEnabled = danmakuEnabled,
+                    onDanmakuChange = { danmakuEnabled = it },
+                    onDismiss = { showSettings = false },
+                )
             }
         }
     }
@@ -249,7 +273,6 @@ private fun PlayerHero(track: BgmTrack?) {
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun PlayerControls(
     controller: BgmPlayerController,
@@ -259,7 +282,7 @@ private fun PlayerControls(
     durationMs: Long,
     hasTrack: Boolean,
     playMode: PlayMode,
-    volume: Float,
+    onOpenSettings: () -> Unit,
 ) {
     val duration = durationMs.coerceAtLeast(1L)
     var dragging by remember { mutableStateOf(false) }
@@ -371,50 +394,150 @@ private fun PlayerControls(
             }
         }
 
-        Spacer(Modifier.height(10.dp))
-        FlowRow(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(
-                8.dp,
-                Alignment.CenterHorizontally,
-            ),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            PlayMode.entries.forEach { mode ->
-                FilterChip(
-                    selected = playMode == mode,
-                    onClick = { controller.setPlayMode(mode) },
-                    label = { Text(mode.label) },
-                    border = null,
-                )
-            }
-        }
-
         Spacer(Modifier.height(12.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Icon(
-                imageVector = if (volume == 0f) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Slider(
-                value = volume,
-                onValueChange = controller::setVolume,
-                valueRange = 0f..1f,
-                modifier = Modifier.weight(1f),
-            )
+            TextButton(
+                onClick = {
+                    controller.setPlayMode(
+                        PlayMode.entries[(playMode.ordinal + 1) % PlayMode.entries.size],
+                    )
+                },
+            ) {
+                Icon(
+                    imageVector = when (playMode) {
+                        PlayMode.SINGLE -> Icons.Filled.RepeatOne
+                        PlayMode.LIST -> Icons.Filled.Repeat
+                        PlayMode.SHUFFLE -> Icons.Filled.Shuffle
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.width(6.dp))
+                Text(playMode.label)
+            }
+            TextButton(onClick = onOpenSettings) {
+                Icon(
+                    imageVector = Icons.Filled.Settings,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                )
+                Spacer(Modifier.width(6.dp))
+                Text("设置")
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PlayerSettingsSheet(
+    controller: BgmPlayerController,
+    volume: Float,
+    pauseWhenFinished: Boolean,
+    playMode: PlayMode,
+    danmakuEnabled: Boolean,
+    onDanmakuChange: (Boolean) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             Text(
-                text = "${(volume * 100).roundToInt()}%",
-                modifier = Modifier.width(40.dp),
-                style = MaterialTheme.typography.labelSmall,
+                text = "播放设置",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.height(4.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Icon(
+                    imageVector = if (volume == 0f) Icons.Filled.VolumeOff else Icons.Filled.VolumeUp,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Slider(
+                    value = volume,
+                    onValueChange = controller::setVolume,
+                    valueRange = 0f..1f,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = "${(volume * 100).roundToInt()}%",
+                    modifier = Modifier.width(40.dp),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.End,
+                )
+            }
+
+            SettingsSwitchRow(
+                title = "弹幕",
+                subtitle = "在播放器背景显示弹幕",
+                checked = danmakuEnabled,
+                onCheckedChange = onDanmakuChange,
+            )
+            SettingsSwitchRow(
+                title = "播完暂停",
+                subtitle = when (playMode) {
+                    PlayMode.SINGLE -> "单曲播放结束后暂停"
+                    PlayMode.LIST -> "列表最后一首播放结束后暂停"
+                    PlayMode.SHUFFLE -> "一轮随机播放结束后暂停"
+                },
+                checked = pauseWhenFinished,
+                onCheckedChange = controller::setPauseWhenFinished,
+            )
+            Spacer(Modifier.height(24.dp))
+        }
+    }
+}
+
+@Composable
+private fun SettingsSwitchRow(
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable { onCheckedChange(!checked) }
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.End,
             )
         }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+        )
     }
 }
 
