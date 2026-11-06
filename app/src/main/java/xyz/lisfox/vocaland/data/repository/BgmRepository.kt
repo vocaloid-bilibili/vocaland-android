@@ -3,6 +3,7 @@ package xyz.lisfox.vocaland.data.repository
 import xyz.lisfox.vocaland.data.model.BgmTrack
 import xyz.lisfox.vocaland.data.model.BgmVideoDto
 import xyz.lisfox.vocaland.data.model.PlayUrlRequest
+import xyz.lisfox.vocaland.data.model.ResolvedBgmAudio
 import xyz.lisfox.vocaland.data.model.VideoBatchRequest
 import xyz.lisfox.vocaland.data.remote.PlayUrlApi
 import xyz.lisfox.vocaland.data.remote.VocaLandApi
@@ -26,15 +27,16 @@ class BgmRepository(
         videos.mapNotNull { it?.toTrack() }
     }
 
-    suspend fun resolveAudioUrl(bvid: String): Result<String> = runCatching {
+    suspend fun resolveAudio(bvid: String): Result<ResolvedBgmAudio> = runCatching {
         val aid = bvidToAid(bvid)
         check(aid > 0) { "无法解析 BV 号" }
-        playUrlApi.resolve(PlayUrlRequest(aid))
-            .audios
+        val response = playUrlApi.resolve(PlayUrlRequest(aid))
+        val url = response.audios
             ?.firstOrNull()
             ?.baseUrl
             ?.takeIf { it.isNotBlank() }
             ?: error("暂无可用音轨")
+        ResolvedBgmAudio(url = url, cid = response.cid?.takeIf { it > 0 })
     }
 
     private fun BgmVideoDto.toTrack(): BgmTrack? {

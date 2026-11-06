@@ -49,6 +49,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -59,7 +60,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import xyz.lisfox.vocaland.data.danmaku.DanmakuRepository
 import xyz.lisfox.vocaland.data.model.BgmTrack
+import xyz.lisfox.vocaland.data.model.DanmakuItem
 import xyz.lisfox.vocaland.data.player.BgmPlayerController
 import xyz.lisfox.vocaland.data.player.PlayMode
 import xyz.lisfox.vocaland.ui.components.LoadingPane
@@ -75,10 +78,23 @@ private enum class PlayButtonState { Loading, Playing, Paused }
 @Composable
 fun PlayerScreen(
     controller: BgmPlayerController,
+    danmakuRepository: DanmakuRepository,
     modifier: Modifier = Modifier,
 ) {
     val state by controller.state.collectAsStateWithLifecycle()
     var editingQueue by remember { mutableStateOf(false) }
+    val danmaku by produceState(
+        initialValue = emptyList<DanmakuItem>(),
+        key1 = state.cid,
+    ) {
+        val cid = state.cid
+        if (cid != null) {
+            val loaded = danmakuRepository.load(cid).getOrDefault(emptyList())
+            if (cid == state.cid) {
+                value = loaded
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         controller.ensureLoaded()
@@ -101,72 +117,81 @@ fun PlayerScreen(
         }
 
         else -> {
-            LazyColumn(
-                modifier = modifier.fillMaxSize(),
-                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                item {
-                    PlayerHero(track = state.currentTrack)
-                }
-
-                item {
-                    PlayerControls(
-                        controller = controller,
-                        loadingTrack = state.loadingTrack,
-                        playing = state.playing,
-                        positionMs = state.positionMs,
-                        durationMs = state.durationMs,
-                        hasTrack = state.currentTrack != null,
-                        playMode = state.playMode,
-                        volume = state.volume,
-                    )
-                }
-
-                state.error
-                    ?.takeIf { it.isNotBlank() }
-                    ?.let { error ->
-                        item {
-                            Text(
-                                text = error,
-                                modifier = Modifier.fillMaxWidth(),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.error,
-                                textAlign = TextAlign.Center,
-                            )
-                        }
+            Box(modifier = modifier.fillMaxSize()) {
+                DanmakuBackground(
+                    danmaku = danmaku,
+                    cid = state.cid,
+                    playing = state.playing,
+                    positionMs = state.positionMs,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(horizontal = 20.dp, vertical = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    item {
+                        PlayerHero(track = state.currentTrack)
                     }
 
-                item {
-                    SectionHeader(
-                        title = "播放列表",
-                        subtitle = "共 ${state.tracks.size} 首",
-                        action = {
-                            TextButton(onClick = { editingQueue = !editingQueue }) {
-                                Text(if (editingQueue) "完成" else "编辑")
-                            }
-                        },
-                    )
-                }
+                    item {
+                        PlayerControls(
+                            controller = controller,
+                            loadingTrack = state.loadingTrack,
+                            playing = state.playing,
+                            positionMs = state.positionMs,
+                            durationMs = state.durationMs,
+                            hasTrack = state.currentTrack != null,
+                            playMode = state.playMode,
+                            volume = state.volume,
+                        )
+                    }
 
-                itemsIndexed(
-                    items = state.tracks,
-                    key = { _, track -> track.bvid },
-                    contentType = { _, _ -> "track" },
-                ) { index, track ->
-                    TrackRow(
-                        modifier = Modifier.animateItem(),
-                        index = index,
-                        track = track,
-                        selected = index == state.currentIndex,
-                        editing = editingQueue,
-                        canMoveUp = index > 0,
-                        canMoveDown = index < state.tracks.lastIndex,
-                        onClick = { controller.playAt(index) },
-                        onMoveUp = { controller.moveTrack(index, index - 1) },
-                        onMoveDown = { controller.moveTrack(index, index + 1) },
-                        onRemove = { controller.removeTrack(index) },
-                    )
+                    state.error
+                        ?.takeIf { it.isNotBlank() }
+                        ?.let { error ->
+                            item {
+                                Text(
+                                    text = error,
+                                    modifier = Modifier.fillMaxWidth(),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.error,
+                                    textAlign = TextAlign.Center,
+                                )
+                            }
+                        }
+
+                    item {
+                        SectionHeader(
+                            title = "播放列表",
+                            subtitle = "共 ${state.tracks.size} 首",
+                            action = {
+                                TextButton(onClick = { editingQueue = !editingQueue }) {
+                                    Text(if (editingQueue) "完成" else "编辑")
+                                }
+                            },
+                        )
+                    }
+
+                    itemsIndexed(
+                        items = state.tracks,
+                        key = { _, track -> track.bvid },
+                        contentType = { _, _ -> "track" },
+                    ) { index, track ->
+                        TrackRow(
+                            modifier = Modifier.animateItem(),
+                            index = index,
+                            track = track,
+                            selected = index == state.currentIndex,
+                            editing = editingQueue,
+                            canMoveUp = index > 0,
+                            canMoveDown = index < state.tracks.lastIndex,
+                            onClick = { controller.playAt(index) },
+                            onMoveUp = { controller.moveTrack(index, index - 1) },
+                            onMoveDown = { controller.moveTrack(index, index + 1) },
+                            onRemove = { controller.removeTrack(index) },
+                        )
+                    }
                 }
             }
         }

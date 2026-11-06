@@ -18,6 +18,7 @@ import xyz.lisfox.vocaland.data.community.CommunityExtrasApi
 import xyz.lisfox.vocaland.data.community.CommunityRepository
 import xyz.lisfox.vocaland.data.customranking.CustomRankingApi
 import xyz.lisfox.vocaland.data.customranking.CustomRankingRepository
+import xyz.lisfox.vocaland.data.danmaku.DanmakuRepository
 import xyz.lisfox.vocaland.data.discovery.DiscoveryApiFactory
 import xyz.lisfox.vocaland.data.discovery.DiscoveryAuth
 import xyz.lisfox.vocaland.data.discovery.DiscoveryRepository
@@ -114,6 +115,7 @@ class AppContainer(context: Context) {
     val v2Api: CommunityApi = v2Retrofit.create(CommunityApi::class.java)
     val playUrlApi: PlayUrlApi = retrofit(PLAYURL_BASE_URL, playUrlClient)
         .create(PlayUrlApi::class.java)
+    val danmakuRepository = DanmakuRepository(playUrlClient)
     val accountApi: AccountApi = v2Retrofit.create(AccountApi::class.java)
     val accountAuthApi: AccountAuthApi = accountAuthRetrofit.create(AccountAuthApi::class.java)
     val notificationApi: NotificationApi = v2Retrofit.create(NotificationApi::class.java)

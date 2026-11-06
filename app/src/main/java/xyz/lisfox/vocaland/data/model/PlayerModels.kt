@@ -24,12 +24,18 @@ data class PlayUrlRequest(
 
 @Serializable
 data class PlayUrlResponse(
+    val cid: Long? = null,
     val audios: List<PlayUrlAudioDto>? = null,
 )
 
 @Serializable
 data class PlayUrlAudioDto(
     val baseUrl: String? = null,
+)
+
+data class ResolvedBgmAudio(
+    val url: String,
+    val cid: Long?,
 )
 
 data class BgmTrack(

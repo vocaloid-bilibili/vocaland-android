@@ -44,6 +44,7 @@ data class BgmPlayerState(
     val playing: Boolean = false,
     val positionMs: Long = 0,
     val durationMs: Long = 0,
+    val cid: Long? = null,
     val error: String? = null,
     val playMode: PlayMode = PlayMode.LIST,
     val volume: Float = 1f,
@@ -174,6 +175,7 @@ class BgmPlayerController(
                 loadingTrack = false,
                 playing = false,
                 positionMs = 0,
+                cid = null,
                 durationMs = tracks[startIndex].durationSeconds * 1000L,
                 error = null,
             )
@@ -232,6 +234,7 @@ class BgmPlayerController(
                     loadingTrack = false,
                     playing = false,
                     positionMs = 0,
+                    cid = null,
                     durationMs = 0,
                     error = null,
                 )
@@ -256,6 +259,7 @@ class BgmPlayerController(
                     loadingTrack = false,
                     playing = false,
                     positionMs = 0,
+                    cid = null,
                     durationMs = nextTracks[nextIndex].durationSeconds * 1000L,
                 )
             }
@@ -309,6 +313,7 @@ class BgmPlayerController(
                 loadingTrack = true,
                 playing = false,
                 positionMs = 0,
+                cid = null,
                 durationMs = track.durationSeconds * 1000L,
                 error = null,
             )
@@ -316,18 +321,20 @@ class BgmPlayerController(
         startPlaybackService()
 
         prepareJob = scope.launch {
-            val result = repository.resolveAudioUrl(track.bvid)
+            val result = repository.resolveAudio(track.bvid)
             if (!isActive) return@launch
             result
-                .onSuccess { url ->
+                .onSuccess { audio ->
                     if (!isActive) return@onSuccess
-                    runCatching { preparePlayer(url, track) }
+                    _state.update { it.copy(cid = audio.cid) }
+                    runCatching { preparePlayer(audio.url, track) }
                         .onFailure { error ->
                             releasePlayer()
                             _state.update {
                                 it.copy(
                                     loadingTrack = false,
                                     playing = false,
+                                    cid = null,
                                     error = error.message ?: "播放失败",
                                 )
                             }
@@ -378,7 +385,7 @@ class BgmPlayerController(
             prepareJob?.cancel()
             releasePlayer()
             _state.update {
-                it.copy(loadingTrack = false, playing = false, positionMs = 0)
+                it.copy(loadingTrack = false, playing = false, positionMs = 0, cid = null)
             }
             return
         }
@@ -536,6 +543,7 @@ class BgmPlayerController(
                     it.copy(
                         loadingTrack = false,
                         playing = false,
+                        cid = null,
                         error = "播放失败",
                     )
                 }

@@ -391,6 +391,7 @@ fun VocaLandApp(
                     PageScaffold(title = "播放器") { contentModifier ->
                         PlayerScreen(
                             controller = container.bgmPlayerController,
+                            danmakuRepository = container.danmakuRepository,
                             modifier = contentModifier,
                         )
                     }
