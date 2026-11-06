@@ -142,17 +142,12 @@ fun PlayerScreen(
 
         else -> {
             Box(modifier = modifier.fillMaxSize()) {
-                if (videoBackgroundEnabled && state.videoUrl != null) {
+                if (videoBackgroundEnabled) {
                     VideoBackground(
                         videoUrl = state.videoUrl,
                         playing = state.playing,
                         positionMs = state.positionMs,
                         modifier = Modifier.fillMaxSize(),
-                    )
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.55f)),
                     )
                 }
                 if (danmakuEnabled) {
