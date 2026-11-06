@@ -32,9 +32,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import xyz.lisfox.vocaland.R
 import xyz.lisfox.vocaland.data.community.CommunityCommentDto
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.NetworkImage
@@ -327,7 +329,13 @@ private fun CommentItem(
                             } else {
                                 Icons.Filled.FavoriteBorder
                             },
-                            contentDescription = null,
+                            contentDescription = stringResource(
+                                if (comment.isLiked) {
+                                    R.string.community_comment_unlike
+                                } else {
+                                    R.string.community_comment_like
+                                },
+                            ),
                             modifier = Modifier.size(16.dp),
                             tint = if (comment.isLiked) scheme.primary else scheme.onSurfaceVariant,
                         )

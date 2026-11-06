@@ -378,11 +378,16 @@ private fun PlayerControls(
                     label = "playPauseCrossfade",
                 ) { buttonState ->
                     when (buttonState) {
-                        PlayButtonState.Loading -> CircularProgressIndicator(
-                            modifier = Modifier.size(26.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                        )
+                        PlayButtonState.Loading -> {
+                            val loadingLabel = stringResource(R.string.loading)
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .size(26.dp)
+                                    .semantics { contentDescription = loadingLabel },
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        }
 
                         PlayButtonState.Playing -> Icon(
                             imageVector = Icons.Filled.Pause,
