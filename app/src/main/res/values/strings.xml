@@ -274,4 +274,20 @@
     <string name="update_install_permission_message">更新包已下载完成。请允许 VocaLand 安装未知应用，授权后将自动继续安装。</string>
     <string name="action_go_settings">去设置</string>
     <string name="action_later">稍后</string>
+    <string name="action_previous">上一页</string>
+    <string name="action_next">下一页</string>
+    <string name="notifications_login_title">登录后查看通知</string>
+    <string name="notifications_login_message">有人回复、点赞或提到你时，通知会出现在这里。</string>
+    <string name="notifications_title">消息中心</string>
+    <string name="notifications_unread_count_format">%1$d 条未读通知</string>
+    <string name="notifications_unread_none_subtitle">暂时没有未读通知</string>
+    <string name="notifications_mark_all_read">全部已读</string>
+    <string name="notifications_tab_unread_format">未读 (%1$d)</string>
+    <string name="notifications_tab_unread">未读</string>
+    <string name="notifications_tab_all">全部</string>
+    <string name="notifications_loading">正在加载通知</string>
+    <string name="notifications_load_failed_title">通知加载失败</string>
+    <string name="notifications_empty_unread">没有未读通知</string>
+    <string name="notifications_empty_all">暂时没有通知</string>
+    <string name="notifications_system_sender">系统消息</string>
 </resources>

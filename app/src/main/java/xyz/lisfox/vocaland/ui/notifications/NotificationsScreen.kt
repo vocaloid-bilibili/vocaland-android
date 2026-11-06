@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -43,6 +44,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import xyz.lisfox.vocaland.R
 import xyz.lisfox.vocaland.data.notification.NotificationEntryDto
 import xyz.lisfox.vocaland.data.notification.NotificationKind
 import xyz.lisfox.vocaland.data.notification.NotificationRepository
@@ -85,10 +87,10 @@ fun NotificationsScreen(
 
     if (!isLoggedIn) {
         ScreenMessage(
-            title = "登录后查看通知",
-            message = "有人回复、点赞或提到你时，通知会出现在这里。",
+            title = stringResource(R.string.notifications_login_title),
+            message = stringResource(R.string.notifications_login_message),
             modifier = modifier,
-            actionLabel = if (onLogin != null) "去登录" else null,
+            actionLabel = if (onLogin != null) stringResource(R.string.action_login) else null,
             onAction = onLogin,
         )
         return
@@ -101,18 +103,18 @@ fun NotificationsScreen(
     ) {
         item {
             SectionHeader(
-                title = "消息中心",
+                title = stringResource(R.string.notifications_title),
                 subtitle = if (state.unread > 0) {
-                    "${state.unread} 条未读通知"
+                    stringResource(R.string.notifications_unread_count_format, state.unread)
                 } else {
-                    "暂时没有未读通知"
+                    stringResource(R.string.notifications_unread_none_subtitle)
                 },
                 action = {
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                         TextButton(onClick = viewModel::refresh) {
                             Icon(
                                 imageVector = Icons.Filled.Refresh,
-                                contentDescription = "刷新",
+                                contentDescription = stringResource(R.string.action_refresh),
                                 modifier = Modifier.size(18.dp),
                             )
                         }
@@ -127,7 +129,7 @@ fun NotificationsScreen(
                                     modifier = Modifier.size(18.dp),
                                 )
                                 Spacer(Modifier.size(4.dp))
-                                Text("全部已读")
+                                Text(stringResource(R.string.notifications_mark_all_read))
                             }
                         }
                     }
@@ -142,14 +144,18 @@ fun NotificationsScreen(
                     onClick = { viewModel.setTab(NotificationTab.Unread) },
                     label = {
                         Text(
-                            if (state.unread > 0) "未读 (${state.unread})" else "未读",
+                            if (state.unread > 0) {
+                                stringResource(R.string.notifications_tab_unread_format, state.unread)
+                            } else {
+                                stringResource(R.string.notifications_tab_unread)
+                            },
                         )
                     },
                 )
                 FilterChip(
                     selected = state.tab == NotificationTab.All,
                     onClick = { viewModel.setTab(NotificationTab.All) },
-                    label = { Text("全部") },
+                    label = { Text(stringResource(R.string.notifications_tab_all)) },
                 )
             }
         }
@@ -159,7 +165,7 @@ fun NotificationsScreen(
                 item {
                     LoadingPane(
                         modifier = Modifier.height(240.dp),
-                        text = "正在加载通知",
+                        text = stringResource(R.string.notifications_loading),
                     )
                 }
             }
@@ -167,9 +173,9 @@ fun NotificationsScreen(
             state.error != null && state.entries.isEmpty() -> {
                 item {
                     ScreenMessage(
-                        title = "通知加载失败",
+                        title = stringResource(R.string.notifications_load_failed_title),
                         message = state.error!!,
-                        actionLabel = "重试",
+                        actionLabel = stringResource(R.string.action_retry),
                         onAction = viewModel::refresh,
                     )
                 }
@@ -179,9 +185,9 @@ fun NotificationsScreen(
                 item {
                     EmptyHint(
                         text = if (state.tab == NotificationTab.Unread) {
-                            "没有未读通知"
+                            stringResource(R.string.notifications_empty_unread)
                         } else {
-                            "暂时没有通知"
+                            stringResource(R.string.notifications_empty_all)
                         },
                     )
                 }
@@ -219,7 +225,8 @@ private fun NotificationCard(
 ) {
     val scheme = MaterialTheme.colorScheme
     val kind = NotificationKind.fromApi(entry.type) ?: NotificationKind.Reply
-    val actorName = entry.actor?.nickname?.ifBlank { "系统消息" } ?: "系统消息"
+    val systemSender = stringResource(R.string.notifications_system_sender)
+    val actorName = entry.actor?.nickname?.ifBlank { systemSender } ?: systemSender
     val preview = notificationPreviewText(entry.contentPreview)
     val containerColor by animateColorAsState(
         targetValue = if (entry.isRead) {
@@ -346,7 +353,7 @@ private fun PaginationRow(
             onClick = onPrevious,
             enabled = page > 1,
         ) {
-            Text("上一页")
+            Text(stringResource(R.string.action_previous))
         }
         Text(
             text = "$page / $pages",
@@ -358,7 +365,7 @@ private fun PaginationRow(
             onClick = onNext,
             enabled = page < pages,
         ) {
-            Text("下一页")
+            Text(stringResource(R.string.action_next))
         }
     }
 }
