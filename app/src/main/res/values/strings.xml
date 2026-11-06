@@ -290,4 +290,7 @@
     <string name="notifications_empty_unread">没有未读通知</string>
     <string name="notifications_empty_all">暂时没有通知</string>
     <string name="notifications_system_sender">系统消息</string>
+    <string name="pager_page_format">第 %1$d / %2$d 页</string>
+    <string name="pager_total_format">共 %1$d %2$s</string>
+    <string name="pager_unit_default">首</string>
 </resources>

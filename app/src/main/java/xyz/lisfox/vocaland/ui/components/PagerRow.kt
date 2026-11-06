@@ -10,6 +10,8 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import xyz.lisfox.vocaland.R
 
 @Composable
 fun PagerRow(
@@ -20,8 +22,9 @@ fun PagerRow(
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     modifier: Modifier = Modifier,
-    unit: String = "首",
+    unit: String? = null,
 ) {
+    val resolvedUnit = unit ?: stringResource(R.string.pager_unit_default)
     Row(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -31,16 +34,16 @@ fun PagerRow(
             onClick = onPrevious,
             enabled = page > 1 && !loading,
         ) {
-            Text("上一页")
+            Text(stringResource(R.string.action_previous))
         }
 
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "第 $page / $totalPages 页",
+                text = stringResource(R.string.pager_page_format, page, totalPages),
                 style = MaterialTheme.typography.labelMedium,
             )
             Text(
-                text = "共 $total $unit",
+                text = stringResource(R.string.pager_total_format, total, resolvedUnit),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -50,7 +53,7 @@ fun PagerRow(
             onClick = onNext,
             enabled = page < totalPages && !loading,
         ) {
-            Text("下一页")
+            Text(stringResource(R.string.action_next))
         }
     }
 }
