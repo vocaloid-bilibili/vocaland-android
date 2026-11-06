@@ -45,12 +45,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import xyz.lisfox.vocaland.R
 import xyz.lisfox.vocaland.data.account.AccountRepository
 import xyz.lisfox.vocaland.data.shop.BACKFILL_TICKET_ID
 import xyz.lisfox.vocaland.data.shop.BackfillInfoDto
@@ -86,10 +88,10 @@ fun WalletScreen(
 
     if (!isLoggedIn) {
         ScreenMessage(
-            title = "登录后查看钱包",
-            message = "V币余额、投票卡、补签卡与签到记录都在这里。",
+            title = stringResource(R.string.wallet_login_required_title),
+            message = stringResource(R.string.wallet_login_required_message),
             modifier = modifier,
-            actionLabel = if (onLogin != null) "去登录" else null,
+            actionLabel = if (onLogin != null) stringResource(R.string.action_login) else null,
             onAction = onLogin,
         )
         return
@@ -97,15 +99,15 @@ fun WalletScreen(
 
     when {
         state.loading && state.wallet == null -> {
-            LoadingPane(modifier = modifier, text = "正在读取钱包")
+            LoadingPane(modifier = modifier, text = stringResource(R.string.wallet_loading))
         }
 
         state.wallet == null -> {
             ScreenMessage(
-                title = "钱包读取失败",
-                message = state.error ?: "请稍后重试",
+                title = stringResource(R.string.wallet_load_failed_title),
+                message = state.error ?: stringResource(R.string.common_retry_later),
                 modifier = modifier,
-                actionLabel = "重试",
+                actionLabel = stringResource(R.string.action_retry),
                 onAction = viewModel::load,
             )
         }
@@ -143,18 +145,21 @@ fun WalletScreen(
                                 Spacer(Modifier.size(10.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = "我的钱包",
+                                        text = stringResource(R.string.page_wallet),
                                         style = MaterialTheme.typography.titleLarge,
                                         fontWeight = FontWeight.Bold,
                                     )
                                     Text(
-                                        text = "累计获得 ${formatNumber(wallet.totalVCoinsEarned.toLong())} V币",
+                                        text = stringResource(
+                                            R.string.wallet_total_earned_format,
+                                            formatNumber(wallet.totalVCoinsEarned.toLong()),
+                                        ),
                                         style = MaterialTheme.typography.bodySmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
                                 }
                                 IconButton(onClick = viewModel::load) {
-                                    Icon(Icons.Filled.Refresh, contentDescription = "刷新")
+                                    Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.action_refresh))
                                 }
                             }
 
@@ -173,7 +178,7 @@ fun WalletScreen(
                                 )
                                 Spacer(Modifier.size(6.dp))
                                 Text(
-                                    text = "V币",
+                                    text = stringResource(R.string.wallet_coin_unit),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -190,7 +195,7 @@ fun WalletScreen(
                                         modifier = Modifier.size(18.dp),
                                     )
                                     Spacer(Modifier.size(8.dp))
-                                    Text("去商城")
+                                    Text(stringResource(R.string.wallet_action_open_shop))
                                 }
                             }
                         }
@@ -215,7 +220,10 @@ fun WalletScreen(
                 }
 
                 item {
-                    SectionHeader(title = "持有道具", subtitle = "投票券、补签卡与偷窥卡")
+                    SectionHeader(
+                        title = stringResource(R.string.wallet_items_title),
+                        subtitle = stringResource(R.string.wallet_items_subtitle),
+                    )
                     Spacer(Modifier.height(8.dp))
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -227,7 +235,7 @@ fun WalletScreen(
                         Column(modifier = Modifier.padding(14.dp)) {
                             if (wallet.items.isEmpty()) {
                                 Text(
-                                    text = "暂时没有持有道具",
+                                    text = stringResource(R.string.wallet_items_empty),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -246,9 +254,9 @@ fun WalletScreen(
                                                 style = MaterialTheme.typography.bodyMedium,
                                             )
                                             val note = when (item.itemId) {
-                                                VOTE_TICKET_ID -> "ED 附加票"
-                                                BACKFILL_TICKET_ID -> "用于补签漏签日期"
-                                                PEEK_TICKET_ID -> "用于查看匿名评分"
+                                                VOTE_TICKET_ID -> stringResource(R.string.wallet_item_note_vote)
+                                                BACKFILL_TICKET_ID -> stringResource(R.string.wallet_item_note_backfill)
+                                                PEEK_TICKET_ID -> stringResource(R.string.wallet_item_note_peek)
                                                 else -> item.description
                                             }
                                             if (!note.isNullOrBlank()) {
@@ -260,7 +268,7 @@ fun WalletScreen(
                                             }
                                         }
                                         Text(
-                                            text = "×${item.quantity}",
+                                            text = stringResource(R.string.wallet_item_quantity_format, item.quantity),
                                             style = MaterialTheme.typography.titleMedium,
                                             fontWeight = FontWeight.Bold,
                                         )
@@ -272,7 +280,10 @@ fun WalletScreen(
                 }
 
                 item {
-                    SectionHeader(title = "每日签到", subtitle = "连续签到可获得额外经验")
+                    SectionHeader(
+                        title = stringResource(R.string.profile_check_in),
+                        subtitle = stringResource(R.string.wallet_checkin_subtitle),
+                    )
                     Spacer(Modifier.height(8.dp))
                     Card(
                         modifier = Modifier.fillMaxWidth(),
@@ -287,7 +298,7 @@ fun WalletScreen(
                         ) {
                             if (level == null) {
                                 Text(
-                                    text = "签到状态读取中",
+                                    text = stringResource(R.string.wallet_checkin_loading),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -302,16 +313,16 @@ fun WalletScreen(
                                     Spacer(Modifier.size(8.dp))
                                     Text(
                                         text = if (level.checkedInToday) {
-                                            "今日已签到"
+                                            stringResource(R.string.wallet_checkin_done)
                                         } else {
-                                            "今日未签到"
+                                            stringResource(R.string.wallet_checkin_pending)
                                         },
                                         style = MaterialTheme.typography.bodyMedium,
                                     )
                                     Spacer(Modifier.weight(1f))
                                     if (level.streakDays > 0) {
                                         Text(
-                                            text = "连续 ${level.streakDays} 天",
+                                            text = stringResource(R.string.wallet_checkin_streak_format, level.streakDays),
                                             style = MaterialTheme.typography.labelSmall,
                                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         )
@@ -339,7 +350,7 @@ fun WalletScreen(
                                     )
                                 }
                                 Text(
-                                    text = "今日经验 +${level.todayExp}",
+                                    text = stringResource(R.string.wallet_checkin_today_exp_format, level.todayExp),
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
@@ -363,7 +374,7 @@ fun WalletScreen(
                                                 modifier = Modifier.size(18.dp),
                                             )
                                             Spacer(Modifier.size(8.dp))
-                                            Text("每日签到")
+                                            Text(stringResource(R.string.profile_check_in))
                                         }
                                     }
                                 }
@@ -376,7 +387,7 @@ fun WalletScreen(
                                         },
                                         modifier = Modifier.fillMaxWidth(),
                                     ) {
-                                        Text("补签（$backfillTickets 张）")
+                                        Text(stringResource(R.string.wallet_backfill_button_format, backfillTickets))
                                     }
                                 }
                             }
@@ -385,7 +396,10 @@ fun WalletScreen(
                 }
 
                 item {
-                    SectionHeader(title = "赞助", subtitle = "赞助状态与订单兑换")
+                    SectionHeader(
+                        title = stringResource(R.string.wallet_sponsor_title),
+                        subtitle = stringResource(R.string.wallet_sponsor_subtitle),
+                    )
                     Spacer(Modifier.height(8.dp))
                     SponsorClaimCard(
                         claiming = state.sponsorClaiming,
@@ -442,7 +456,7 @@ private fun SponsorClaimCard(
                 )
                 Spacer(Modifier.size(8.dp))
                 Text(
-                    text = "赞助权益可通过爱发电订单号兑换",
+                    text = stringResource(R.string.wallet_sponsor_hint),
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
@@ -455,7 +469,7 @@ private fun SponsorClaimCard(
                     value = orderId,
                     onValueChange = { orderId = it },
                     modifier = Modifier.weight(1f),
-                    label = { Text("爱发电订单号") },
+                    label = { Text(stringResource(R.string.wallet_sponsor_order_label)) },
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
                 )
@@ -470,7 +484,7 @@ private fun SponsorClaimCard(
                             color = MaterialTheme.colorScheme.onPrimary,
                         )
                     } else {
-                        Text("兑换")
+                        Text(stringResource(R.string.wallet_sponsor_claim))
                     }
                 }
             }
@@ -502,7 +516,7 @@ private fun BackfillDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("补签漏签的日期") },
+        title = { Text(stringResource(R.string.wallet_backfill_dialog_title)) },
         text = {
             when {
                 loading && info == null -> {
@@ -519,14 +533,14 @@ private fun BackfillDialog(
 
                 info == null -> {
                     Text(
-                        text = "补签信息加载失败",
+                        text = stringResource(R.string.wallet_backfill_load_failed),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
 
                 info.missedDates.isEmpty() -> {
                     Text(
-                        text = "最近没有漏签的日期",
+                        text = stringResource(R.string.wallet_backfill_empty),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -539,7 +553,7 @@ private fun BackfillDialog(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Text(
-                            text = "可用补签卡 ${info.tickets} 张，只能补过去的日期",
+                            text = stringResource(R.string.wallet_backfill_hint_format, info.tickets),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -558,7 +572,7 @@ private fun BackfillDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text("关闭")
+                Text(stringResource(R.string.action_close))
             }
         },
     )
