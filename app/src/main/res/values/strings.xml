@@ -263,4 +263,15 @@
     <string name="settings_sponsor_active_format">赞助有效，剩余 %1$d 天</string>
     <string name="settings_sponsor_expires_format">到期时间：%1$s</string>
     <string name="settings_banned_sponsor">账号已被封禁，无法兑换</string>
+    <string name="page_artist">艺人</string>
+    <string name="feature_comment_title">评论 #%1$d</string>
+    <string name="page_invalid_collection">无效的收藏册</string>
+    <string name="feature_default_title">详情</string>
+    <string name="toast_install_permission_missing">未获得安装权限</string>
+    <string name="toast_install_launch_failed">无法启动安装程序</string>
+    <string name="toast_install_permission_settings_failed">无法打开安装权限设置</string>
+    <string name="update_install_permission_title">需要安装权限</string>
+    <string name="update_install_permission_message">更新包已下载完成。请允许 VocaLand 安装未知应用，授权后将自动继续安装。</string>
+    <string name="action_go_settings">去设置</string>
+    <string name="action_later">稍后</string>
 </resources>

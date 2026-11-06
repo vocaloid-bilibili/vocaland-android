@@ -165,13 +165,13 @@ fun VocaLandApp(
         if (file != null) {
             when {
                 !canInstallPackages(context) -> {
-                    Toast.makeText(context, "未获得安装权限", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.toast_install_permission_missing), Toast.LENGTH_SHORT).show()
                 }
                 installApk(context, file) -> {
                     pendingInstallFile = null
                 }
                 else -> {
-                    Toast.makeText(context, "无法启动安装程序", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, context.getString(R.string.toast_install_launch_failed), Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -180,7 +180,7 @@ fun VocaLandApp(
     val requestInstall: (File) -> Unit = { file ->
         if (canInstallPackages(context)) {
             if (!installApk(context, file)) {
-                Toast.makeText(context, "无法启动安装程序", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, context.getString(R.string.toast_install_launch_failed), Toast.LENGTH_SHORT).show()
             }
         } else {
             pendingInstallFile = file
@@ -729,7 +729,7 @@ fun VocaLandApp(
                     val artistId = entry.arguments?.getInt("artistId") ?: 0
                     val kind = ArtistKind.fromApiType(kindParam)
                     PageScaffold(
-                        title = kind?.label ?: "艺人",
+                        title = kind?.label ?: stringResource(R.string.page_artist),
                         onBack = { navController.popBackStack() },
                         sharedElementScope = this,
                     ) { contentModifier ->
@@ -877,7 +877,7 @@ fun VocaLandApp(
                     val kind = VotingKind.fromRoute(entry.arguments?.getString("kind"))
                     val campaignId = entry.arguments?.getInt("campaignId") ?: 0
                     PageScaffold(
-                        title = kind?.label ?: "投票",
+                        title = kind?.label ?: stringResource(R.string.page_votings),
                         onBack = { navController.popBackStack() },
                     ) { contentModifier ->
                         if (kind == null || campaignId <= 0) {
@@ -993,7 +993,7 @@ fun VocaLandApp(
                                 when {
                                     target != null -> openTarget(target)
                                     commentId != null -> navController.navigate(
-                                        Routes.feature("评论 #$commentId"),
+                                        Routes.feature(context.getString(R.string.feature_comment_title, commentId)),
                                     )
                                 }
                             },
@@ -1131,7 +1131,7 @@ fun VocaLandApp(
                             title = stringResource(R.string.page_collections),
                             onBack = { navController.popBackStack() },
                         ) { contentModifier ->
-                            FeatureScreen("无效的收藏册", modifier = contentModifier)
+                            FeatureScreen(stringResource(R.string.page_invalid_collection), modifier = contentModifier)
                         }
                     } else {
                         val target = CollectionTarget.Manual(collectionId)
@@ -1160,7 +1160,7 @@ fun VocaLandApp(
                             title = stringResource(R.string.page_collections),
                             onBack = { navController.popBackStack() },
                         ) { contentModifier ->
-                            FeatureScreen("无效的收藏册", modifier = contentModifier)
+                            FeatureScreen(stringResource(R.string.page_invalid_collection), modifier = contentModifier)
                         }
                     } else {
                         CollectionRouteContent(
@@ -1182,7 +1182,7 @@ fun VocaLandApp(
                             title = stringResource(R.string.page_share_card),
                             onBack = { navController.popBackStack() },
                         ) { contentModifier ->
-                            FeatureScreen("无效的收藏册", modifier = contentModifier)
+                            FeatureScreen(stringResource(R.string.page_invalid_collection), modifier = contentModifier)
                         }
                     } else {
                         CollectionShareRouteContent(
@@ -1210,7 +1210,7 @@ fun VocaLandApp(
                             title = stringResource(R.string.page_share_card),
                             onBack = { navController.popBackStack() },
                         ) { contentModifier ->
-                            FeatureScreen("无效的收藏册", modifier = contentModifier)
+                            FeatureScreen(stringResource(R.string.page_invalid_collection), modifier = contentModifier)
                         }
                     } else {
                         CollectionShareRouteContent(
@@ -1226,7 +1226,7 @@ fun VocaLandApp(
                         navArgument("title") { type = NavType.StringType },
                     ),
                 ) { entry ->
-                    val title = entry.arguments?.getString("title") ?: "详情"
+                    val title = entry.arguments?.getString("title") ?: stringResource(R.string.feature_default_title)
                     PageScaffold(
                         title = title,
                         onBack = { navController.popBackStack() },
@@ -1285,9 +1285,9 @@ fun VocaLandApp(
             if (showInstallPermission) {
                 AlertDialog(
                     onDismissRequest = { showInstallPermission = false },
-                    title = { Text("需要安装权限") },
+                    title = { Text(stringResource(R.string.update_install_permission_title)) },
                     text = {
-                        Text("更新包已下载完成。请允许 VocaLand 安装未知应用，授权后将自动继续安装。")
+                        Text(stringResource(R.string.update_install_permission_message))
                     },
                     confirmButton = {
                         TextButton(
@@ -1296,16 +1296,16 @@ fun VocaLandApp(
                                 runCatching {
                                     installPermissionLauncher.launch(installPermissionIntent(context))
                                 }.onFailure {
-                                    Toast.makeText(context, "无法打开安装权限设置", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, context.getString(R.string.toast_install_permission_settings_failed), Toast.LENGTH_SHORT).show()
                                 }
                             },
                         ) {
-                            Text("去设置")
+                            Text(stringResource(R.string.action_go_settings))
                         }
                     },
                     dismissButton = {
                         TextButton(onClick = { showInstallPermission = false }) {
-                            Text("稍后")
+                            Text(stringResource(R.string.action_later))
                         }
                     },
                 )
