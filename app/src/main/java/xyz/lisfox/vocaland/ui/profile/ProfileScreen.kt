@@ -1,4 +1,4 @@
-package xyz.lisfox.vocaland.ui.profile
+﻿package xyz.lisfox.vocaland.ui.profile
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -42,6 +42,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingBag
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
@@ -77,6 +78,7 @@ import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.SectionHeader
 import xyz.lisfox.vocaland.ui.components.StatusPill
 import xyz.lisfox.vocaland.ui.theme.AppPalette
+import xyz.lisfox.vocaland.ui.theme.LocalAppColorScheme
 import xyz.lisfox.vocaland.ui.theme.ThemeMode
 import xyz.lisfox.vocaland.util.formatNumber
 
@@ -381,7 +383,7 @@ fun ProfileScreen(
 
 @Composable
 private fun GuestHeader(onLogin: () -> Unit) {
-    val scheme = MaterialTheme.colorScheme
+    val scheme = LocalAppColorScheme.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
@@ -414,7 +416,13 @@ private fun GuestHeader(onLogin: () -> Unit) {
                     style = MaterialTheme.typography.bodyMedium,
                     color = scheme.onPrimaryContainer.copy(alpha = 0.82f),
                 )
-                Button(onClick = onLogin) {
+                Button(
+                    onClick = onLogin,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = scheme.primary,
+                        contentColor = scheme.onPrimary,
+                    ),
+                ) {
                     Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null)
                     Spacer(Modifier.size(8.dp))
                     Text(stringResource(R.string.profile_login_register))
@@ -426,7 +434,7 @@ private fun GuestHeader(onLogin: () -> Unit) {
 
 @Composable
 private fun UserHeader(user: CachedUserDto) {
-    val scheme = MaterialTheme.colorScheme
+    val scheme = LocalAppColorScheme.current
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(28.dp),
@@ -503,6 +511,7 @@ private fun UserHeader(user: CachedUserDto) {
 
 @Composable
 private fun UserStat(value: String, label: String) {
+    val scheme = LocalAppColorScheme.current
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = value,
@@ -512,7 +521,7 @@ private fun UserStat(value: String, label: String) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = scheme.onSurfaceVariant,
         )
     }
 }

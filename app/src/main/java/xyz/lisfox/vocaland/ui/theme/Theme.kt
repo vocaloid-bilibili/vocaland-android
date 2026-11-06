@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -29,6 +30,10 @@ data class ThemeSettings(
     val palette: AppPalette = AppPalette.DeepPurple,
     val mode: ThemeMode = ThemeMode.System,
 )
+
+val LocalAppColorScheme = compositionLocalOf<ColorScheme> {
+    AppPalette.DeepPurple.colorScheme(false)
+}
 
 @Composable
 fun resolveDarkTheme(themeMode: ThemeMode): Boolean = when (themeMode) {
@@ -115,6 +120,7 @@ fun VocaLandTheme(
         typography = Typography,
     ) {
         CompositionLocalProvider(
+            LocalAppColorScheme provides colorScheme,
             LocalContentColor provides colorScheme.onBackground,
             content = content,
         )
