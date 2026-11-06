@@ -1472,7 +1472,7 @@ private fun PageScaffold(
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 48.dp),
+                .height(ComponentSize.topBarHeight),
             color = MaterialTheme.colorScheme.surface,
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
