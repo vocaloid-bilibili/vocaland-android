@@ -1496,6 +1496,7 @@ private fun PageScaffold(
                     }
                     Box(
                         modifier = Modifier
+                            .align(Alignment.Center)
                             .fillMaxWidth()
                             .padding(horizontal = if (onBack != null) 56.dp else 12.dp),
                         contentAlignment = Alignment.Center,
