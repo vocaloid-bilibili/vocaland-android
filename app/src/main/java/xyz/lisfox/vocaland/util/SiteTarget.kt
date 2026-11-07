@@ -20,12 +20,12 @@ sealed interface SiteTarget {
 }
 
 fun SiteTarget.displayLabel(): String = when (this) {
-    is SiteTarget.Song -> "歌曲 #$id"
-    is SiteTarget.Artist -> "${kind.label} #$id"
-    is SiteTarget.Tag -> "标签 #$id"
-    is SiteTarget.User -> "用户 #$id"
-    is SiteTarget.Playlist -> "歌单 #$id"
-    is SiteTarget.Voting -> "${kind.label} #$campaignId"
+    is SiteTarget.Song -> "歌曲"
+    is SiteTarget.Artist -> kind.label
+    is SiteTarget.Tag -> "标签"
+    is SiteTarget.User -> "用户"
+    is SiteTarget.Playlist -> "歌单"
+    is SiteTarget.Voting -> kind.label
     SiteTarget.Ranking -> "排行榜"
 }
 

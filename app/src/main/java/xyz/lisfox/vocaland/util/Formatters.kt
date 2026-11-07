@@ -1,5 +1,6 @@
 package xyz.lisfox.vocaland.util
 
+import android.text.Html
 import android.util.Base64
 import xyz.lisfox.vocaland.data.model.SearchEntityDto
 import xyz.lisfox.vocaland.data.model.SongBriefDto
@@ -62,8 +63,54 @@ fun artistLine(
         .ifBlank { "未知" }
 }
 
-fun targetLabel(targetKey: String): String =
-    parseTargetKey(targetKey)?.displayLabel() ?: targetKey
+fun targetLabel(targetKey: String, targetName: String? = null): String {
+    targetName?.trim()?.takeIf { it.isNotEmpty() }?.let { return it }
+    parseTargetKey(targetKey)?.let { return it.displayLabel() }
+    return fallbackTargetLabel(targetKey)
+}
+
+private fun fallbackTargetLabel(targetKey: String): String {
+    val key = targetKey.trim()
+    if (key.isEmpty()) return "社区"
+    val rest = key.substringAfter(':', "")
+    return when (key.substringBefore(':').lowercase()) {
+        "page" -> pageLabel(rest.substringBefore(':'))
+        "ranking" -> "排行榜"
+        "song" -> "歌曲"
+        "artist" -> "P主 / 歌手"
+        "tag" -> "标签"
+        "user" -> "用户"
+        "playlist" -> "歌单"
+        "ed", "trending", "voting" -> "投票"
+        else -> "社区"
+    }
+}
+
+private fun pageLabel(slug: String): String = when (slug.lowercase()) {
+    "home" -> "首页"
+    "ranking" -> "排行榜"
+    "search" -> "搜索"
+    "profile" -> "我的"
+    "player" -> "播放器"
+    "voting", "vote" -> "投票"
+    "collection" -> "收藏"
+    "playlist", "playlists" -> "歌单"
+    "settings" -> "设置"
+    "notifications" -> "通知"
+    "tag", "tags" -> "标签"
+    "shop" -> "商城"
+    "wallet" -> "钱包"
+    else -> "页面"
+}
+
+fun decodeHtmlText(raw: String?): String? {
+    val text = raw?.trim().orEmpty()
+    if (text.isEmpty()) return null
+    if ('&' !in text && '<' !in text) return text
+    return runCatching {
+        Html.fromHtml(text, Html.FROM_HTML_MODE_LEGACY).toString().trim()
+    }.getOrNull()?.takeIf { it.isNotEmpty() }
+}
 
 fun timeAgo(iso: String?): String {
     val millis = parseIsoMillis(iso) ?: return ""
@@ -141,6 +188,17 @@ fun compactParts(value: Long, decimals: Int = 0): Pair<String, String> {
 }
 
 fun formatNumber(value: Long): String = String.format(Locale.CHINA, "%,d", value)
+
+fun formatDecimal(value: Double, decimals: Int = 1): String =
+    String.format(Locale.CHINA, "%.${decimals}f", value)
+
+/** 分数等大数值：整数补千分位，非整数保留一位小数。 */
+fun formatScore(value: Double): String =
+    if (value % 1.0 == 0.0) {
+        formatNumber(value.toLong())
+    } else {
+        String.format(Locale.CHINA, "%,.1f", value)
+    }
 
 fun captchaImageModel(image: String): Any {
     val trimmed = image.trim()

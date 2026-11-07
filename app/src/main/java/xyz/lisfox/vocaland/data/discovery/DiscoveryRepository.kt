@@ -66,10 +66,11 @@ class DiscoveryRepository(
 
             val groups = groupsDeferred.await()
             val summary = summaryDeferred.await()
+            val summedTags = groups.data.sumOf { it.total }
             TagWallData(
                 groups = groups.data,
                 categories = summary?.categories ?: emptyList(),
-                totalTags = summary?.totalTags ?: groups.data.sumOf { it.total },
+                totalTags = summary?.totalTags?.takeIf { it > 0 } ?: summedTags,
             )
         }
     }
