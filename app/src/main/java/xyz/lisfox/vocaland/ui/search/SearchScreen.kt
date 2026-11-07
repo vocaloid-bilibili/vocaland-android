@@ -29,7 +29,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Button
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -38,12 +38,19 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -85,35 +92,68 @@ fun SearchScreen(
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
     val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    val submitSearch: () -> Unit = { viewModel.submit() }
+
+    // 提交搜索后收起键盘：放在 effect 里执行，避免与输入法的按键分发互相覆盖
+    LaunchedEffect(state.searched) {
+        if (state.searched) {
+            keyboardController?.hide()
+            focusManager.clearFocus()
+        }
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
-        OutlinedTextField(
-            value = state.query,
-            onValueChange = viewModel::onQueryChange,
+        Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 8.dp),
-            placeholder = { Text("搜索歌曲、P主、歌手、标签…") },
-            leadingIcon = {
-                Icon(Icons.Filled.Search, contentDescription = null)
-            },
-            trailingIcon = {
-                if (state.query.isNotEmpty()) {
-                    IconButton(onClick = viewModel::clearQuery) {
-                        Icon(Icons.Filled.Close, contentDescription = "清空")
-                    }
-                }
-            },
-            singleLine = true,
-            shape = RoundedCornerShape(18.dp),
-            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-            keyboardActions = KeyboardActions(
-                onSearch = {
-                    focusManager.clearFocus()
-                    viewModel.submit()
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            OutlinedTextField(
+                value = state.query,
+                onValueChange = viewModel::onQueryChange,
+                modifier = Modifier
+                    .weight(1f)
+                    .onPreviewKeyEvent { event ->
+                        if (event.key == Key.Enter && event.type == KeyEventType.KeyDown) {
+                            submitSearch()
+                            true
+                        } else {
+                            false
+                        }
+                    },
+                placeholder = { Text("搜索歌曲、P主、歌手…") },
+                leadingIcon = {
+                    Icon(Icons.Filled.Search, contentDescription = null)
                 },
-            ),
-        )
+                trailingIcon = {
+                    if (state.query.isNotEmpty()) {
+                        IconButton(onClick = viewModel::clearQuery) {
+                            Icon(Icons.Filled.Close, contentDescription = "清空")
+                        }
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(18.dp),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+                keyboardActions = KeyboardActions(
+                    onSearch = { submitSearch() },
+                ),
+            )
+            FilledIconButton(
+                onClick = submitSearch,
+                enabled = state.query.isNotBlank(),
+                modifier = Modifier.size(56.dp),
+                shape = RoundedCornerShape(18.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Search,
+                    contentDescription = "搜索",
+                )
+            }
+        }
 
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp),
@@ -130,31 +170,12 @@ fun SearchScreen(
 
         when {
             !state.searched -> {
-                val pending = state.query.trim()
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
                 ) {
-                    if (pending.isEmpty()) {
-                        EmptyHint("输入关键词搜索歌曲、P主、歌手与标签")
-                    } else {
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(10.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            EmptyHint("按回车或点击下方按钮搜索「$pending」")
-                            Button(
-                                onClick = {
-                                    focusManager.clearFocus()
-                                    viewModel.submit()
-                                },
-                            ) {
-                                Text("搜索「$pending」")
-                            }
-                        }
-                    }
+                    EmptyHint("输入关键词搜索歌曲、P主、歌手与标签")
                 }
             }
 
