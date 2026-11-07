@@ -3,11 +3,14 @@ package xyz.lisfox.vocaland.ui.community
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -66,7 +69,6 @@ data class CommunityUiState(
     val commentsError: String? = null,
     val commentPosting: Boolean = false,
     val commentActionError: String? = null,
-    val commentNotice: String? = null,
     val commentResetKey: Int = 0,
     val likePendingIds: Set<Int> = emptySet(),
     val deletingCommentIds: Set<Int> = emptySet(),
@@ -81,6 +83,10 @@ class CommunityViewModel(
 ) : ViewModel() {
     private val _state = MutableStateFlow(CommunityUiState(targetKey = targetKey))
     val state: StateFlow<CommunityUiState> = _state.asStateFlow()
+
+    /** 评论操作成功后的一次性提示，由界面交给全局 Snackbar 展示。 */
+    private val _commentMessages = Channel<String>(Channel.BUFFERED)
+    val commentMessages: Flow<String> = _commentMessages.receiveAsFlow()
 
     private var summaryJob: Job? = null
     private var ratingsJob: Job? = null
@@ -246,7 +252,7 @@ class CommunityViewModel(
         val current = _state.value
         if (trimmed.isEmpty() || current.commentPosting || !current.isLoggedIn) return
 
-        _state.update { it.copy(commentPosting = true, commentActionError = null, commentNotice = null) }
+        _state.update { it.copy(commentPosting = true, commentActionError = null) }
         viewModelScope.launch {
             repository.postComment(
                 targetKey = targetKey,
@@ -259,10 +265,10 @@ class CommunityViewModel(
                         it.copy(
                             commentPosting = false,
                             commentActionError = null,
-                            commentNotice = if (parentId == null) "评论已发布" else "回复已发布",
                             commentResetKey = it.commentResetKey + 1,
                         )
                     }
+                    _commentMessages.trySend(if (parentId == null) "评论已发布" else "回复已发布")
                     loadComments(1)
                 }
                 .onFailure { error ->
@@ -284,18 +290,15 @@ class CommunityViewModel(
             it.copy(
                 deletingCommentIds = it.deletingCommentIds + commentId,
                 commentActionError = null,
-                commentNotice = null,
             )
         }
         viewModelScope.launch {
             repository.deleteComment(commentId)
                 .onSuccess {
                     _state.update {
-                        it.copy(
-                            deletingCommentIds = it.deletingCommentIds - commentId,
-                            commentNotice = "评论已删除",
-                        )
+                        it.copy(deletingCommentIds = it.deletingCommentIds - commentId)
                     }
+                    _commentMessages.trySend("评论已删除")
                     loadComments(_state.value.commentsPage)
                 }
                 .onFailure { error ->
@@ -371,7 +374,6 @@ class CommunityViewModel(
                 ratingError = null,
                 ratingNotice = null,
                 commentActionError = null,
-                commentNotice = null,
             )
         }
 

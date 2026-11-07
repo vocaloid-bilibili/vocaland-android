@@ -47,6 +47,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -66,6 +68,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import xyz.lisfox.vocaland.R
 import xyz.lisfox.vocaland.ui.components.LocalSharedElementVisibilityScope
+import xyz.lisfox.vocaland.ui.components.LocalSnackbarHostState
 import xyz.lisfox.vocaland.ui.components.LocalSharedTransitionScope
 import xyz.lisfox.vocaland.ui.components.MotionDurations
 import xyz.lisfox.vocaland.ui.theme.ComponentSize
@@ -215,6 +218,7 @@ fun VocaLandApp(
     ) {
         val navController = rememberNavController()
         val scope = rememberCoroutineScope()
+        val snackbarHostState = remember { SnackbarHostState() }
         val backStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = backStackEntry?.destination?.route
         val loggedIn = sessionState.user != null
@@ -285,7 +289,10 @@ fun VocaLandApp(
                     enabled = isTopLevel,
                 )
             }
-            SharedTransitionLayout { CompositionLocalProvider(LocalSharedTransitionScope provides this@SharedTransitionLayout) {
+            SharedTransitionLayout { CompositionLocalProvider(
+                LocalSharedTransitionScope provides this@SharedTransitionLayout,
+                LocalSnackbarHostState provides snackbarHostState,
+            ) {
             NavHost(
                 navController = navController,
                 startDestination = Routes.HOME,
@@ -682,10 +689,12 @@ fun VocaLandApp(
                                 onLogin = { navController.navigate(Routes.LOGIN) },
                                 onPlaylistDeleted = { navController.popBackStack() },
                                 communitySlot = {
+                                    // 歌单不支持评分（后端返回「该对象不支持评分」），只保留评论
                                     CommunityPanel(
                                         repository = container.communityRepository,
                                         targetKey = CommunityTargets.playlist(playlistId),
                                         session = container.session,
+                                        showRatings = false,
                                         onLogin = { navController.navigate(Routes.LOGIN) },
                                         onOpenUser = { id ->
                                             navController.navigate(Routes.user(id)) {
@@ -1293,6 +1302,14 @@ fun VocaLandApp(
                     },
                 )
             }
+            SnackbarHost(
+                hostState = snackbarHostState,
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = if (isTopLevel) bottomBarRowHeight + 12.dp else 12.dp)
+                    .navigationBarsPadding(),
+            )
         }
     }
 }

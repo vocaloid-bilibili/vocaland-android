@@ -18,6 +18,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +35,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import xyz.lisfox.vocaland.data.community.CommunityRepository
 import xyz.lisfox.vocaland.data.session.AuthSession
+import xyz.lisfox.vocaland.ui.components.LocalSnackbarHostState
 import xyz.lisfox.vocaland.ui.components.PagerRow
 import xyz.lisfox.vocaland.ui.components.SectionHeader
 
@@ -81,6 +83,12 @@ fun CommunityPanel(
         },
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // 评论/回复/删除成功走全局 Snackbar，一次性事件用 Channel 投递，不会因重组重复弹出
+    val snackbarHostState = LocalSnackbarHostState.current
+    LaunchedEffect(viewModel, snackbarHostState) {
+        val host = snackbarHostState ?: return@LaunchedEffect
+        viewModel.commentMessages.collect { message -> host.showSnackbar(message) }
+    }
 
     Column(
         modifier = modifier.fillMaxWidth(),

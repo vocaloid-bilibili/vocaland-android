@@ -95,9 +95,6 @@ internal fun CommunityCommentSection(
             onSend = { viewModel.postComment(draft) },
         )
 
-        state.commentNotice?.let { notice ->
-            CommunityInlineMessage(text = notice, isError = false)
-        }
         state.commentActionError?.let { error ->
             CommunityInlineMessage(text = error, isError = true)
         }
