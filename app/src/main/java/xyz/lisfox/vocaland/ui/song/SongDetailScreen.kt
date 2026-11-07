@@ -1,9 +1,10 @@
-@file:OptIn(ExperimentalSharedTransitionApi::class)
+﻿@file:OptIn(ExperimentalSharedTransitionApi::class)
 
 package xyz.lisfox.vocaland.ui.song
 
 import android.widget.Toast
 import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -25,12 +27,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -48,6 +51,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -1105,7 +1110,6 @@ private fun LoginHintCard(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun SongActionSection(
     songId: Int,
@@ -1117,116 +1121,175 @@ private fun SongActionSection(
     onClearListenStatus: () -> Unit,
     onRetryListen: () -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        FlowRow(
+    val scheme = MaterialTheme.colorScheme
+    val statusEnabled = listenAvailable && !state.listenUpdating
+
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Card(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            shape = RoundedCornerShape(20.dp),
+            colors = CardDefaults.cardColors(containerColor = scheme.surfaceContainerLow),
         ) {
-            OutlinedButton(
-                onClick = { onAddToPlaylist?.invoke(songId) },
-                enabled = onAddToPlaylist != null,
+            Column(
+                modifier = Modifier.padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Icon(
-                    imageVector = Icons.Filled.PlaylistAdd,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(Modifier.size(6.dp))
-                Text("加入歌单")
-            }
-
-            if (!state.isLoggedIn) {
-                OutlinedButton(onClick = onLogin) {
-                    Icon(
-                        imageVector = Icons.Filled.Favorite,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(Modifier.size(6.dp))
-                    Text("登录后标记")
-                }
-            } else {
-                FilterChip(
-                    selected = state.listenStatus == SongListenStatus.Want,
-                    onClick = { onSetListenStatus(SongListenStatus.Want) },
-                    enabled = listenAvailable && !state.listenUpdating,
-                    label = { Text(SongListenStatus.Want.label) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Filled.Favorite,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                    },
-                )
-                FilterChip(
-                    selected = state.listenStatus == SongListenStatus.Listened,
-                    onClick = { onSetListenStatus(SongListenStatus.Listened) },
-                    enabled = listenAvailable && !state.listenUpdating,
-                    label = { Text(SongListenStatus.Listened.label) },
-                    leadingIcon = {
-                        Icon(
-                            imageVector = Icons.Filled.Check,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                    },
-                )
-                if (state.listenStatus != null) {
-                    TextButton(
-                        onClick = onClearListenStatus,
-                        enabled = listenAvailable && !state.listenUpdating,
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Close,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp),
-                        )
-                        Spacer(Modifier.size(4.dp))
-                        Text("清除")
-                    }
-                }
-            }
-        }
-
-        if (state.listenLoading || state.listenUpdating) {
-            InlineLoading()
-        }
-
-        when {
-            !listenAvailable -> {
-                Text(
-                    text = "标记功能尚未接入",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-
-            state.listenError != null -> {
                 Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
-                    Text(
-                        text = state.listenError,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.error,
+                    SongActionItem(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.AutoMirrored.Filled.PlaylistAdd,
+                        label = "加入歌单",
+                        enabled = onAddToPlaylist != null,
+                        containerColor = scheme.primary,
+                        contentColor = scheme.onPrimary,
+                        onClick = { onAddToPlaylist?.invoke(songId) },
                     )
-                    TextButton(onClick = onRetryListen) {
-                        Text("重试")
+                    SongActionItem(
+                        modifier = Modifier.weight(1f),
+                        icon = if (state.listenStatus == SongListenStatus.Want) {
+                            Icons.Filled.Favorite
+                        } else {
+                            Icons.Filled.FavoriteBorder
+                        },
+                        label = SongListenStatus.Want.label,
+                        selected = state.listenStatus == SongListenStatus.Want,
+                        enabled = !state.isLoggedIn || statusEnabled,
+                        onClick = {
+                            if (state.isLoggedIn) {
+                                onSetListenStatus(SongListenStatus.Want)
+                            } else {
+                                onLogin()
+                            }
+                        },
+                    )
+                    SongActionItem(
+                        modifier = Modifier.weight(1f),
+                        icon = Icons.Filled.Check,
+                        label = SongListenStatus.Listened.label,
+                        selected = state.listenStatus == SongListenStatus.Listened,
+                        enabled = !state.isLoggedIn || statusEnabled,
+                        onClick = {
+                            if (state.isLoggedIn) {
+                                onSetListenStatus(SongListenStatus.Listened)
+                            } else {
+                                onLogin()
+                            }
+                        },
+                    )
+                }
+            }
+        }
+
+        if (!listenAvailable) {
+            Text(
+                text = "标记功能尚未接入",
+                style = MaterialTheme.typography.labelSmall,
+                color = scheme.onSurfaceVariant,
+            )
+        } else {
+            val error = state.listenError
+            val hint = when {
+                error != null -> error
+                state.listenLoading || state.listenUpdating -> "正在同步标记…"
+                !state.isLoggedIn -> "登录后可以标记想听 / 听过"
+                state.listenStatus == SongListenStatus.Want -> "已标记为「想听」"
+                state.listenStatus == SongListenStatus.Listened -> "已标记为「听过」"
+                state.listenLitCount > 0 ->
+                    "已有 ${formatNumber(state.listenLitCount.toLong())} 人听过"
+
+                else -> "标记你的收听状态"
+            }
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 48.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Text(
+                    text = hint,
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (error != null) scheme.error else scheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                when {
+                    error != null -> {
+                        TextButton(onClick = onRetryListen) {
+                            Text("重试")
+                        }
+                    }
+
+                    state.listenStatus != null -> {
+                        TextButton(
+                            onClick = onClearListenStatus,
+                            enabled = statusEnabled,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Close,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Spacer(Modifier.size(4.dp))
+                            Text("清除标记")
+                        }
                     }
                 }
             }
-
-            state.listenLitCount > 0 -> {
-                Text(
-                    text = "已有 ${formatNumber(state.listenLitCount.toLong())} 人听过",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
         }
+    }
+}
+
+@Composable
+private fun SongActionItem(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    selected: Boolean = false,
+    enabled: Boolean = true,
+    containerColor: Color = Color.Transparent,
+    contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+) {
+    val scheme = MaterialTheme.colorScheme
+    val background = when {
+        !enabled -> scheme.surfaceContainerHigh
+        selected -> scheme.secondaryContainer
+        else -> containerColor
+    }
+    val foreground = when {
+        !enabled -> scheme.onSurface.copy(alpha = 0.38f)
+        selected -> scheme.onSecondaryContainer
+        else -> contentColor
+    }
+
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(background)
+            .clickable(enabled = enabled, onClick = onClick)
+            .padding(vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(22.dp),
+            tint = foreground,
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = foreground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
     }
 }
 
@@ -1411,7 +1474,7 @@ private fun SubmissionDetailCard(
                         enabled = playerAvailable && track != null && !inQueue && !video.disabled,
                     ) {
                         Icon(
-                            imageVector = if (inQueue) Icons.Filled.Check else Icons.Filled.PlaylistAdd,
+                            imageVector = if (inQueue) Icons.Filled.Check else Icons.AutoMirrored.Filled.PlaylistAdd,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
                         )
