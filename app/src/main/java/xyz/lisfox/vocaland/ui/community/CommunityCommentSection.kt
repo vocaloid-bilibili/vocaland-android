@@ -298,7 +298,10 @@ private fun CommentItem(
             ) {
                 Text(
                     text = comment.user.nickname.ifBlank { "用户 #${comment.user.id}" },
+                    // 昵称必须参与权重分配：否则超长昵称会先占满整行，
+                    // 后面的等级/时间被挤成 0 宽，文字竖排错位
                     modifier = Modifier
+                        .weight(1f, fill = false)
                         .clip(RoundedCornerShape(6.dp))
                         .clickable(enabled = canOpenUser) {
                             onOpenUser?.invoke(comment.user.id)
@@ -318,6 +321,7 @@ private fun CommentItem(
                         text = label,
                         style = MaterialTheme.typography.labelSmall,
                         color = scheme.onSurfaceVariant,
+                        maxLines = 1,
                     )
                 }
             }
