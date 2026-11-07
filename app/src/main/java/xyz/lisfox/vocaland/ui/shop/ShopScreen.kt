@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -143,7 +144,7 @@ fun ShopScreen(
                         Spacer(Modifier.size(10.dp))
                         Column(modifier = Modifier.weight(1f)) {
                             Text(
-                                text = stringResource(R.string.page_shop),
+                                text = "票券与道具",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                             )
@@ -288,7 +289,7 @@ fun ShopScreen(
                                     rowItems.forEach { item ->
                                         ShopItemCard(
                                             item = item,
-                                            held = item.itemId?.let { heldMap[it] } ?: 0,
+                                            held = item.itemId?.let { heldMap[it] ?: 0 },
                                             onClick = {
                                                 viewModel.clearNotice()
                                                 selected = item
@@ -331,7 +332,7 @@ fun ShopScreen(
 @Composable
 private fun ShopItemCard(
     item: ShopItemDto,
-    held: Int,
+    held: Int?,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -364,9 +365,9 @@ private fun ShopItemCard(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                if (held > 0) {
+                held?.let { heldCount ->
                     Text(
-                        text = stringResource(R.string.shop_item_held_format, held),
+                        text = stringResource(R.string.shop_item_held_format, heldCount),
                         style = MaterialTheme.typography.labelSmall,
                         color = scheme.onSurfaceVariant,
                     )
@@ -380,10 +381,10 @@ private fun ShopItemCard(
                     color = scheme.onSurfaceVariant,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.height(36.dp),
+                    modifier = Modifier.heightIn(min = 36.dp),
                 )
             } else {
-                Spacer(Modifier.height(36.dp))
+                Spacer(Modifier.heightIn(min = 36.dp))
             }
 
             Row(verticalAlignment = Alignment.Bottom) {

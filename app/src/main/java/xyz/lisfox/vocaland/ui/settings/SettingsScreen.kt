@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -44,6 +45,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -60,6 +62,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import xyz.lisfox.vocaland.R
+import xyz.lisfox.vocaland.util.formatNumber
 import xyz.lisfox.vocaland.data.account.AccountAuthRepository
 import xyz.lisfox.vocaland.data.account.AccountRepository
 import xyz.lisfox.vocaland.data.account.UserPrivateDto
@@ -316,6 +319,7 @@ private fun ProfileSection(
                 ) {
                     NetworkImage(
                         url = me.avatar,
+                    fallbackIcon = Icons.Filled.Person,
                         contentDescription = me.nickname,
                         modifier = Modifier.size(74.dp),
                     )
@@ -389,7 +393,10 @@ private fun ProfileSection(
                     else -> stringResource(R.string.settings_email_unverified)
                 },
             )
-            InfoRow(label = stringResource(R.string.profile_exp), value = me.totalExp.toString())
+            InfoRow(
+                label = stringResource(R.string.profile_exp),
+                value = formatNumber(me.totalExp.toLong()),
+            )
             InfoRow(
                 label = stringResource(R.string.wallet_sponsor_title),
                 value = if (me.sponsorActive) {
@@ -648,7 +655,7 @@ private fun SponsorSection(
     error: String?,
     onSubmit: (String) -> Unit,
 ) {
-    var orderId by remember { mutableStateOf("") }
+    var orderId by rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(message) {
         if (!message.isNullOrBlank()) orderId = ""

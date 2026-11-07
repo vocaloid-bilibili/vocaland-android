@@ -59,7 +59,7 @@ fun MyPlaylistsScreen(
     modifier: Modifier = Modifier,
 ) {
     if (!loggedIn) {
-        Box(modifier = modifier.padding(16.dp)) {
+        Box(modifier = modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
             ScreenMessage(
                 title = "需要登录",
                 message = "登录后可以创建、整理自己的歌单",
@@ -89,15 +89,10 @@ fun MyPlaylistsScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "我的歌单",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                )
                 if (state.limit > 0) {
                     Text(
-                        text = "${state.items.size} / ${state.limit}",
-                        style = MaterialTheme.typography.labelSmall,
+                        text = "${state.items.size} / ${state.limit} 个歌单",
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }

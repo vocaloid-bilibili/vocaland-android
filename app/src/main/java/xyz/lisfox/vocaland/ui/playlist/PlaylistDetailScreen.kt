@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -67,6 +68,7 @@ import xyz.lisfox.vocaland.ui.components.ScreenMessage
 import xyz.lisfox.vocaland.ui.components.SectionHeader
 import xyz.lisfox.vocaland.util.artistLine
 import xyz.lisfox.vocaland.util.coverUrl
+import xyz.lisfox.vocaland.util.decodeHtmlText
 import xyz.lisfox.vocaland.util.formatNumber
 import xyz.lisfox.vocaland.util.songDisplayName
 
@@ -110,7 +112,8 @@ fun PlaylistDetailScreen(
     val canEdit = playlist?.canEdit == true
     val canDelete = canEdit &&
         viewer != null &&
-        playlist?.owner?.id == viewer.id
+        playlist?.owner?.id == viewer.id &&
+        playlist?.isDefault != true
 
     LaunchedEffect(state.deleted) {
         if (state.deleted) {
@@ -179,7 +182,7 @@ fun PlaylistDetailScreen(
 
     if (showDescriptionDialog && playlist != null) {
         PlaylistDescriptionDialog(
-            initialDescription = playlist.description,
+            initialDescription = decodeHtmlText(playlist.description).orEmpty(),
             onDismiss = { showDescriptionDialog = false },
             onConfirm = {
                 showDescriptionDialog = false
@@ -317,7 +320,7 @@ private fun PlaylistDetailContent(
                     }
                 }
 
-                if (playlist.description.isNullOrBlank()) {
+                if (decodeHtmlText(playlist.description).isNullOrBlank()) {
                     if (canEdit) {
                         TextButton(onClick = onEditDescription) {
                             Text("添加简介")
@@ -325,7 +328,7 @@ private fun PlaylistDetailContent(
                     }
                 } else {
                     Text(
-                        text = playlist.description.orEmpty(),
+                        text = decodeHtmlText(playlist.description).orEmpty(),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -393,6 +396,13 @@ private fun PlaylistDetailContent(
                                 Text("删除歌单")
                             }
                         }
+                    }
+                    if (playlist.isDefault) {
+                        Text(
+                            text = "默认收藏夹由系统维护，不可删除",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                     }
                 }
 
@@ -492,6 +502,7 @@ private fun OwnerRow(
         ) {
             NetworkImage(
                 url = ownerAvatarUrl(owner.avatar),
+                    fallbackIcon = Icons.Filled.Person,
                 contentDescription = owner.nickname,
                 modifier = Modifier
                     .size(32.dp)
@@ -546,7 +557,7 @@ private fun PlaylistSongRow(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Column(
-            modifier = Modifier.width(32.dp),
+            modifier = Modifier.width(48.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
@@ -554,7 +565,7 @@ private fun PlaylistSongRow(
                 IconButton(
                     onClick = onMoveUp,
                     enabled = index > 0,
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(48.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Filled.KeyboardArrowUp,
@@ -564,7 +575,7 @@ private fun PlaylistSongRow(
                 }
                 IconButton(
                     onClick = onMoveDown,
-                    modifier = Modifier.size(24.dp),
+                    modifier = Modifier.size(48.dp),
                 ) {
                     Icon(
                         imageVector = Icons.Filled.KeyboardArrowDown,

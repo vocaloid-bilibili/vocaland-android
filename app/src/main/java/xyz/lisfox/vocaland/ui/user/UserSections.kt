@@ -17,6 +17,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -139,7 +140,13 @@ internal fun UserOwnerSection(
 ) {
     val scheme = MaterialTheme.colorScheme
     val checkedIn = level?.checkedInToday == true
-    val progress = (level?.progress ?: 0.0).coerceIn(0.0, 1.0)
+    val progress = level?.let { info ->
+        if (info.nextLevelExp > 0) {
+            (info.currentLevelExp.toFloat() / info.nextLevelExp.toFloat()).coerceIn(0f, 1f)
+        } else {
+            info.progress.toFloat().coerceIn(0f, 1f)
+        }
+    } ?: 0f
 
     Column(
         modifier = modifier.fillMaxWidth(),
@@ -236,27 +243,19 @@ internal fun UserOwnerSection(
                         )
                         Spacer(Modifier.weight(1f))
                         Text(
-                            text = "${level.currentLevelExp} / ${level.nextLevelExp}",
+                            text = "${formatNumber(level.currentLevelExp.toLong())} / ${formatNumber(level.nextLevelExp.toLong())}",
                             style = MaterialTheme.typography.labelSmall,
                             color = scheme.onSurfaceVariant,
                         )
                     }
 
-                    Box(
+                    LinearProgressIndicator(
+                        progress = { progress },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(6.dp)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(scheme.outlineVariant),
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth(progress.toFloat())
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp))
-                                .background(scheme.primary),
-                        )
-                    }
+                            .height(6.dp),
+                        drawStopIndicator = {},
+                    )
 
                     if (!checkedIn) {
                         Button(

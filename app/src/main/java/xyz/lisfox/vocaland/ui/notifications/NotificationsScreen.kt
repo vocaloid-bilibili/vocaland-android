@@ -20,12 +20,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -52,6 +52,7 @@ import xyz.lisfox.vocaland.data.notification.notificationPreviewText
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.MotionDurations
+import xyz.lisfox.vocaland.ui.components.PagerRow
 import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
 import xyz.lisfox.vocaland.ui.components.SectionHeader
@@ -103,7 +104,7 @@ fun NotificationsScreen(
     ) {
         item {
             SectionHeader(
-                title = stringResource(R.string.notifications_title),
+                title = "最新动态",
                 subtitle = if (state.unread > 0) {
                     stringResource(R.string.notifications_unread_count_format, state.unread)
                 } else {
@@ -206,11 +207,14 @@ fun NotificationsScreen(
 
         if (state.total > 0) {
             item {
-                PaginationRow(
+                PagerRow(
                     page = state.page,
-                    pages = state.pages,
+                    totalPages = state.pages,
+                    loading = state.loading,
                     onPrevious = { viewModel.setPage(state.page - 1) },
                     onNext = { viewModel.setPage(state.page + 1) },
+                    total = state.total,
+                    unit = "条",
                 )
             }
         }
@@ -254,6 +258,7 @@ private fun NotificationCard(
             Box(modifier = Modifier.size(42.dp)) {
                 NetworkImage(
                     url = entry.actor?.avatar,
+                    fallbackIcon = Icons.Filled.Person,
                     contentDescription = actorName,
                     modifier = Modifier
                         .size(42.dp)
@@ -337,35 +342,3 @@ private fun NotificationCard(
     }
 }
 
-@Composable
-private fun PaginationRow(
-    page: Int,
-    pages: Int,
-    onPrevious: () -> Unit,
-    onNext: () -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        OutlinedButton(
-            onClick = onPrevious,
-            enabled = page > 1,
-        ) {
-            Text(stringResource(R.string.action_previous))
-        }
-        Text(
-            text = "$page / $pages",
-            modifier = Modifier.padding(horizontal = 16.dp),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        OutlinedButton(
-            onClick = onNext,
-            enabled = page < pages,
-        ) {
-            Text(stringResource(R.string.action_next))
-        }
-    }
-}

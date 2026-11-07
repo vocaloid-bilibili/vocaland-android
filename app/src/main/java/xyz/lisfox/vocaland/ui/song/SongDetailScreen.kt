@@ -1,4 +1,4 @@
-﻿@file:OptIn(ExperimentalSharedTransitionApi::class)
+@file:OptIn(ExperimentalSharedTransitionApi::class)
 
 package xyz.lisfox.vocaland.ui.song
 
@@ -95,12 +95,12 @@ import xyz.lisfox.vocaland.ui.components.SectionHeader
 import xyz.lisfox.vocaland.ui.components.StatusPill
 import xyz.lisfox.vocaland.util.coverUrl
 import xyz.lisfox.vocaland.util.formatNumber
+import xyz.lisfox.vocaland.util.formatScore
 import xyz.lisfox.vocaland.util.formatShortDate
 import xyz.lisfox.vocaland.util.openBilibiliUser
 import xyz.lisfox.vocaland.util.openBilibiliVideo
 import xyz.lisfox.vocaland.util.songDisplayName
 import xyz.lisfox.vocaland.util.timeAgo
-import java.util.Locale
 import kotlin.math.roundToInt
 
 private val songRankingBoards = listOf(
@@ -129,7 +129,7 @@ fun SongDetailScreen(
     playerController: BgmPlayerController? = null,
     songActionsRepository: SongActionsRepository? = null,
     onAddToPlaylist: ((Int) -> Unit)? = null,
-    communitySlot: (@Composable () -> Unit)? = null,
+    communitySlot: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
     val appContainer = (context.applicationContext as? VocaLandApplication)?.container
@@ -197,12 +197,6 @@ fun SongDetailScreen(
                     },
                     onSelectRankingBoard = viewModel::selectRankingBoard,
                     onRetryRanking = viewModel::retryRanking,
-                    onRetryRatings = viewModel::retryRatings,
-                    onPreviousRatings = viewModel::previousRatingsPage,
-                    onNextRatings = viewModel::nextRatingsPage,
-                    onRetryComments = viewModel::retryComments,
-                    onPreviousComments = viewModel::previousCommentsPage,
-                    onNextComments = viewModel::nextCommentsPage,
                     communitySlot = communitySlot,
                     modifier = modifier,
                 )
@@ -232,14 +226,8 @@ private fun SongDetailContent(
     onAddToQueue: (BgmTrack) -> Unit,
     onSelectRankingBoard: (RankingBoard) -> Unit,
     onRetryRanking: () -> Unit,
-    onRetryRatings: () -> Unit,
-    onPreviousRatings: () -> Unit,
-    onNextRatings: () -> Unit,
-    onRetryComments: () -> Unit,
-    onPreviousComments: () -> Unit,
-    onNextComments: () -> Unit,
     modifier: Modifier = Modifier,
-    communitySlot: (@Composable () -> Unit)? = null,
+    communitySlot: @Composable () -> Unit,
 ) {
     val videos = remember(song.id, song.videos) { sortSongVideos(song.videos) }
     val selectedVideo = videos.firstOrNull { it.bvid == state.selectedBvid }
@@ -375,31 +363,7 @@ private fun SongDetailContent(
             )
         }
 
-        val slot = communitySlot
-        if (slot != null) {
-            item { slot() }
-        } else {
-            item {
-                SongRatingsSection(
-                    state = state,
-                    onRetry = onRetryRatings,
-                    onPrevious = onPreviousRatings,
-                    onNext = onNextRatings,
-                    onOpenUser = onOpenUser,
-                )
-            }
-
-            item {
-                SongCommentsSection(
-                    state = state,
-                    onLogin = onLogin,
-                    onRetry = onRetryComments,
-                    onPrevious = onPreviousComments,
-                    onNext = onNextComments,
-                    onOpenUser = onOpenUser,
-                )
-            }
-        }
+        item { communitySlot() }
     }
 }
 
@@ -744,7 +708,7 @@ private fun RankingHistoryCard(
                         )
                     }
                     Text(
-                        text = "${formatPoint(item.point)} 分",
+                        text = "${formatScore(item.point)} 分",
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -764,312 +728,6 @@ private fun RankingHistoryCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SongRatingsSection(
-    state: SongDetailUiState,
-    onRetry: () -> Unit,
-    onPrevious: () -> Unit,
-    onNext: () -> Unit,
-    onOpenUser: (Int) -> Unit,
-) {
-    val summary = state.ratingSummary
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SectionHeader(
-            title = "评分",
-            subtitle = summary?.total?.takeIf { it > 0 }?.let { "共 $it 条" },
-        )
-
-        summary?.takeIf { it.total > 0 }?.let {
-            RatingSummaryCard(it)
-        }
-
-        if (state.ratingsLoading && state.ratings.isEmpty()) {
-            InlineLoading()
-        }
-
-        when {
-            state.ratingsError != null -> {
-                ScreenMessage(
-                    title = "评分加载失败",
-                    message = state.ratingsError ?: "请稍后重试",
-                    actionLabel = "重试",
-                    onAction = onRetry,
-                )
-            }
-
-            state.ratings.isEmpty() && !state.ratingsLoading -> {
-                EmptyHint("还没有人评分")
-            }
-
-            else -> {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    state.ratings.forEach { rating ->
-                        RatingCard(rating, onOpenUser)
-                    }
-                }
-            }
-        }
-
-        if (state.ratingsTotalPages > 1) {
-            PagerRow(
-                page = state.ratingsPage,
-                totalPages = state.ratingsTotalPages,
-                total = summary?.total ?: state.ratings.size,
-                loading = state.ratingsLoading,
-                onPrevious = onPrevious,
-                onNext = onNext,
-                unit = "条",
-            )
-        }
-    }
-}
-
-@Composable
-private fun RatingSummaryCard(summary: RatingSummaryDto) {
-    val average = summary.avgScore?.let {
-        String.format(Locale.CHINA, "%.1f", it)
-    } ?: "-"
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            Column {
-                Text(
-                    text = average,
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Text(
-                    text = "平均分 / 10",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Text(
-                text = "${summary.total} 人评分",
-                style = MaterialTheme.typography.titleSmall,
-            )
-        }
-    }
-}
-
-@Composable
-private fun RatingCard(rating: RatingDto, onOpenUser: (Int) -> Unit) {
-    val name = if (rating.isAnonymous && !rating.isRevealed) {
-        "匿名用户"
-    } else {
-        rating.user.nickname.ifBlank { "用户 #${rating.user.id}" }
-    }
-    val canOpenUser = rating.user.id > 0 && !(rating.isAnonymous && !rating.isRevealed)
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            NetworkImage(
-                url = rating.user.avatar,
-                contentDescription = name,
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .clickable(enabled = canOpenUser) {
-                        onOpenUser(rating.user.id)
-                    },
-            )
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = name,
-                        style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(
-                        text = "${rating.score} 分",
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-                Text(
-                    text = timeAgo(rating.createdAt),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                rating.comment
-                    ?.takeIf { it.isNotBlank() }
-                    ?.let { comment ->
-                        Text(
-                            text = comment,
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SongCommentsSection(
-    state: SongDetailUiState,
-    onLogin: () -> Unit,
-    onRetry: () -> Unit,
-    onPrevious: () -> Unit,
-    onNext: () -> Unit,
-    onOpenUser: (Int) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        SectionHeader(
-            title = "评论",
-            subtitle = state.commentsTotal.takeIf { it > 0 }?.let { "共 $it 条" },
-        )
-
-        if (!state.isLoggedIn) {
-            LoginHintCard(
-                message = "登录后即可查看与参与评论",
-                onLogin = onLogin,
-            )
-        } else {
-            if (state.commentsLoading && state.comments.isEmpty()) {
-                InlineLoading()
-            }
-
-            when {
-                state.commentsError != null -> {
-                    ScreenMessage(
-                        title = "评论加载失败",
-                        message = state.commentsError ?: "请稍后重试",
-                        actionLabel = "重试",
-                        onAction = onRetry,
-                    )
-                }
-
-                state.comments.isEmpty() && !state.commentsLoading -> {
-                    EmptyHint("还没有评论，来抢沙发")
-                }
-
-                else -> {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        state.comments.forEach { comment ->
-                            CommentCard(comment, onOpenUser)
-                        }
-                    }
-                }
-            }
-
-            if (state.commentsTotalPages > 1) {
-                PagerRow(
-                    page = state.commentsPage,
-                    totalPages = state.commentsTotalPages,
-                    total = state.commentsTotal,
-                    loading = state.commentsLoading,
-                    onPrevious = onPrevious,
-                    onNext = onNext,
-                    unit = "条",
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun CommentCard(comment: CommentDto, onOpenUser: (Int) -> Unit) {
-    val name = comment.user.nickname.ifBlank { "用户 #${comment.user.id}" }
-    val canOpenUser = comment.user.id > 0
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            NetworkImage(
-                url = comment.user.avatar,
-                contentDescription = name,
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .clickable(enabled = canOpenUser) {
-                        onOpenUser(comment.user.id)
-                    },
-            )
-
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        text = name,
-                        style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Text(
-                        text = timeAgo(comment.createdAt),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-
-                comment.replyTo
-                    ?.nickname
-                    ?.takeIf { it.isNotBlank() }
-                    ?.let { replyName ->
-                        Text(
-                            text = "回复 @$replyName",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-
-                Text(
-                    text = if (comment.isDeleted) "该评论已删除" else comment.content,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (comment.isDeleted) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-                )
-
-                if (comment.likeCount > 0 || comment.replyCount > 0) {
-                    Text(
-                        text = listOfNotNull(
-                            comment.likeCount.takeIf { it > 0 }?.let { "$it 赞" },
-                            comment.replyCount.takeIf { it > 0 }?.let { "$it 回复" },
-                        ).joinToString(" · "),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
             }
         }
     }
@@ -1397,17 +1055,21 @@ private fun SubmissionDetailCard(
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                    val uploaderName = video.uploader?.name?.takeIf { it.isNotBlank() }
+                    val uploaderUid = video.uploader?.uid?.takeIf { it.isNotBlank() }
                     Text(
-                        text = video.uploader?.name?.takeIf { it.isNotBlank() } ?: "未知UP主",
+                        text = uploaderName ?: "未知UP主",
                         style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
+                        color = if (uploaderUid != null) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.onSurface
+                        },
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.clickable(
-                            enabled = !video.uploader?.uid.isNullOrBlank(),
-                            onClick = {
-                                openBilibiliUser(context, video.uploader?.uid)
-                            },
+                            enabled = uploaderUid != null,
+                            onClick = { openBilibiliUser(context, uploaderUid) },
                         ),
                     )
                 }
@@ -1493,5 +1155,3 @@ private fun SubmissionDetailCard(
     }
 }
 
-private fun formatPoint(value: Double): String =
-    String.format(Locale.CHINA, "%.1f", value)

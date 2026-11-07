@@ -38,6 +38,7 @@ import xyz.lisfox.vocaland.data.model.PublicPlaylistDto
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.SectionHeader
+import xyz.lisfox.vocaland.util.decodeHtmlText
 import xyz.lisfox.vocaland.util.formatNumber
 
 @Composable
@@ -154,8 +155,7 @@ fun PlaylistListCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                playlist.description
-                    ?.takeIf { it.isNotBlank() }
+                decodeHtmlText(playlist.description)
                     ?.let { description ->
                         Spacer(Modifier.height(3.dp))
                         Text(

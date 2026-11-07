@@ -17,7 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.List
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -38,6 +38,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -58,12 +59,14 @@ import xyz.lisfox.vocaland.ui.components.StatusPill
 import xyz.lisfox.vocaland.util.boardLabel
 import xyz.lisfox.vocaland.util.categoryLabels
 import xyz.lisfox.vocaland.util.coverUrl
+import xyz.lisfox.vocaland.util.formatDecimal
 import xyz.lisfox.vocaland.util.deadlineText
 import xyz.lisfox.vocaland.util.displayArtistLine
 import xyz.lisfox.vocaland.util.displaySubtitle
 import xyz.lisfox.vocaland.util.displayTitle
 import xyz.lisfox.vocaland.util.parseIsoMillis
 import xyz.lisfox.vocaland.util.statusLabel
+import xyz.lisfox.vocaland.util.votingStatusLabel
 
 @Composable
 fun VotingCampaignHeader(
@@ -92,7 +95,12 @@ fun VotingCampaignHeader(
                     style = MaterialTheme.typography.titleLarge,
                 )
                 Spacer(Modifier.width(10.dp))
-                StatusPill(text = status)
+                val statusColors = votingStatusPillColors(status)
+                StatusPill(
+                    text = status,
+                    containerColor = statusColors.first,
+                    contentColor = statusColors.second,
+                )
             }
             if (!deadline.isNullOrBlank()) {
                 Spacer(Modifier.height(8.dp))
@@ -172,7 +180,7 @@ fun EdRulesButton(
     var open by remember { mutableStateOf(false) }
     OutlinedButton(onClick = { open = true }, modifier = modifier) {
         Icon(
-            imageVector = Icons.Filled.List,
+            imageVector = Icons.AutoMirrored.Filled.List,
             contentDescription = null,
             modifier = Modifier.size(16.dp),
         )
@@ -705,7 +713,7 @@ fun EdResultItem(
     val candidate = result.candidate
     val songId = candidate.songId?.takeIf { it > 0 }
         ?: candidate.song?.id?.takeIf { it > 0 }
-    val scoreText = "%.2f".format(result.score)
+    val scoreText = formatDecimal(result.score, 2)
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -773,7 +781,7 @@ fun EdResultItem(
                     )
                     if (result.songPenaltyPct > 0) {
                         Text(
-                            text = "提名者折分 × ${"%.1f".format(100 - result.songPenaltyPct)}%",
+                            text = "提名者折分 × ${formatDecimal(100 - result.songPenaltyPct, 1)}%",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.error,
                         )
@@ -811,13 +819,13 @@ private fun EdResultDetails(
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             Text(
-                text = "赞成 $positive · 反对 $negative · 附加 ${bonusEntries.size} 人 / $bonusCount 张 · 实际票权合计 ${"%.2f".format(rawTotal)} · 最终 ${"%.2f".format(result.score)}",
+                text = "赞成 $positive · 反对 $negative · 附加 ${bonusEntries.size} 人 / $bonusCount 张 · 实际票权合计 ${formatDecimal(rawTotal, 2)} · 最终 ${formatDecimal(result.score, 2)}",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (result.songPenaltyPct > 0) {
                 Text(
-                    text = "提名者折分：× ${"%.1f".format(100 - result.songPenaltyPct)}%",
+                    text = "提名者折分：× ${formatDecimal(100 - result.songPenaltyPct, 1)}%",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.error,
                 )
@@ -836,9 +844,9 @@ private fun EdResultDetails(
                 val detail = buildString {
                     append("$user · $kind")
                     role?.let { append(" · $it") }
-                    if (bonusPct > 100) append(" · 角色加成 ${"%.0f".format(bonusPct)}%")
-                    if (penaltyPct > 0) append(" · 投票惩罚 ${"%.1f".format(penaltyPct)}%")
-                    append(" · 权重 ${"%.2f".format(snapshot.rawWeight)} → ${"%.2f".format(snapshot.actualWeight)}")
+                    if (bonusPct > 100) append(" · 角色加成 ${formatDecimal(bonusPct, 0)}%")
+                    if (penaltyPct > 0) append(" · 投票惩罚 ${formatDecimal(penaltyPct, 1)}%")
+                    append(" · 权重 ${formatDecimal(snapshot.rawWeight, 2)} → ${formatDecimal(snapshot.actualWeight, 2)}")
                 }
                 Text(
                     text = detail,
@@ -850,7 +858,7 @@ private fun EdResultDetails(
             }
             if (negative > 0) {
                 Text(
-                    text = "反对票权重系数：${"%.0f".format(negativeWeight * 100)}%",
+                    text = "反对票权重系数：${formatDecimal(negativeWeight * 100, 0)}%",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -1012,7 +1020,7 @@ fun EdHistoryRow(
                 }
                 Text(
                     text = buildString {
-                        append("得分 ${"%.2f".format(history.score)}")
+                        append("得分 ${formatDecimal(history.score, 2)}")
                         history.nominator?.nickname?.takeIf { it.isNotBlank() }?.let {
                             append(" · 提名 $it")
                         }
@@ -1181,5 +1189,15 @@ fun TrendingEntitySearchRow(
                 Text(if (submitting) "提交中…" else "提名")
             }
         }
+    }
+}
+
+@Composable
+internal fun votingStatusPillColors(label: String): Pair<Color, Color> {
+    val scheme = MaterialTheme.colorScheme
+    return when (label) {
+        votingStatusLabel("voting") -> scheme.primaryContainer to scheme.onPrimaryContainer
+        votingStatusLabel("nomination") -> scheme.tertiaryContainer to scheme.onTertiaryContainer
+        else -> scheme.surfaceContainerHighest to scheme.onSurfaceVariant
     }
 }

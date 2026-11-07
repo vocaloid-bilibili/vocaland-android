@@ -17,7 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
@@ -148,6 +148,24 @@ private fun VotingHubContent(
         item {
             Spacer(Modifier.height(14.dp))
             Text(
+                text = "人气投票",
+                style = MaterialTheme.typography.titleLarge,
+            )
+        }
+        if (trending.isEmpty()) {
+            item { EmptyHint(text = "暂无人气投票活动") }
+        } else {
+            items(trending, key = { "trending-${it.id}" }) { campaign ->
+                TrendingCampaignRow(
+                    campaign = campaign,
+                    onClick = { onOpenVoting(VotingKind.Trending, campaign.id) },
+                )
+            }
+        }
+
+        item {
+            Spacer(Modifier.height(14.dp))
+            Text(
                 text = "ED 往期结果",
                 style = MaterialTheme.typography.titleLarge,
             )
@@ -170,7 +188,7 @@ private fun VotingHubContent(
             item { InlineLoading() }
         }
         state.edHistoryError?.takeIf { it.isNotBlank() }?.let { error ->
-            item { EmptyHint(text = error) }
+            item { EmptyHint(text = error, maxLines = Int.MAX_VALUE) }
         }
         val edHistory = state.edHistory
         if (edHistory != null && edHistory.items.isNotEmpty()) {
@@ -198,24 +216,6 @@ private fun VotingHubContent(
         item {
             Spacer(Modifier.height(14.dp))
             Text(
-                text = "人气投票",
-                style = MaterialTheme.typography.titleLarge,
-            )
-        }
-        if (trending.isEmpty()) {
-            item { EmptyHint(text = "暂无人气投票活动") }
-        } else {
-            items(trending, key = { "trending-${it.id}" }) { campaign ->
-                TrendingCampaignRow(
-                    campaign = campaign,
-                    onClick = { onOpenVoting(VotingKind.Trending, campaign.id) },
-                )
-            }
-        }
-
-        item {
-            Spacer(Modifier.height(14.dp))
-            Text(
                 text = "人气投票往期结果",
                 style = MaterialTheme.typography.titleLarge,
             )
@@ -224,7 +224,7 @@ private fun VotingHubContent(
             item { InlineLoading() }
         }
         state.trendingHistoryError?.takeIf { it.isNotBlank() }?.let { error ->
-            item { EmptyHint(text = error) }
+            item { EmptyHint(text = error, maxLines = Int.MAX_VALUE) }
         }
         val trendingHistory = state.trendingHistory
         if (trendingHistory != null && trendingHistory.items.isNotEmpty()) {
@@ -334,7 +334,12 @@ private fun CampaignRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    StatusPill(text = status)
+                    val statusColors = votingStatusPillColors(status)
+                    StatusPill(
+                        text = status,
+                        containerColor = statusColors.first,
+                        contentColor = statusColors.second,
+                    )
                     if (!deadline.isNullOrBlank()) {
                         Text(
                             text = deadline,
@@ -354,7 +359,7 @@ private fun CampaignRow(
             }
             Spacer(Modifier.width(10.dp))
             Icon(
-                imageVector = Icons.Filled.ArrowForward,
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = null,
                 modifier = Modifier.size(18.dp),
                 tint = MaterialTheme.colorScheme.primary,

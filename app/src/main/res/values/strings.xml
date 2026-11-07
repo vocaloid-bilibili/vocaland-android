@@ -285,17 +285,17 @@
     <string name="notifications_login_message">有人回复、点赞或提到你时，通知会出现在这里。</string>
     <string name="notifications_title">消息中心</string>
     <string name="notifications_unread_count_format">%1$d 条未读通知</string>
-    <string name="notifications_unread_none_subtitle">暂时没有未读通知</string>
+    <string name="notifications_unread_none_subtitle">全部已读</string>
     <string name="notifications_mark_all_read">全部已读</string>
     <string name="notifications_tab_unread_format">未读 (%1$d)</string>
     <string name="notifications_tab_unread">未读</string>
     <string name="notifications_tab_all">全部</string>
     <string name="notifications_loading">正在加载通知</string>
     <string name="notifications_load_failed_title">通知加载失败</string>
-    <string name="notifications_empty_unread">没有未读通知</string>
-    <string name="notifications_empty_all">暂时没有通知</string>
+    <string name="notifications_empty_unread">新的回复和互动会出现在这里</string>
+    <string name="notifications_empty_all">还没有收到任何通知</string>
     <string name="notifications_system_sender">系统消息</string>
     <string name="pager_page_format">第 %1$d / %2$d 页</string>
-    <string name="pager_total_format">共 %1$d %2$s</string>
+    <string name="pager_total_format">共 %1$s %2$s</string>
     <string name="pager_unit_default">首</string>
 </resources>

@@ -33,6 +33,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -42,11 +44,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -145,7 +150,7 @@ fun WalletScreen(
                                 Spacer(Modifier.size(10.dp))
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text(
-                                        text = stringResource(R.string.page_wallet),
+                                        text = "V币余额",
                                         style = MaterialTheme.typography.titleLarge,
                                         fontWeight = FontWeight.Bold,
                                     )
@@ -329,12 +334,18 @@ fun WalletScreen(
                                     }
                                 }
 
-                                val progress = level.progress.toFloat().coerceIn(0f, 1f)
+                                val progress = if (level.nextLevelExp > 0) {
+                                    (level.currentLevelExp.toFloat() / level.nextLevelExp.toFloat())
+                                        .coerceIn(0f, 1f)
+                                } else {
+                                    level.progress.toFloat().coerceIn(0f, 1f)
+                                }
                                 LinearProgressIndicator(
                                     progress = { progress },
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .height(6.dp),
+                                    drawStopIndicator = {},
                                 )
                                 Row(modifier = Modifier.fillMaxWidth()) {
                                     Text(
@@ -344,7 +355,7 @@ fun WalletScreen(
                                     )
                                     Spacer(Modifier.weight(1f))
                                     Text(
-                                        text = "${level.currentLevelExp} / ${level.nextLevelExp}",
+                                        text = "${formatNumber(level.currentLevelExp.toLong())} / ${formatNumber(level.nextLevelExp.toLong())}",
                                         style = MaterialTheme.typography.labelSmall,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     )
@@ -430,7 +441,7 @@ private fun SponsorClaimCard(
     error: String?,
     onSubmit: (String) -> Unit,
 ) {
-    var orderId by remember { mutableStateOf("") }
+    var orderId by rememberSaveable { mutableStateOf("") }
 
     LaunchedEffect(message) {
         if (!message.isNullOrBlank()) orderId = ""
@@ -472,6 +483,15 @@ private fun SponsorClaimCard(
                     label = { Text(stringResource(R.string.wallet_sponsor_order_label)) },
                     singleLine = true,
                     shape = RoundedCornerShape(14.dp),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Ascii,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            if (orderId.isNotBlank() && !claiming) onSubmit(orderId)
+                        },
+                    ),
                 )
                 Button(
                     onClick = { onSubmit(orderId) },

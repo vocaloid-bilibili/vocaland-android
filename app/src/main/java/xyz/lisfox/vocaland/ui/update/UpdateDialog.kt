@@ -72,7 +72,7 @@ fun UpdateDialog(
                 Spacer(Modifier.height(14.dp))
                 Column(
                     modifier = Modifier
-                        .weight(1f, fill = false)
+                        .heightIn(min = 160.dp, max = 360.dp)
                         .verticalScroll(rememberScrollState()),
                 ) {
                     if (update.changelog.isBlank()) {

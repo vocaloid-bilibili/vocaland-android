@@ -1,5 +1,7 @@
 package xyz.lisfox.vocaland.ui.user
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -245,6 +247,7 @@ private fun UserHero(user: PublicUserDto) {
             ) {
                 NetworkImage(
                     url = user.avatar,
+                    fallbackIcon = Icons.Filled.Person,
                     contentDescription = user.nickname,
                     modifier = Modifier
                         .size(76.dp)
@@ -343,8 +346,7 @@ private fun UserRatingRow(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(
-                text = rating.targetName?.takeIf { it.isNotBlank() }
-                    ?: targetLabel(rating.targetKey),
+                text = targetLabel(rating.targetKey, rating.targetName),
                 style = MaterialTheme.typography.titleSmall,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
