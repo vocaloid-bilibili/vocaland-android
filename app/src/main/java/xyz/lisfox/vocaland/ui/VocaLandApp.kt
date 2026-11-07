@@ -604,8 +604,9 @@ fun VocaLandApp(
                                 communityRepository = container.communityRepository,
                                 onLogin = { navController.navigate(Routes.LOGIN) },
                                 onOpenUser = { id ->
-                                    navController.navigate(Routes.user(id)) {
-                                        launchSingleTop = true
+                                    // 同上：用户页之间互相跳转需要压栈，不能用 launchSingleTop
+                                    if (id != userId) {
+                                        navController.navigate(Routes.user(id))
                                     }
                                 },
                                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
@@ -729,8 +730,10 @@ fun VocaLandApp(
                                     }
                                 },
                                 onOpenArtist = { artistKind, id ->
-                                    navController.navigate(Routes.artist(artistKind, id)) {
-                                        launchSingleTop = true
+                                    // 目标与当前页相同时不重复入栈；否则必须新建一层，
+                                    // 否则 launchSingleTop 会原地替换当前 entry（无转场动画、返回跳过上一页）
+                                    if (artistKind != kind || id != artistId) {
+                                        navController.navigate(Routes.artist(artistKind, id))
                                     }
                                 },
                                 onOpenTag = { id ->
