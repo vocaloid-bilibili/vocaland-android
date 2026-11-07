@@ -29,6 +29,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Button
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,6 +61,7 @@ import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.NetworkImage
+import xyz.lisfox.vocaland.ui.components.PagerRow
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
 import xyz.lisfox.vocaland.ui.components.SongCoverCard
 import xyz.lisfox.vocaland.util.coverUrl
@@ -128,12 +130,31 @@ fun SearchScreen(
 
         when {
             !state.searched -> {
+                val pending = state.query.trim()
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
                 ) {
-                    EmptyHint("输入关键词搜索歌曲、P主、歌手与标签")
+                    if (pending.isEmpty()) {
+                        EmptyHint("输入关键词搜索歌曲、P主、歌手与标签")
+                    } else {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            EmptyHint("按回车或点击下方按钮搜索「$pending」")
+                            Button(
+                                onClick = {
+                                    focusManager.clearFocus()
+                                    viewModel.submit()
+                                },
+                            ) {
+                                Text("搜索「$pending」")
+                            }
+                        }
+                    }
                 }
             }
 
@@ -330,7 +351,7 @@ private fun SearchGroupHeader(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.weight(1f))
-        if (showAllAction) {
+        if (showAllAction && group.total > group.data.size) {
             TextButton(onClick = onShowAll) {
                 Text("查看全部")
             }
@@ -417,29 +438,15 @@ private fun SearchPagination(
     onPrevious: () -> Unit,
     onNext: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        TextButton(
-            onClick = onPrevious,
-            enabled = page > 1,
-        ) {
-            Text("上一页")
-        }
-        Text(
-            text = "第 $page / $totalPages 页 · 共 $total 条",
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        TextButton(
-            onClick = onNext,
-            enabled = page < totalPages,
-        ) {
-            Text("下一页")
-        }
-    }
+    PagerRow(
+        page = page,
+        totalPages = totalPages,
+        loading = false,
+        onPrevious = onPrevious,
+        onNext = onNext,
+        total = total,
+        unit = "条",
+    )
 }
 
 private fun entityTitle(type: String, entity: SearchEntityDto): String = when (type) {

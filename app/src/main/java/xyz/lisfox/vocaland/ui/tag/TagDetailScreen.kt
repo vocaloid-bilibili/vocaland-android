@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -67,7 +68,7 @@ fun TagDetailScreen(
         }
 
         state.tag == null -> {
-            Box(modifier = modifier.padding(16.dp)) {
+            Box(modifier = modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
                 ScreenMessage(
                     title = "标签加载失败",
                     message = state.error ?: "请稍后重试",
@@ -278,7 +279,7 @@ private fun TagHero(
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 tag.category
                     .takeIf { it.isNotBlank() }
-                    ?.let { StatusPill(tagCategoryLabel(it)) }
+                    ?.let { StatusPill("分类：${tagCategoryLabel(it)}") }
                 if (total > 0) {
                     StatusPill("$total 首")
                 }
@@ -294,7 +295,7 @@ private fun TagHero(
 
             if (tag.scope.isNotEmpty()) {
                 Text(
-                    text = tag.scope.joinToString(" / ") { tagScopeLabel(it) },
+                    text = "适用于：" + tag.scope.joinToString(" / ") { tagScopeLabel(it) },
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

@@ -139,7 +139,7 @@ fun HeroCarousel(
                         modifier = Modifier
                             .align(Alignment.BottomStart)
                             .fillMaxWidth()
-                            .padding(start = 16.dp, end = 64.dp, bottom = 14.dp),
+                            .padding(start = 16.dp, end = 96.dp, bottom = 14.dp),
                         style = MaterialTheme.typography.titleMedium,
                         color = Color.White,
                         maxLines = 1,

@@ -42,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -195,6 +196,8 @@ fun RankingScreen(
                                         onClick = { onOpenSong(item.song.id) },
                                         modifier = Modifier.weight(1f),
                                         sharedKey = "song-cover-${item.song.id}",
+                                        badge = "#${item.rank}",
+                                        value = formatNumber(statValue(item, currentData.order)),
                                     )
                                 }
                                 if (row.size == 1) {
@@ -450,12 +453,15 @@ private fun IssueSelector(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (issue != null && latest != null && issue < latest) {
-                    Text(
-                        text = "回到最新",
-                        modifier = Modifier.clickable(onClick = onLatest),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
+                    TextButton(
+                        onClick = onLatest,
+                        contentPadding = PaddingValues(horizontal = 8.dp),
+                    ) {
+                        Text(
+                            text = "回到最新",
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                    }
                 }
             }
             IconButton(
@@ -580,7 +586,8 @@ private fun RankingRow(
             ) {
                 Text(
                     text = item.rank.toString(),
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Medium,
                     color = when (item.rank) {
                         1 -> MaterialTheme.colorScheme.primary
                         2 -> MaterialTheme.colorScheme.tertiary

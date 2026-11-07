@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -90,7 +91,7 @@ fun ArtistDetailScreen(
         }
 
         state.artist == null -> {
-            Box(modifier = modifier.padding(16.dp)) {
+            Box(modifier = modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
                 ScreenMessage(
                     title = "加载失败",
                     message = state.error ?: "请稍后重试",
@@ -130,6 +131,7 @@ fun ArtistDetailScreen(
                             title = "热门作品",
                             subtitle = "按播放数据",
                             songs = extras.topSongs,
+                            keyPrefix = "artist-top",
                             onOpenSong = onOpenSong,
                         )
                     }
@@ -141,6 +143,7 @@ fun ArtistDetailScreen(
                             title = "最新作品",
                             subtitle = "按发布时间",
                             songs = extras.latestSongs,
+                            keyPrefix = "artist-latest",
                             onOpenSong = onOpenSong,
                         )
                     }
@@ -276,7 +279,7 @@ private fun ArtistHero(
                 ) {
                     StatusPill(kind.label)
                     if (artist.isVs) {
-                        StatusPill("VS")
+                        StatusPill("虚拟歌手")
                     }
                     artist.abbreviation
                         ?.takeIf { it.isNotBlank() }
@@ -334,6 +337,7 @@ private fun SongStrip(
     title: String,
     subtitle: String,
     songs: List<SongDto>,
+    keyPrefix: String,
     onOpenSong: (Int) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -348,7 +352,7 @@ private fun SongStrip(
                     thumbnail = song.coverUrl(),
                     onClick = { onOpenSong(song.id) },
                     modifier = Modifier.width(220.dp),
-                    sharedKey = "song-cover-${song.id}",
+                    sharedKey = "$keyPrefix-cover-${song.id}",
                 )
             }
         }

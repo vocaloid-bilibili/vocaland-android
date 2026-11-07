@@ -78,7 +78,7 @@ fun TagIndexScreen(
     ) {
         item {
             SectionHeader(
-                title = "标签图鉴",
+                title = "全部标签",
                 subtitle = if (state.filtered) {
                     "共 ${state.total} 个标签"
                 } else {
@@ -282,6 +282,7 @@ fun TagIndexScreen(
                                 tag = tag,
                                 onClick = { onOpenTag(tag.id) },
                                 modifier = Modifier.weight(1f),
+                                showCategory = false,
                             )
                         }
                         if (row.size == 1) {
@@ -299,6 +300,7 @@ private fun TagTile(
     tag: TagItemDto,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    showCategory: Boolean = true,
 ) {
     Card(
         modifier = modifier.clickable(onClick = onClick),
@@ -328,7 +330,7 @@ private fun TagTile(
                 )
                 Spacer(Modifier.height(3.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    if (tag.category.isNotBlank()) {
+                    if (showCategory && tag.category.isNotBlank()) {
                         StatusPill(tagCategoryLabel(tag.category))
                         Spacer(Modifier.width(6.dp))
                     }

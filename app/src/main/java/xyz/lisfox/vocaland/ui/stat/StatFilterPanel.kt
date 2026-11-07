@@ -3,6 +3,7 @@ package xyz.lisfox.vocaland.ui.stat
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -32,8 +33,10 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -526,8 +529,8 @@ private fun RangeFilterDialog(
     onConfirm: (List<StatRange>) -> Unit,
 ) {
     var ranges by remember(initial) { mutableStateOf(initial) }
-    var minText by remember { mutableStateOf("") }
-    var maxText by remember { mutableStateOf("") }
+    var minText by rememberSaveable { mutableStateOf("") }
+    var maxText by rememberSaveable { mutableStateOf("") }
     var error by remember { mutableStateOf<String?>(null) }
 
     AlertDialog(
@@ -722,7 +725,7 @@ private fun ArtistFilterField(
     searchType: String,
     onSearchEntities: suspend (type: String, keyword: String) -> List<SearchEntityDto>,
 ) {
-    var query by remember { mutableStateOf("") }
+    var query by rememberSaveable { mutableStateOf("") }
     var searching by remember { mutableStateOf(false) }
     var results by remember { mutableStateOf(emptyList<SearchEntityDto>()) }
 
@@ -758,13 +761,21 @@ private fun ArtistFilterField(
                             Text("${artist.name} · ${StatArtistRef.modeLabel(artist.mode)}")
                         },
                         trailingIcon = {
-                            Icon(
-                                imageVector = Icons.Filled.Close,
-                                contentDescription = "移除",
+                            Box(
                                 modifier = Modifier
-                                    .size(16.dp)
-                                    .clickable { onRemove(artist.id) },
-                            )
+                                    .size(24.dp)
+                                    .clickable(
+                                        role = Role.Button,
+                                        onClickLabel = "移除${artist.name}",
+                                    ) { onRemove(artist.id) },
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Close,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                            }
                         },
                     )
                 }

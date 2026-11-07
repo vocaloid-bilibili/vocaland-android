@@ -33,7 +33,7 @@ fun LazyListScope.songCoverGrid(
                     thumbnail = song.coverUrl(),
                     onClick = { onOpenSong(song.id) },
                     modifier = Modifier.weight(1f),
-                    sharedKey = "song-cover-${song.id}",
+                    sharedKey = "$keyPrefix-cover-${song.id}",
                 )
             }
             if (row.size == 1) {

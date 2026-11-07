@@ -66,7 +66,7 @@ fun CollectionDetailScreen(
         state.loading && state.header == null -> LoadingPane(modifier = modifier)
 
         state.header == null -> {
-            Box(modifier = modifier.padding(16.dp)) {
+            Box(modifier = modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center) {
                 ScreenMessage(
                     title = "加载失败",
                     message = state.error ?: "收藏册可能不存在",

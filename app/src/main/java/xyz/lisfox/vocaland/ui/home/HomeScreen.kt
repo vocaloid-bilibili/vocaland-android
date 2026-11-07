@@ -252,7 +252,7 @@ private fun HomeContentList(
                         onOpenTarget(target)
                     } else {
                         onOpenFeature(
-                            "评分：${rating.targetName ?: targetLabel(rating.targetKey)}",
+                            "评分：${targetLabel(rating.targetKey, rating.targetName)}",
                         )
                     }
                 },

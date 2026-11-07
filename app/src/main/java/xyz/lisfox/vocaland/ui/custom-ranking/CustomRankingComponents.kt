@@ -33,6 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -278,7 +279,7 @@ fun PlaylistPickerDialog(
     onDismiss: () -> Unit,
     onSelect: (PublicPlaylistDto) -> Unit,
 ) {
-    var keyword by remember { mutableStateOf("") }
+    var keyword by rememberSaveable { mutableStateOf("") }
     LaunchedEffect(keyword) {
         delay(400)
         onSearch(keyword.trim())

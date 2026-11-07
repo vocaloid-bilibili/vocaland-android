@@ -68,7 +68,7 @@ fun TopSongsSection(
 
         when {
             loading -> LoadingRow()
-            !error.isNullOrBlank() -> EmptyHint(error)
+            !error.isNullOrBlank() -> EmptyHint(error, maxLines = Int.MAX_VALUE)
             items.isEmpty() -> EmptyHint("暂无数据")
             else -> {
                 val unit = TOP_STATS.firstOrNull { it.key == selectedStat }?.label ?: ""
@@ -227,7 +227,7 @@ private fun SongRankRow(
         )
         NetworkImage(
             url = thumbnail,
-            contentDescription = title,
+            contentDescription = null,
             modifier = Modifier
                 .width(72.dp)
                 .aspectRatio(16f / 9f)

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -19,7 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.HowToVote
 import androidx.compose.material.icons.filled.Person
@@ -156,7 +157,7 @@ fun VotingCard(
                 TextButton(onClick = onOpenAll) {
                     Text("全部")
                     Icon(
-                        imageVector = Icons.Filled.ArrowForward,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                         contentDescription = null,
                         modifier = Modifier.size(16.dp),
                     )
@@ -173,7 +174,7 @@ fun VotingCard(
                                 .clip(RoundedCornerShape(14.dp))
                                 .clickable { onOpenEntry(entry) },
                             shape = RoundedCornerShape(14.dp),
-                            color = scheme.surface,
+                            color = scheme.surfaceContainerLow,
                             contentColor = scheme.onSurface,
                         ) {
                             Row(
@@ -348,12 +349,12 @@ private fun RatingCard(
 ) {
     val scheme = MaterialTheme.colorScheme
     val masked = item.isAnonymous && !item.isRevealed
-    val label = item.targetName?.takeIf { it.isNotBlank() } ?: targetLabel(item.targetKey)
+    val label = targetLabel(item.targetKey, item.targetName)
 
     Card(
         modifier = Modifier
             .width(236.dp)
-            .height(196.dp)
+            .heightIn(min = 136.dp)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = scheme.surfaceContainerLow),
@@ -410,6 +411,7 @@ private fun RatingCard(
                 } else {
                     NetworkImage(
                         url = item.user.avatar,
+                    fallbackIcon = Icons.Filled.Person,
                         contentDescription = item.user.nickname,
                         modifier = Modifier
                             .size(22.dp)
@@ -481,6 +483,7 @@ private fun CommentRow(
     ) {
         NetworkImage(
             url = comment.user.avatar,
+                    fallbackIcon = Icons.Filled.Person,
             contentDescription = comment.user.nickname,
             modifier = Modifier
                 .size(32.dp)
