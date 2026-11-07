@@ -7,6 +7,7 @@ import xyz.lisfox.vocaland.data.model.SongDto
 import xyz.lisfox.vocaland.data.model.SongProducerDto
 import xyz.lisfox.vocaland.data.model.SongVocalistDto
 import java.time.Instant
+import java.time.LocalDateTime
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -113,6 +114,13 @@ fun parseIsoMillis(iso: String?): Long? {
     if (iso.isNullOrBlank()) return null
     return runCatching { Instant.parse(iso).toEpochMilli() }.getOrNull()
         ?: runCatching { OffsetDateTime.parse(iso).toInstant().toEpochMilli() }.getOrNull()
+        ?: runCatching {
+            // 后端部分接口返回不带时区的本地时间（如 2026-11-05T19:42:51.488972），按站点时区解释
+            LocalDateTime.parse(iso.replace(' ', 'T'))
+                .atZone(shanghaiZone)
+                .toInstant()
+                .toEpochMilli()
+        }.getOrNull()
 }
 
 fun compactParts(value: Long, decimals: Int = 0): Pair<String, String> {
