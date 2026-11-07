@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -49,6 +50,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -136,11 +138,11 @@ private fun PlayButtonContent(state: PlayButtonState) {
     }
 }
 
-private const val DANMAKU_LIMIT_MIN = 50
-private const val DANMAKU_LIMIT_MAX = 1000
-private const val DANMAKU_LIMIT_STEP = 50
-private const val DANMAKU_LIMIT_DEFAULT = 500
-private const val DANMAKU_LIMIT_UNLIMITED = -1
+private const val DANMAKU_LIMIT_MIN = PlayerVideoPreferences.DANMAKU_LIMIT_MIN
+private const val DANMAKU_LIMIT_MAX = PlayerVideoPreferences.DANMAKU_LIMIT_MAX
+private const val DANMAKU_LIMIT_STEP = PlayerVideoPreferences.DANMAKU_LIMIT_STEP
+private const val DANMAKU_LIMIT_DEFAULT = PlayerVideoPreferences.DANMAKU_LIMIT_DEFAULT
+private const val DANMAKU_LIMIT_UNLIMITED = PlayerVideoPreferences.DANMAKU_LIMIT_UNLIMITED
 private const val VIDEO_FADE_PERCENT_STEP = 5
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -155,9 +157,9 @@ fun PlayerScreen(
     val videoSettings by videoPreferences.settings.collectAsStateWithLifecycle()
     var editingQueue by remember { mutableStateOf(false) }
     var showSettings by rememberSaveable { mutableStateOf(false) }
-    var videoBackgroundEnabled by rememberSaveable { mutableStateOf(true) }
-    var danmakuEnabled by rememberSaveable { mutableStateOf(true) }
-    var danmakuLimit by rememberSaveable { mutableIntStateOf(DANMAKU_LIMIT_DEFAULT) }
+    val videoBackgroundEnabled = videoSettings.videoBackgroundEnabled
+    val danmakuEnabled = videoSettings.danmakuEnabled
+    val danmakuLimit = videoSettings.danmakuLimit
     val danmaku by produceState(
         initialValue = emptyList<DanmakuItem>(),
         key1 = state.cid,
@@ -293,15 +295,15 @@ fun PlayerScreen(
                     pauseWhenFinished = state.pauseWhenFinished,
                     playMode = state.playMode,
                     videoBackgroundEnabled = videoBackgroundEnabled,
-                    onVideoBackgroundChange = { videoBackgroundEnabled = it },
+                    onVideoBackgroundChange = videoPreferences::setVideoBackgroundEnabled,
                     videoFrameRate = videoSettings.frameRate,
                     onVideoFrameRateChange = videoPreferences::setFrameRate,
                     videoFadePercent = videoSettings.fadePercent,
                     onVideoFadePercentChange = videoPreferences::setFadePercent,
                     danmakuEnabled = danmakuEnabled,
-                    onDanmakuChange = { danmakuEnabled = it },
+                    onDanmakuChange = videoPreferences::setDanmakuEnabled,
                     danmakuLimit = danmakuLimit,
-                    onDanmakuLimitChange = { danmakuLimit = it },
+                    onDanmakuLimitChange = videoPreferences::setDanmakuLimit,
                     onDismiss = { showSettings = false },
                 )
             }
@@ -360,6 +362,7 @@ private fun PlayerHero(track: BgmTrack?) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PlayerControls(
     controller: BgmPlayerController,
@@ -399,6 +402,20 @@ private fun PlayerControls(
             valueRange = 0f..duration.toFloat(),
             enabled = hasTrack && durationMs > 0,
             modifier = Modifier.semantics { contentDescription = progressLabel },
+            thumb = {
+                Box(
+                    modifier = Modifier
+                        .size(18.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
+                )
+            },
+            track = { sliderState ->
+                SliderDefaults.Track(
+                    sliderState = sliderState,
+                    drawStopIndicator = {},
+                )
+            },
         )
         Row(
             modifier = Modifier.fillMaxWidth(),

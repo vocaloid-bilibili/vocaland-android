@@ -184,8 +184,14 @@ private class DanmakuView(context: Context) : View(context) {
             val progress = elapsed.toFloat() / item.durationMs.toFloat()
             val x = item.startX - item.distance * progress
 
-            paint.color = lighten(item.color, 0.28f)
-            paint.alpha = if (lightBackground) 135 else 115
+            if (lightBackground) {
+                // 浅色视频上压暗文字并提高不透明度，避免白字看不清
+                paint.color = darken(item.color, 0.45f)
+                paint.alpha = 220
+            } else {
+                paint.color = lighten(item.color, 0.28f)
+                paint.alpha = 150
+            }
             canvas.drawText(item.text, x, item.baseline, paint)
             drawn++
         }
@@ -356,5 +362,13 @@ private fun lighten(rgb: Int, amount: Float): Int {
     val green = (rgb shr 8) and 0xFF
     val blue = rgb and 0xFF
     fun mix(channel: Int): Int = (channel + (255 - channel) * amount).toInt().coerceIn(0, 255)
+    return Color.rgb(mix(red), mix(green), mix(blue))
+}
+
+private fun darken(rgb: Int, amount: Float): Int {
+    val red = (rgb shr 16) and 0xFF
+    val green = (rgb shr 8) and 0xFF
+    val blue = rgb and 0xFF
+    fun mix(channel: Int): Int = (channel * (1f - amount)).toInt().coerceIn(0, 255)
     return Color.rgb(mix(red), mix(green), mix(blue))
 }
