@@ -3,6 +3,7 @@ package xyz.lisfox.vocaland.ui.community
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,13 +13,16 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -27,10 +31,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -201,8 +210,20 @@ private fun CommentThread(
             )
 
             if (!comment.isDeleted && comment.replies.isNotEmpty()) {
+                val guideColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.7f)
                 Column(
-                    modifier = Modifier.padding(start = 18.dp, bottom = 8.dp),
+                    modifier = Modifier
+                        .drawBehind {
+                            val lineWidth = 2.dp.toPx()
+                            val inset = 4.dp.toPx()
+                            drawRoundRect(
+                                color = guideColor,
+                                topLeft = Offset(inset, inset),
+                                size = Size(lineWidth, size.height - inset * 2),
+                                cornerRadius = CornerRadius(lineWidth / 2),
+                            )
+                        }
+                        .padding(start = 26.dp, bottom = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
                     comment.replies.forEach { reply ->
@@ -257,6 +278,7 @@ private fun CommentItem(
     ) {
         NetworkImage(
             url = comment.user.avatar,
+                    fallbackIcon = Icons.Filled.Person,
             contentDescription = comment.user.nickname,
             modifier = Modifier
                 .size(avatarSize)
@@ -323,11 +345,12 @@ private fun CommentItem(
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
                 ) {
                     TextButton(
                         onClick = { onLike(comment.id) },
                         enabled = !likePending,
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                     ) {
                         Icon(
                             imageVector = if (comment.isLiked) {
@@ -342,14 +365,14 @@ private fun CommentItem(
                                     R.string.community_comment_like
                                 },
                             ),
-                            modifier = Modifier.size(16.dp),
+                            modifier = Modifier.size(18.dp),
                             tint = if (comment.isLiked) scheme.primary else scheme.onSurfaceVariant,
                         )
                         if (comment.likeCount > 0) {
                             Spacer(Modifier.width(4.dp))
                             Text(
                                 text = comment.likeCount.toString(),
-                                style = MaterialTheme.typography.labelSmall,
+                                style = MaterialTheme.typography.labelMedium,
                             )
                         }
                     }
@@ -358,8 +381,9 @@ private fun CommentItem(
                         onClick = {
                             onReply(rootId, comment.id)
                         },
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                     ) {
-                        Text("回复", style = MaterialTheme.typography.labelSmall)
+                        Text("回复", style = MaterialTheme.typography.labelMedium)
                     }
 
                     if (comment.isAuthor) {
@@ -370,16 +394,20 @@ private fun CommentItem(
                                     onDelete(comment.id)
                                 },
                                 enabled = !deleting,
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
                             ) {
                                 Text(
                                     text = if (deleting) "删除中…" else "确认删除",
-                                    style = MaterialTheme.typography.labelSmall,
+                                    style = MaterialTheme.typography.labelMedium,
                                     color = scheme.error,
                                 )
                             }
                         } else {
-                            TextButton(onClick = { confirmingDelete = true }) {
-                                Text("删除", style = MaterialTheme.typography.labelSmall)
+                            TextButton(
+                                onClick = { confirmingDelete = true },
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp),
+                            ) {
+                                Text("删除", style = MaterialTheme.typography.labelMedium)
                             }
                         }
                     }
@@ -428,6 +456,7 @@ private fun CommentComposer(
                 minLines = 2,
                 maxLines = 5,
                 enabled = !posting,
+                colors = commentFieldColors(),
             )
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -443,6 +472,7 @@ private fun CommentComposer(
                 Button(
                     onClick = onSend,
                     enabled = value.isNotBlank() && !posting,
+                    colors = commentSendButtonColors(),
                 ) {
                     Text(if (posting) "发送中…" else "发送")
                 }
@@ -459,7 +489,7 @@ private fun ReplyComposer(
     onSend: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var text by remember { mutableStateOf("") }
+    var text by rememberSaveable { mutableStateOf("") }
 
     Column(
         modifier = modifier
@@ -475,6 +505,7 @@ private fun ReplyComposer(
             minLines = 2,
             maxLines = 4,
             enabled = !posting,
+            colors = commentFieldColors(),
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -489,9 +520,23 @@ private fun ReplyComposer(
                     if (text.isNotBlank()) onSend(text)
                 },
                 enabled = text.isNotBlank() && !posting,
+                colors = commentSendButtonColors(),
             ) {
                 Text(if (posting) "发送中…" else "回复")
             }
         }
     }
 }
+
+@Composable
+private fun commentFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = MaterialTheme.colorScheme.primary,
+    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+    disabledBorderColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+)
+
+@Composable
+private fun commentSendButtonColors() = ButtonDefaults.buttonColors(
+    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+)

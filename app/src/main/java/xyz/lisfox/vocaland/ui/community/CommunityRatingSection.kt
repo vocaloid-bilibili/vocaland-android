@@ -15,14 +15,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -44,6 +47,7 @@ import xyz.lisfox.vocaland.data.model.RatingSummaryDto
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.StatusPill
+import xyz.lisfox.vocaland.util.formatDecimal
 import xyz.lisfox.vocaland.util.timeAgo
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -179,7 +183,7 @@ private fun RatingSummaryCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    text = average?.let { String.format("%.1f", it) } ?: "—",
+                    text = average?.let { formatDecimal(it) } ?: "—",
                     style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Bold,
                 )
@@ -247,12 +251,24 @@ private fun ScoreDistribution(
                             .fillMaxWidth()
                             .height(
                                 if (count > 0) {
-                                    max((count.toFloat() / maxCount) * 44f, 4f).dp
+                                    max((count.toFloat() / maxCount) * 44f, 6f).dp
                                 } else {
-                                    2.dp
+                                    3.dp
                                 },
                             )
-                            .background(MaterialTheme.colorScheme.primary),
+                            .clip(
+                                RoundedCornerShape(
+                                    topStart = 3.dp,
+                                    topEnd = 3.dp,
+                                ),
+                            )
+                            .background(
+                                if (count > 0) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.outlineVariant
+                                },
+                            ),
                     )
                 }
                 Spacer(Modifier.height(3.dp))
@@ -266,6 +282,7 @@ private fun ScoreDistribution(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MyRatingEditor(
     state: CommunityUiState,
@@ -330,6 +347,20 @@ private fun MyRatingEditor(
                         valueRange = COMMUNITY_RATING_MIN.toFloat()..COMMUNITY_RATING_MAX.toFloat(),
                         steps = COMMUNITY_RATING_MAX - COMMUNITY_RATING_MIN - 1,
                         modifier = Modifier.semantics { contentDescription = ratingLabel },
+                        thumb = {
+                            Box(
+                                modifier = Modifier
+                                    .size(20.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary),
+                            )
+                        },
+                        track = { sliderState ->
+                            SliderDefaults.Track(
+                                sliderState = sliderState,
+                                drawStopIndicator = {},
+                            )
+                        },
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -455,6 +486,7 @@ private fun RatingRow(
             ) {
                 NetworkImage(
                     url = if (masked) null else rating.user.avatar,
+                    fallbackIcon = Icons.Filled.Person,
                     contentDescription = displayName,
                     modifier = Modifier
                         .size(40.dp)

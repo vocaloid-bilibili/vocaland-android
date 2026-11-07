@@ -17,7 +17,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -35,6 +34,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import xyz.lisfox.vocaland.data.community.CommunityRepository
 import xyz.lisfox.vocaland.data.session.AuthSession
+import xyz.lisfox.vocaland.ui.components.PagerRow
 import xyz.lisfox.vocaland.ui.components.SectionHeader
 
 enum class CommunityTab(val label: String) {
@@ -229,29 +229,12 @@ internal fun CommunityPager(
     onNext: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    if (totalPages <= 1) return
-
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        TextButton(
-            onClick = onPrevious,
-            enabled = page > 1 && !loading,
-        ) {
-            Text("上一页")
-        }
-        Text(
-            text = "$page / $totalPages",
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        TextButton(
-            onClick = onNext,
-            enabled = page < totalPages && !loading,
-        ) {
-            Text("下一页")
-        }
-    }
+    PagerRow(
+        page = page,
+        totalPages = totalPages,
+        loading = loading,
+        onPrevious = onPrevious,
+        onNext = onNext,
+        modifier = modifier,
+    )
 }
