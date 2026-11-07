@@ -6,7 +6,6 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,19 +29,12 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.minimumInteractiveComponentSize
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -57,7 +49,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.runtime.snapshotFlow
-import xyz.lisfox.vocaland.R
 import xyz.lisfox.vocaland.data.model.HeroSlideDto
 import xyz.lisfox.vocaland.ui.components.MotionDurations
 import xyz.lisfox.vocaland.ui.components.NetworkImage
@@ -79,7 +70,6 @@ fun HeroCarousel(
     // 注意：只监听 isScrollInProgress 这种离散状态，避免依赖每帧变化的 offset
     // 导致 LaunchedEffect 反复重启
     val lifecycleState by LocalLifecycleOwner.current.lifecycle.currentStateAsState()
-    val scope = rememberCoroutineScope()
     LaunchedEffect(slides.size, lifecycleState) {
         if (slides.size <= 1 || lifecycleState != Lifecycle.State.RESUMED) {
             return@LaunchedEffect
@@ -139,7 +129,7 @@ fun HeroCarousel(
                         modifier = Modifier
                             .align(Alignment.BottomStart)
                             .fillMaxWidth()
-                            .padding(start = 16.dp, end = 96.dp, bottom = 14.dp),
+                            .padding(start = 16.dp, end = 64.dp, bottom = 14.dp),
                         style = MaterialTheme.typography.titleMedium,
                         color = Color.White,
                         maxLines = 1,
@@ -157,11 +147,6 @@ fun HeroCarousel(
             ) {
                 repeat(slides.size) { index ->
                     val selected = pagerState.currentPage == index
-                    val pageDescription = stringResource(
-                        R.string.carousel_page_format,
-                        index + 1,
-                        slides.size,
-                    )
                     val dotWidth by animateDpAsState(
                         targetValue = if (selected) 16.dp else 6.dp,
                         animationSpec = tween(
@@ -175,30 +160,13 @@ fun HeroCarousel(
                         animationSpec = tween(MotionDurations.MEDIUM),
                         label = "heroIndicatorAlpha",
                     )
-                    // 触摸热区保持 >= 32dp，视觉圆点仍为 6dp
                     Box(
                         modifier = Modifier
-                            .minimumInteractiveComponentSize()
+                            .width(dotWidth)
+                            .height(6.dp)
                             .clip(CircleShape)
-                            .clickable(
-                                interactionSource = remember { MutableInteractionSource() },
-                                indication = ripple(bounded = false, radius = 16.dp),
-                            ) {
-                                scope.launch {
-                                    pagerState.animateScrollToPage(index)
-                                }
-                            }
-                            .semantics { contentDescription = pageDescription },
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .width(dotWidth)
-                                .height(6.dp)
-                                .clip(CircleShape)
-                                .background(Color.White.copy(alpha = dotAlpha)),
-                        )
-                    }
+                            .background(Color.White.copy(alpha = dotAlpha)),
+                    )
                 }
             }
         }
