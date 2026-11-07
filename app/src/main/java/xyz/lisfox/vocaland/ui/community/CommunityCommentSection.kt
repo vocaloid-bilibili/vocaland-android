@@ -16,7 +16,6 @@ import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -130,29 +129,28 @@ internal fun CommunityCommentSection(
             }
 
             else -> {
-                state.comments.forEachIndexed { index, comment ->
-                    CommentThread(
-                        comment = comment,
-                        rootId = comment.id,
-                        replyTarget = replyTarget,
-                        state = state,
-                        onOpenUser = onOpenUser,
-                        onReply = { rootId, replyToId ->
-                            replyTarget = ReplyTarget(rootId, replyToId)
-                        },
-                        onCancelReply = { replyTarget = null },
-                        onPostReply = { content, target ->
-                            viewModel.postComment(
-                                content = content,
-                                parentId = target.rootId,
-                                replyToId = target.replyToId,
-                            )
-                        },
-                        onLike = viewModel::toggleCommentLike,
-                        onDelete = viewModel::deleteComment,
-                    )
-                    if (index != state.comments.lastIndex) {
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    state.comments.forEach { comment ->
+                        CommentThread(
+                            comment = comment,
+                            rootId = comment.id,
+                            replyTarget = replyTarget,
+                            state = state,
+                            onOpenUser = onOpenUser,
+                            onReply = { rootId, replyToId ->
+                                replyTarget = ReplyTarget(rootId, replyToId)
+                            },
+                            onCancelReply = { replyTarget = null },
+                            onPostReply = { content, target ->
+                                viewModel.postComment(
+                                    content = content,
+                                    parentId = target.rootId,
+                                    replyToId = target.replyToId,
+                                )
+                            },
+                            onLike = viewModel::toggleCommentLike,
+                            onDelete = viewModel::deleteComment,
+                        )
                     }
                 }
             }
@@ -182,40 +180,46 @@ private fun CommentThread(
     onDelete: (Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        CommentItem(
-            comment = comment,
-            rootId = rootId,
-            isNested = false,
-            replyTarget = replyTarget,
-            state = state,
-            onOpenUser = onOpenUser,
-            onReply = onReply,
-            onCancelReply = onCancelReply,
-            onPostReply = onPostReply,
-            onLike = onLike,
-            onDelete = onDelete,
-        )
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 4.dp)) {
+            CommentItem(
+                comment = comment,
+                rootId = rootId,
+                isNested = false,
+                replyTarget = replyTarget,
+                state = state,
+                onOpenUser = onOpenUser,
+                onReply = onReply,
+                onCancelReply = onCancelReply,
+                onPostReply = onPostReply,
+                onLike = onLike,
+                onDelete = onDelete,
+            )
 
-        if (!comment.isDeleted && comment.replies.isNotEmpty()) {
-            Column(
-                modifier = Modifier.padding(start = 22.dp, bottom = 6.dp),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                comment.replies.forEach { reply ->
-                    CommentItem(
-                        comment = reply,
-                        rootId = rootId,
-                        isNested = true,
-                        replyTarget = replyTarget,
-                        state = state,
-                        onOpenUser = onOpenUser,
-                        onReply = onReply,
-                        onCancelReply = onCancelReply,
-                        onPostReply = onPostReply,
-                        onLike = onLike,
-                        onDelete = onDelete,
-                    )
+            if (!comment.isDeleted && comment.replies.isNotEmpty()) {
+                Column(
+                    modifier = Modifier.padding(start = 18.dp, bottom = 8.dp),
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    comment.replies.forEach { reply ->
+                        CommentItem(
+                            comment = reply,
+                            rootId = rootId,
+                            isNested = true,
+                            replyTarget = replyTarget,
+                            state = state,
+                            onOpenUser = onOpenUser,
+                            onReply = onReply,
+                            onCancelReply = onCancelReply,
+                            onPostReply = onPostReply,
+                            onLike = onLike,
+                            onDelete = onDelete,
+                        )
+                    }
                 }
             }
         }
@@ -287,11 +291,13 @@ private fun CommentItem(
                     overflow = TextOverflow.Ellipsis,
                 )
                 StatusPill(text = "Lv.${comment.user.level}")
-                Text(
-                    text = timeAgo(comment.createdAt),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = scheme.onSurfaceVariant,
-                )
+                timeAgo(comment.createdAt).takeIf { it.isNotBlank() }?.let { label ->
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = scheme.onSurfaceVariant,
+                    )
+                }
             }
 
             comment.replyTo?.let { replyTo ->

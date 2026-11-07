@@ -12,13 +12,13 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -42,6 +42,7 @@ import xyz.lisfox.vocaland.R
 import xyz.lisfox.vocaland.data.model.RatingDto
 import xyz.lisfox.vocaland.data.model.RatingSummaryDto
 import xyz.lisfox.vocaland.ui.components.EmptyHint
+import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.StatusPill
 import xyz.lisfox.vocaland.util.timeAgo
 import kotlin.math.max
@@ -76,8 +77,6 @@ internal fun CommunityRatingSection(
                 onLogin = onLogin,
             )
         }
-
-        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -133,13 +132,12 @@ internal fun CommunityRatingSection(
             }
 
             else -> {
-                state.ratings.forEachIndexed { index, rating ->
-                    RatingRow(
-                        rating = rating,
-                        onOpenUser = onOpenUser,
-                    )
-                    if (index != state.ratings.lastIndex) {
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    state.ratings.forEach { rating ->
+                        RatingRow(
+                            rating = rating,
+                            onOpenUser = onOpenUser,
+                        )
                     }
                 }
             }
@@ -442,81 +440,101 @@ private fun RatingRow(
     val canOpenUser = !masked && rating.user.id > 0 && onOpenUser != null
     val time = rating.updatedAt.takeIf { it.isNotBlank() } ?: rating.createdAt
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        color = scheme.surfaceContainerLow,
     ) {
         Column(
-            modifier = Modifier.width(42.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Text(
-                text = rating.score.toString(),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = scheme.primary,
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                text = "/ 10",
-                style = MaterialTheme.typography.labelSmall,
-                color = scheme.onSurfaceVariant,
-            )
-        }
-
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
-                Text(
-                    text = displayName,
+                NetworkImage(
+                    url = if (masked) null else rating.user.avatar,
+                    contentDescription = displayName,
                     modifier = Modifier
-                        .clip(RoundedCornerShape(6.dp))
+                        .size(40.dp)
+                        .clip(CircleShape)
                         .clickable(enabled = canOpenUser) {
                             if (canOpenUser) onOpenUser?.invoke(rating.user.id)
                         },
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
                 )
-                if (!masked) {
-                    StatusPill(text = "Lv.${rating.user.level}")
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        Text(
+                            text = displayName,
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(6.dp))
+                                .clickable(enabled = canOpenUser) {
+                                    if (canOpenUser) onOpenUser?.invoke(rating.user.id)
+                                },
+                            style = MaterialTheme.typography.titleSmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        if (!masked) {
+                            StatusPill(text = "Lv.${rating.user.level}")
+                        }
+                        if (rating.isAnonymous) {
+                            StatusPill(
+                                text = "匿名",
+                                containerColor = scheme.tertiaryContainer,
+                                contentColor = scheme.onTertiaryContainer,
+                            )
+                        }
+                    }
+                    timeAgo(time).takeIf { it.isNotBlank() }?.let { label ->
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = scheme.onSurfaceVariant,
+                        )
+                    }
                 }
-                if (rating.isAnonymous) {
-                    StatusPill(
-                        text = "匿名",
-                        containerColor = scheme.tertiaryContainer,
-                        contentColor = scheme.onTertiaryContainer,
-                    )
+
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = scheme.primaryContainer,
+                    contentColor = scheme.onPrimaryContainer,
+                ) {
+                    Column(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Text(
+                            text = rating.score.toString(),
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        Text(
+                            text = "/ 10",
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                    }
                 }
             }
 
-            rating.comment
-                ?.takeIf { it.isNotBlank() }
-                ?.let { comment ->
-                    Text(
-                        text = comment,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = scheme.onSurfaceVariant,
-                    )
-                }
-                ?: Text(
-                    text = "只打了分，没留言",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = scheme.onSurfaceVariant,
-                )
+            Text(
+                text = rating.comment?.takeIf { it.isNotBlank() } ?: "只打了分，没留言",
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (rating.comment.isNullOrBlank()) {
+                    scheme.onSurfaceVariant
+                } else {
+                    scheme.onSurface
+                },
+            )
         }
-
-        Text(
-            text = timeAgo(time),
-            style = MaterialTheme.typography.labelSmall,
-            color = scheme.onSurfaceVariant,
-        )
     }
 }
