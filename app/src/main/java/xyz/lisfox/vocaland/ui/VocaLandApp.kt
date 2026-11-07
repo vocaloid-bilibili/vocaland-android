@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.only
@@ -42,6 +43,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -67,6 +69,7 @@ import xyz.lisfox.vocaland.ui.components.LocalSharedElementVisibilityScope
 import xyz.lisfox.vocaland.ui.components.LocalSharedTransitionScope
 import xyz.lisfox.vocaland.ui.components.MotionDurations
 import xyz.lisfox.vocaland.ui.theme.ComponentSize
+import xyz.lisfox.vocaland.ui.theme.Spacing
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -455,26 +458,21 @@ fun VocaLandApp(
                             authRepository = container.authRepository,
                             themePreferences = container.themePreferences,
                             onLogin = { navController.navigate(Routes.LOGIN) },
-                            onOpenFeature = { title ->
-                                when (title) {
-                                    "我的收藏" -> navController.navigate(Routes.COLLECTION_LIST)
-                                    "我的歌单" -> navController.navigate(Routes.MY_PLAYLISTS)
-                                    "标签图鉴" -> navController.navigate(Routes.TAG_INDEX)
-                                    "数据统计" -> navController.navigate(Routes.STAT)
-                                    "自定义排行榜" -> navController.navigate(Routes.CUSTOM_RANKING)
-                                    "个人资料" -> {
-                                        val userId = sessionState.user?.id
-                                        if (userId != null) {
-                                            navController.navigate(Routes.user(userId)) {
-                                                launchSingleTop = true
-                                            }
-                                        } else {
-                                            navController.navigate(Routes.LOGIN)
-                                        }
+                            onOpenFavorites = { navController.navigate(Routes.COLLECTION_LIST) },
+                            onOpenPlaylists = { navController.navigate(Routes.MY_PLAYLISTS) },
+                            onOpenUserDetail = {
+                                val userId = sessionState.user?.id
+                                if (userId != null) {
+                                    navController.navigate(Routes.user(userId)) {
+                                        launchSingleTop = true
                                     }
-                                    else -> navController.navigate(Routes.feature(title))
+                                } else {
+                                    navController.navigate(Routes.LOGIN)
                                 }
                             },
+                            onOpenTagIndex = { navController.navigate(Routes.TAG_INDEX) },
+                            onOpenStat = { navController.navigate(Routes.STAT) },
+                            onOpenCustomRanking = { navController.navigate(Routes.CUSTOM_RANKING) },
                             onOpenNotifications = { navController.navigate(Routes.NOTIFICATIONS) },
                             onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                             onOpenWallet = { navController.navigate(Routes.WALLET) },
@@ -621,16 +619,22 @@ fun VocaLandApp(
                     PageScaffold(
                         title = stringResource(R.string.page_playlists),
                         onBack = { navController.popBackStack() },
+                        actions = {
+                            TextButton(
+                                onClick = {
+                                    navController.navigate(Routes.MY_PLAYLISTS) {
+                                        launchSingleTop = true
+                                    }
+                                },
+                            ) {
+                                Text("我的歌单")
+                            }
+                        },
                     ) { contentModifier ->
                         PlaylistScreen(
                             repository = container.playlistRepository,
                             onOpenPlaylist = { id ->
                                 navController.navigate(Routes.playlist(id)) {
-                                    launchSingleTop = true
-                                }
-                            },
-                            onOpenMyPlaylists = {
-                                navController.navigate(Routes.MY_PLAYLISTS) {
                                     launchSingleTop = true
                                 }
                             },
@@ -1415,12 +1419,17 @@ private fun CompactBottomBar(
                             }
                             Spacer(Modifier.height(2.dp))
                         } else {
-                            Icon(
-                                imageVector = destination.icon,
-                                contentDescription = null,
-                                modifier = Modifier.size(23.dp),
-                                tint = contentColor,
-                            )
+                            Box(
+                                modifier = Modifier.size(36.dp),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Icon(
+                                    imageVector = destination.icon,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(23.dp),
+                                    tint = contentColor,
+                                )
+                            }
                             Spacer(Modifier.height(2.dp))
                         }
                         Text(
@@ -1441,6 +1450,7 @@ private fun CompactBottomBar(
 private fun PageScaffold(
     title: String?,
     onBack: (() -> Unit)? = null,
+    actions: (@Composable () -> Unit)? = null,
     sharedElementScope: AnimatedVisibilityScope? = null,
     content: @Composable (Modifier) -> Unit,
 ) {
@@ -1460,48 +1470,67 @@ private fun PageScaffold(
             .background(MaterialTheme.colorScheme.background),
     ) {
         Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(ComponentSize.topBarHeight),
+            modifier = Modifier.fillMaxWidth(),
             color = MaterialTheme.colorScheme.surface,
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                if (onBack != null) {
-                    IconButton(
-                        onClick = onBack,
-                        modifier = Modifier.align(Alignment.CenterStart),
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = stringResource(R.string.action_back),
-                        )
-                    }
-                }
+            Column {
                 Box(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = if (onBack != null) 56.dp else 12.dp),
-                    contentAlignment = Alignment.Center,
+                        .fillMaxWidth()
+                        .heightIn(min = ComponentSize.topBarHeight)
+                        .padding(vertical = Spacing.xs),
                 ) {
-                    if (title == null) {
-                        BrandTitle()
-                    } else {
-                        Text(
-                            text = title,
-                            modifier = Modifier.fillMaxWidth(),
-                            style = MaterialTheme.typography.titleLarge,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            textAlign = TextAlign.Center,
-                        )
+                    if (onBack != null) {
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier.align(Alignment.CenterStart),
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.action_back),
+                            )
+                        }
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = if (onBack != null) 56.dp else 12.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (title == null) {
+                            BrandTitle()
+                        } else {
+                            Text(
+                                text = title,
+                                modifier = Modifier.fillMaxWidth(),
+                                style = MaterialTheme.typography.titleLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
+                    }
+                    if (actions != null) {
+                        Row(
+                            modifier = Modifier
+                                .align(Alignment.CenterEnd)
+                                .padding(end = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            actions()
+                        }
                     }
                 }
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.6f),
+                )
             }
         }
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
+                .imePadding()
                 .then(
                     if (onBack != null) {
                         Modifier.windowInsetsPadding(

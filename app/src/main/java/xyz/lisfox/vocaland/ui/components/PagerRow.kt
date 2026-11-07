@@ -12,18 +12,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import xyz.lisfox.vocaland.R
+import xyz.lisfox.vocaland.util.formatNumber
 
 @Composable
 fun PagerRow(
     page: Int,
     totalPages: Int,
-    total: Int,
     loading: Boolean,
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     modifier: Modifier = Modifier,
+    total: Int? = null,
     unit: String? = null,
 ) {
+    if (totalPages <= 1) return
     val resolvedUnit = unit ?: stringResource(R.string.pager_unit_default)
     Row(
         modifier = modifier.fillMaxWidth(),
@@ -42,11 +44,17 @@ fun PagerRow(
                 text = stringResource(R.string.pager_page_format, page, totalPages),
                 style = MaterialTheme.typography.labelMedium,
             )
-            Text(
-                text = stringResource(R.string.pager_total_format, total, resolvedUnit),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            if (total != null) {
+                Text(
+                    text = stringResource(
+                        R.string.pager_total_format,
+                        formatNumber(total.toLong()),
+                        resolvedUnit,
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
 
         TextButton(

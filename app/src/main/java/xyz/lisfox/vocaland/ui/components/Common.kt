@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -63,6 +64,7 @@ fun NetworkImage(
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
     placeholderColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
+    fallbackIcon: ImageVector = Icons.Filled.MusicNote,
 ) {
     val resolved = toHttps(url)
     BoxWithConstraints(
@@ -72,7 +74,7 @@ fun NetworkImage(
         val useShimmer = maxWidth >= 64.dp && maxHeight >= 64.dp
         if (resolved == null) {
             Icon(
-                imageVector = Icons.Filled.MusicNote,
+                imageVector = fallbackIcon,
                 contentDescription = contentDescription,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
             )
@@ -280,7 +282,11 @@ fun InlineLoading(modifier: Modifier = Modifier, text: String? = null) {
 }
 
 @Composable
-fun EmptyHint(text: String, modifier: Modifier = Modifier) {
+fun EmptyHint(
+    text: String,
+    modifier: Modifier = Modifier,
+    maxLines: Int = 2,
+) {
     Surface(
         modifier = modifier
             .fillMaxWidth()
@@ -304,7 +310,7 @@ fun EmptyHint(text: String, modifier: Modifier = Modifier) {
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodySmall,
-                maxLines = 2,
+                maxLines = maxLines,
                 overflow = TextOverflow.Ellipsis,
             )
         }

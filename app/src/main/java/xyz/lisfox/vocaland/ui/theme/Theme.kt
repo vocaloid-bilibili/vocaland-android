@@ -9,6 +9,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
@@ -43,6 +44,14 @@ fun resolveDarkTheme(themeMode: ThemeMode): Boolean = when (themeMode) {
 }
 
 private const val THEME_TRANSITION_MS = 320
+
+private val AppShapes = Shapes(
+    extraSmall = Corners.xs,
+    small = Corners.sm,
+    medium = Corners.md,
+    large = Corners.lg,
+    extraLarge = Corners.hero,
+)
 
 @Composable
 private fun animateColorScheme(target: ColorScheme): ColorScheme = target.copy(
@@ -118,6 +127,7 @@ fun VocaLandTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = AppShapes,
     ) {
         CompositionLocalProvider(
             LocalAppColorScheme provides colorScheme,

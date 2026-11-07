@@ -1,4 +1,4 @@
-﻿package xyz.lisfox.vocaland.ui.profile
+package xyz.lisfox.vocaland.ui.profile
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
@@ -90,12 +90,17 @@ fun ProfileScreen(
     authRepository: AuthRepository,
     themePreferences: ThemePreferences,
     onLogin: () -> Unit,
-    onOpenFeature: (String) -> Unit,
-    onOpenNotifications: (() -> Unit)? = null,
-    onOpenSettings: (() -> Unit)? = null,
-    onOpenWallet: (() -> Unit)? = null,
-    onOpenShop: (() -> Unit)? = null,
-    onCheckUpdate: (() -> Unit)? = null,
+    onOpenFavorites: () -> Unit,
+    onOpenPlaylists: () -> Unit,
+    onOpenUserDetail: () -> Unit,
+    onOpenTagIndex: () -> Unit,
+    onOpenStat: () -> Unit,
+    onOpenCustomRanking: () -> Unit,
+    onOpenNotifications: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onOpenWallet: () -> Unit,
+    onOpenShop: () -> Unit,
+    onCheckUpdate: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val sessionState by session.state.collectAsStateWithLifecycle()
@@ -112,11 +117,6 @@ fun ProfileScreen(
     val favoritesLabel = stringResource(R.string.profile_favorites)
     val playlistsLabel = stringResource(R.string.profile_playlists)
     val userDetailLabel = stringResource(R.string.profile_user_detail)
-    val openNotifications = onOpenNotifications ?: { onOpenFeature(notificationsLabel) }
-    val openSettings = onOpenSettings ?: { onOpenFeature(settingsLabel) }
-    val openWallet = onOpenWallet ?: { onOpenFeature(walletLabel) }
-    val openShop = onOpenShop ?: { onOpenFeature(shopLabel) }
-    val checkUpdate = onCheckUpdate ?: { onOpenFeature(updateLabel) }
 
     LazyColumn(
         modifier = modifier.fillMaxWidth(),
@@ -148,17 +148,17 @@ fun ProfileScreen(
                     ProfileQuickAction(
                         icon = Icons.Filled.Favorite,
                         label = favoritesLabel,
-                        onClick = { onOpenFeature(favoritesLabel) },
+                        onClick = onOpenFavorites,
                     ),
                     ProfileQuickAction(
                         icon = Icons.AutoMirrored.Filled.PlaylistPlay,
                         label = playlistsLabel,
-                        onClick = { onOpenFeature(playlistsLabel) },
+                        onClick = onOpenPlaylists,
                     ),
                     ProfileQuickAction(
                         icon = Icons.Filled.Person,
                         label = userDetailLabel,
-                        onClick = { onOpenFeature(userDetailLabel) },
+                        onClick = onOpenUserDetail,
                     ),
                 ),
             )
@@ -179,27 +179,27 @@ fun ProfileScreen(
                     ProfileMenuEntry(
                         icon = Icons.Filled.Notifications,
                         title = notificationsLabel,
-                        onClick = openNotifications,
+                        onClick = onOpenNotifications,
                     ),
                     ProfileMenuEntry(
                         icon = Icons.Filled.AccountBalanceWallet,
                         title = walletLabel,
-                        onClick = openWallet,
+                        onClick = onOpenWallet,
                     ),
                     ProfileMenuEntry(
                         icon = Icons.Filled.ShoppingBag,
                         title = shopLabel,
-                        onClick = openShop,
+                        onClick = onOpenShop,
                     ),
                     ProfileMenuEntry(
                         icon = Icons.Filled.Settings,
                         title = settingsLabel,
-                        onClick = openSettings,
+                        onClick = onOpenSettings,
                     ),
                     ProfileMenuEntry(
                         icon = Icons.Filled.Refresh,
                         title = updateLabel,
-                        onClick = checkUpdate,
+                        onClick = onCheckUpdate,
                     ),
                 ),
             )
@@ -212,17 +212,17 @@ fun ProfileScreen(
                     ProfileMenuEntry(
                         icon = Icons.Filled.Search,
                         title = tagIndexLabel,
-                        onClick = { onOpenFeature(tagIndexLabel) },
+                        onClick = onOpenTagIndex,
                     ),
                     ProfileMenuEntry(
                         icon = Icons.Filled.Leaderboard,
                         title = statLabel,
-                        onClick = { onOpenFeature(statLabel) },
+                        onClick = onOpenStat,
                     ),
                     ProfileMenuEntry(
                         icon = Icons.Filled.Star,
                         title = customRankingLabel,
-                        onClick = { onOpenFeature(customRankingLabel) },
+                        onClick = onOpenCustomRanking,
                     ),
                 ),
             )
@@ -511,6 +511,7 @@ private fun UserHeader(user: CachedUserDto) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 NetworkImage(
                     url = user.avatar,
+                    fallbackIcon = Icons.Filled.Person,
                     contentDescription = user.nickname,
                     modifier = Modifier
                         .size(66.dp)
@@ -553,11 +554,21 @@ private fun UserHeader(user: CachedUserDto) {
                     .padding(vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
             ) {
-                UserStat(value = formatNumber(user.totalExp.toLong()), label = stringResource(R.string.profile_exp))
-                UserStat(value = user.level.toString(), label = stringResource(R.string.profile_level))
+                UserStat(
+                    value = formatNumber(user.totalExp.toLong()),
+                    label = stringResource(R.string.profile_exp),
+                    modifier = Modifier.weight(1f),
+                )
+                UserStat(
+                    value = user.level.toString(),
+                    label = stringResource(R.string.profile_level),
+                    modifier = Modifier.weight(1f),
+                )
                 UserStat(
                     value = if (user.isBanned) stringResource(R.string.profile_status_restricted) else stringResource(R.string.profile_status_normal),
                     label = stringResource(R.string.profile_account_status),
+                    modifier = Modifier.weight(1f),
+                    emphasis = false,
                 )
             }
         }
@@ -565,18 +576,30 @@ private fun UserHeader(user: CachedUserDto) {
 }
 
 @Composable
-private fun UserStat(value: String, label: String) {
+private fun UserStat(
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier,
+    emphasis: Boolean = true,
+) {
     val scheme = LocalAppColorScheme.current
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         Text(
             text = value,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
+            style = if (emphasis) {
+                MaterialTheme.typography.titleMedium
+            } else {
+                MaterialTheme.typography.titleSmall
+            },
+            fontWeight = if (emphasis) FontWeight.Bold else FontWeight.Medium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
             color = scheme.onSurfaceVariant,
+            maxLines = 1,
         )
     }
 }
