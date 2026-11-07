@@ -1,5 +1,6 @@
 package xyz.lisfox.vocaland.ui.components
 
+import android.graphics.drawable.BitmapDrawable
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -36,9 +37,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -51,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.request.ImageRequest
+import coil.size.Size
 import xyz.lisfox.vocaland.R
 import xyz.lisfox.vocaland.ui.theme.ComponentSize
 import xyz.lisfox.vocaland.ui.theme.Corners
@@ -65,13 +70,27 @@ fun NetworkImage(
     contentScale: ContentScale = ContentScale.Crop,
     placeholderColor: Color = MaterialTheme.colorScheme.surfaceContainerHighest,
     fallbackIcon: ImageVector = Icons.Filled.MusicNote,
+    decodeWidth: Dp? = null,
+    cachedBitmap: ImageBitmap? = null,
+    onLoaded: ((ImageBitmap) -> Unit)? = null,
 ) {
     val resolved = toHttps(url)
+    val density = LocalDensity.current
     BoxWithConstraints(
         modifier = modifier.background(placeholderColor),
         contentAlignment = Alignment.Center,
     ) {
         val useShimmer = maxWidth >= 64.dp && maxHeight >= 64.dp
+        // 共享元素两端需要同一份解码结果，显式指定解码宽度而不是跟随当前布局尺寸
+        val requestSize = decodeWidth
+            ?.takeIf { maxWidth > 0.dp && maxHeight.value.isFinite() }
+            ?.let { target ->
+                val scale = target / maxWidth
+                Size(
+                    with(density) { target.roundToPx() }.coerceAtLeast(1),
+                    with(density) { (maxHeight * scale).roundToPx() }.coerceAtLeast(1),
+                )
+            }
         if (resolved == null) {
             Icon(
                 imageVector = fallbackIcon,
@@ -82,17 +101,35 @@ fun NetworkImage(
             var imageState by remember { mutableStateOf<AsyncImagePainter.State?>(null) }
             val loading = imageState == null || imageState is AsyncImagePainter.State.Loading
             val failed = imageState is AsyncImagePainter.State.Error
+            // 先把上一次解码好的位图铺上，请求回来后再由 AsyncImage 覆盖，
+            // 避免共享元素转场的第一帧只画出一个占位色块
+            val cached = cachedBitmap?.takeIf { imageState !is AsyncImagePainter.State.Success }
+            if (cached != null) {
+                Image(
+                    bitmap = cached,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = contentScale,
+                )
+            }
+            val request = ImageRequest.Builder(LocalContext.current)
+                .data(resolved)
+                .crossfade(true)
+            requestSize?.let { request.size(it) }
             AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(resolved)
-                    .crossfade(true)
-                    .build(),
+                model = request.build(),
                 contentDescription = if (failed) null else contentDescription,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = contentScale,
-                onState = { imageState = it },
+                onState = { state ->
+                    imageState = state
+                    if (state is AsyncImagePainter.State.Success && onLoaded != null) {
+                        val bitmap = (state.result.drawable as? BitmapDrawable)?.bitmap
+                        if (bitmap != null) onLoaded(bitmap.asImageBitmap())
+                    }
+                },
             )
-            if (loading && useShimmer) {
+            if (loading && useShimmer && cached == null) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()

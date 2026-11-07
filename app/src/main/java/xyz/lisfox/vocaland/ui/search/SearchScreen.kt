@@ -71,6 +71,7 @@ import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.PagerRow
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
 import xyz.lisfox.vocaland.ui.components.SongCoverCard
+import xyz.lisfox.vocaland.ui.components.songCoverSharedKey
 import xyz.lisfox.vocaland.util.coverUrl
 import xyz.lisfox.vocaland.util.formatNumber
 import xyz.lisfox.vocaland.util.songArtistLine
@@ -282,7 +283,7 @@ fun SearchScreen(
                                                     ?.let(onOpenSong)
                                             },
                                             modifier = Modifier.weight(1f),
-                                            sharedKey = "song-cover-${entity.song?.id ?: entity.id}",
+                                            sharedKey = songCoverSharedKey(entity.song?.id ?: entity.id),
                                         )
                                     }
                                     if (row.size == 1) {

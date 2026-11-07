@@ -36,6 +36,7 @@ import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.SectionHeader
 import xyz.lisfox.vocaland.ui.components.SongCoverCard
+import xyz.lisfox.vocaland.ui.components.songCoverSharedKey
 import xyz.lisfox.vocaland.util.artistLine
 import xyz.lisfox.vocaland.util.formatNumber
 import xyz.lisfox.vocaland.util.songDisplayName
@@ -182,7 +183,7 @@ private fun LatestSongCard(
         thumbnail = song.thumbnail,
         onClick = onClick,
         modifier = modifier,
-        sharedKey = "song-cover-${song.id}",
+        sharedKey = songCoverSharedKey(song.id),
     )
 }
 

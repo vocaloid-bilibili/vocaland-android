@@ -68,6 +68,7 @@ import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.PagerRow
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
 import xyz.lisfox.vocaland.ui.components.SongCoverCard
+import xyz.lisfox.vocaland.ui.components.songCoverSharedKey
 import xyz.lisfox.vocaland.util.artistLine
 import xyz.lisfox.vocaland.util.compactParts
 import xyz.lisfox.vocaland.util.formatNumber
@@ -195,7 +196,7 @@ fun RankingScreen(
                                             ?: item.song.thumbnail,
                                         onClick = { onOpenSong(item.song.id) },
                                         modifier = Modifier.weight(1f),
-                                        sharedKey = "song-cover-${item.song.id}",
+                                        sharedKey = songCoverSharedKey(item.song.id),
                                         badge = "#${item.rank}",
                                         value = formatNumber(statValue(item, currentData.order)),
                                     )

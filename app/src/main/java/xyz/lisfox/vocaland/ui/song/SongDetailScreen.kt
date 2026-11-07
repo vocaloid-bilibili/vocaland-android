@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -83,7 +85,6 @@ import xyz.lisfox.vocaland.data.songactions.songVideoTrack
 import xyz.lisfox.vocaland.data.songactions.sortSongVideos
 import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.ui.components.EmptyHint
-import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.LocalSharedElementVisibilityScope
 import xyz.lisfox.vocaland.ui.components.LocalSharedTransitionScope
 import xyz.lisfox.vocaland.ui.components.MetricGrid
@@ -92,7 +93,14 @@ import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.PagerRow
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
 import xyz.lisfox.vocaland.ui.components.SectionHeader
+import xyz.lisfox.vocaland.ui.components.SharedCoverHint
 import xyz.lisfox.vocaland.ui.components.StatusPill
+import xyz.lisfox.vocaland.ui.components.getSharedCoverBitmap
+import xyz.lisfox.vocaland.ui.components.getSharedCoverHint
+import xyz.lisfox.vocaland.ui.components.putSharedCoverBitmap
+import xyz.lisfox.vocaland.ui.components.sharedCoverDecodeWidth
+import xyz.lisfox.vocaland.ui.components.shimmer
+import xyz.lisfox.vocaland.ui.components.songCoverSharedKey
 import xyz.lisfox.vocaland.util.coverUrl
 import xyz.lisfox.vocaland.util.formatNumber
 import xyz.lisfox.vocaland.util.formatScore
@@ -144,13 +152,11 @@ fun SongDetailScreen(
         },
     )
     val state by viewModel.state.collectAsStateWithLifecycle()
+    // 列表页已经知道的封面与标题：数据到达前先拿它们占位，转场第一帧就能画出完整封面
+    val coverHint = remember(songId) { getSharedCoverHint(songCoverSharedKey(songId)) }
 
     when {
-        state.loading && state.song == null -> {
-            LoadingPane(modifier = modifier)
-        }
-
-        state.song == null -> {
+        state.song == null && !state.loading -> {
             Box(modifier = modifier.padding(16.dp)) {
                 ScreenMessage(
                     title = "歌曲加载失败",
@@ -162,45 +168,45 @@ fun SongDetailScreen(
         }
 
         else -> {
-            state.song?.let { song ->
-                SongDetailContent(
-                    state = state,
-                    song = song,
-                    playerState = playerState,
-                    playerAvailable = controller != null,
-                    listenAvailable = songActionsRepository != null,
-                    onOpenArtist = onOpenArtist,
-                    onOpenTag = onOpenTag,
-                    onOpenUser = onOpenUser,
-                    onLogin = onLogin,
-                    onSelectVideo = viewModel::selectVideo,
-                    onSetListenStatus = viewModel::setListenStatus,
-                    onClearListenStatus = viewModel::clearListenStatus,
-                    onRetryListen = viewModel::retryListen,
-                    onAddToPlaylist = onAddToPlaylist,
-                    onPlayTrack = { track ->
-                        if (controller == null) {
-                            Toast.makeText(context, "播放器尚未就绪", Toast.LENGTH_SHORT).show()
-                        } else {
-                            controller.playTrackNow(track)
-                        }
-                    },
-                    onTogglePlayback = { controller?.toggle() },
-                    onAddToQueue = { track ->
-                        val added = controller?.addToQueue(track)
-                        val message = when (added) {
-                            null -> "播放器尚未就绪"
-                            true -> "已加入播放队列"
-                            false -> "已在播放队列中"
-                        }
-                        Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-                    },
-                    onSelectRankingBoard = viewModel::selectRankingBoard,
-                    onRetryRanking = viewModel::retryRanking,
-                    communitySlot = communitySlot,
-                    modifier = modifier,
-                )
-            }
+            SongDetailContent(
+                state = state,
+                song = state.song,
+                songId = songId,
+                coverHint = coverHint,
+                playerState = playerState,
+                playerAvailable = controller != null,
+                listenAvailable = songActionsRepository != null,
+                onOpenArtist = onOpenArtist,
+                onOpenTag = onOpenTag,
+                onOpenUser = onOpenUser,
+                onLogin = onLogin,
+                onSelectVideo = viewModel::selectVideo,
+                onSetListenStatus = viewModel::setListenStatus,
+                onClearListenStatus = viewModel::clearListenStatus,
+                onRetryListen = viewModel::retryListen,
+                onAddToPlaylist = onAddToPlaylist,
+                onPlayTrack = { track ->
+                    if (controller == null) {
+                        Toast.makeText(context, "播放器尚未就绪", Toast.LENGTH_SHORT).show()
+                    } else {
+                        controller.playTrackNow(track)
+                    }
+                },
+                onTogglePlayback = { controller?.toggle() },
+                onAddToQueue = { track ->
+                    val added = controller?.addToQueue(track)
+                    val message = when (added) {
+                        null -> "播放器尚未就绪"
+                        true -> "已加入播放队列"
+                        false -> "已在播放队列中"
+                    }
+                    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                },
+                onSelectRankingBoard = viewModel::selectRankingBoard,
+                onRetryRanking = viewModel::retryRanking,
+                communitySlot = communitySlot,
+                modifier = modifier,
+            )
         }
     }
 }
@@ -208,7 +214,9 @@ fun SongDetailScreen(
 @Composable
 private fun SongDetailContent(
     state: SongDetailUiState,
-    song: SongDto,
+    song: SongDto?,
+    songId: Int,
+    coverHint: SharedCoverHint?,
     playerState: BgmPlayerState?,
     playerAvailable: Boolean,
     listenAvailable: Boolean,
@@ -229,21 +237,23 @@ private fun SongDetailContent(
     modifier: Modifier = Modifier,
     communitySlot: @Composable () -> Unit,
 ) {
-    val videos = remember(song.id, song.videos) { sortSongVideos(song.videos) }
+    val videos = remember(songId, song?.videos) {
+        song?.let { sortSongVideos(it.videos) } ?: emptyList()
+    }
     val selectedVideo = videos.firstOrNull { it.bvid == state.selectedBvid }
         ?: videos.firstOrNull()
 
-    val producers = song.producers
+    val producers = (song?.producers ?: emptyList())
         .map { it.producer }
         .filter { it.id > 0 }
         .distinctBy { it.id }
         .map { ArtistChip(it.id, it.name, ArtistKind.Producer) }
-    val vocalists = song.vocalists
+    val vocalists = (song?.vocalists ?: emptyList())
         .map { it.vocalist }
         .filter { it.id > 0 }
         .distinctBy { it.id }
         .map { ArtistChip(it.id, it.name, ArtistKind.Vocalist) }
-    val synthesizers = song.vocalists
+    val synthesizers = (song?.vocalists ?: emptyList())
         .mapNotNull { it.synthesizer }
         .filter { it.id > 0 }
         .distinctBy { it.id }
@@ -254,8 +264,24 @@ private fun SongDetailContent(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
-        item {
-            SongHero(song)
+        // 首帧就挂上共享元素容器：加载期间不换根布局，数据到达后只做重组，
+        // 否则转场会因为没有目标元素而整段消失
+        item(key = "hero") {
+            SongHero(song = song, songId = songId, coverHint = coverHint)
+        }
+
+        if (song == null) {
+            item(key = "loading") {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 40.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+            }
+            return@LazyColumn
         }
 
         item {
@@ -368,33 +394,50 @@ private fun SongDetailContent(
 }
 
 @Composable
-private fun SongHero(song: SongDto) {
+private fun SongHero(
+    song: SongDto?,
+    songId: Int,
+    coverHint: SharedCoverHint?,
+) {
     val sharedScope = LocalSharedTransitionScope.current
     val visibilityScope = LocalSharedElementVisibilityScope.current
     val coverModifier = if (sharedScope != null && visibilityScope != null) {
         with(sharedScope) {
             Modifier.sharedElement(
-                state = rememberSharedContentState("song-cover-${song.id}"),
+                state = rememberSharedContentState(songCoverSharedKey(songId)),
                 animatedVisibilityScope = visibilityScope,
             )
         }
     } else {
         Modifier
     }
+    val sharedKey = songCoverSharedKey(songId)
+    val cachedCover = remember(songId) { getSharedCoverBitmap(sharedKey) }
+    val title = song?.let { songDisplayName(it) } ?: coverHint?.title
+
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         NetworkImage(
-            url = song.coverUrl(),
-            contentDescription = songDisplayName(song),
+            url = song?.coverUrl() ?: coverHint?.url,
+            contentDescription = title,
             modifier = coverModifier
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)
                 .clip(RoundedCornerShape(24.dp)),
+            decodeWidth = sharedCoverDecodeWidth(),
+            cachedBitmap = cachedCover,
+            onLoaded = { bitmap -> putSharedCoverBitmap(sharedKey, bitmap) },
         )
 
-        Text(
-            text = songDisplayName(song),
-            style = MaterialTheme.typography.headlineSmall,
-        )
+        if (title.isNullOrBlank()) {
+            LoadingBar(Modifier.width(180.dp).height(26.dp))
+        } else {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+            )
+        }
+
+        if (song == null) return
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             StatusPill(song.type?.takeIf { it.isNotBlank() } ?: "歌曲")
@@ -406,6 +449,16 @@ private fun SongHero(song: SongDto) {
             }
         }
     }
+}
+
+@Composable
+private fun LoadingBar(modifier: Modifier) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            .shimmer(),
+    )
 }
 
 private data class ArtistChip(
