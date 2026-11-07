@@ -479,7 +479,6 @@ fun VocaLandApp(
                             onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                             onOpenWallet = { navController.navigate(Routes.WALLET) },
                             onOpenShop = { navController.navigate(Routes.SHOP) },
-                            onOpenCheckIn = { navController.navigate(Routes.WALLET) },
                             onCheckUpdate = {
                                 updateViewModel.checkForUpdates(silent = false)
                             },

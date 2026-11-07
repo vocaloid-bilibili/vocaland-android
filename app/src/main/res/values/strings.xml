@@ -65,7 +65,6 @@
     <string name="profile_palette_hint">选择一套种子色，明暗主题自动生成</string>
     <string name="profile_account_section">账号与资产</string>
     <string name="profile_tools_section">探索工具</string>
-    <string name="profile_content_section">我的内容</string>
     <string name="profile_notifications">通知中心</string>
     <string name="profile_wallet">我的钱包</string>
     <string name="profile_check_in">每日签到</string>
@@ -76,7 +75,6 @@
     <string name="profile_stat">数据统计</string>
     <string name="profile_custom_ranking">自定义排行榜</string>
     <string name="profile_favorites">我的收藏</string>
-    <string name="profile_ratings">我的评分</string>
     <string name="profile_playlists">我的歌单</string>
     <string name="profile_user_detail">个人资料</string>
     <string name="profile_logout">退出登录</string>
