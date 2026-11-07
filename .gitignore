@@ -1,6 +1,7 @@
 .gradle/
 .idea/
 .kotlin/
+.tmp/
 local.properties
 **/build/
 keystore.properties
