@@ -5,12 +5,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -22,7 +19,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -46,6 +42,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -54,7 +51,6 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import xyz.lisfox.vocaland.data.model.BgmTrack
 import xyz.lisfox.vocaland.data.model.PlaylistDetailDto
-import xyz.lisfox.vocaland.data.model.PlaylistOwnerDto
 import xyz.lisfox.vocaland.data.model.PlaylistSortMode
 import xyz.lisfox.vocaland.data.model.PlaylistSongDto
 import xyz.lisfox.vocaland.data.model.PlaylistVisibility
@@ -73,7 +69,6 @@ import xyz.lisfox.vocaland.util.decodeHtmlText
 import xyz.lisfox.vocaland.util.formatNumber
 import xyz.lisfox.vocaland.util.songDisplayName
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PlaylistDetailScreen(
     repository: PlaylistRepository,
@@ -250,7 +245,7 @@ fun PlaylistDetailScreen(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun PlaylistDetailContent(
     detail: PlaylistDetailDto,
@@ -287,130 +282,167 @@ private fun PlaylistDetailContent(
     LazyColumn(
         modifier = modifier,
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item {
-            PlaylistCover(
-                cover = playlist.coverVideo,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(16f / 9f),
-                iconSize = 56.dp,
-            )
-        }
-
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            var showManage by remember { mutableStateOf(false) }
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text(
-                        text = playlist.name,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f),
+                    PlaylistCover(
+                        cover = playlist.coverVideo,
+                        modifier = Modifier.size(96.dp),
+                        iconSize = 32.dp,
                     )
-                    if (canEdit) {
-                        IconButton(onClick = onEditName) {
-                            Icon(
-                                imageVector = Icons.Filled.Edit,
-                                contentDescription = "修改名称",
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(3.dp),
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = playlist.name,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.weight(1f),
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis,
                             )
+                            if (canEdit) {
+                                IconButton(
+                                    onClick = onEditName,
+                                    modifier = Modifier.size(32.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Edit,
+                                        contentDescription = "修改名称",
+                                        modifier = Modifier.size(18.dp),
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                        }
+                        Text(
+                            text = buildString {
+                                append("${formatNumber(playlist.songCount.toLong())} 首")
+                                if (playlist.clickCount > 0) {
+                                    append(" · ${formatNumber(playlist.clickCount.toLong())} 次浏览")
+                                }
+                                append(" · ${visibility.label}")
+                                append(" · ${sortMode.label}")
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        playlist.owner?.let { owner ->
+                            Row(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .clickable(enabled = owner.id > 0) { onOpenUser(owner.id) }
+                                    .padding(vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            ) {
+                                NetworkImage(
+                                    url = ownerAvatarUrl(owner.avatar),
+                                    fallbackIcon = Icons.Filled.Person,
+                                    contentDescription = owner.nickname,
+                                    modifier = Modifier
+                                        .size(18.dp)
+                                        .clip(CircleShape),
+                                )
+                                Text(
+                                    text = "${owner.nickname.ifBlank { owner.username }} · 歌单创建者",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
                         }
                     }
                 }
 
-                if (decodeHtmlText(playlist.description).isNullOrBlank()) {
-                    if (canEdit) {
-                        TextButton(onClick = onEditDescription) {
+                val description = decodeHtmlText(playlist.description)
+                when {
+                    !description.isNullOrBlank() -> {
+                        Text(
+                            text = description,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+
+                    canEdit -> {
+                        TextButton(
+                            onClick = onEditDescription,
+                            contentPadding = PaddingValues(0.dp),
+                        ) {
                             Text("添加简介")
                         }
                     }
-                } else {
-                    Text(
-                        text = decodeHtmlText(playlist.description).orEmpty(),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
                 }
 
-                Text(
-                    text = buildString {
-                        append("${formatNumber(playlist.songCount.toLong())} 首")
-                        if (playlist.clickCount > 0) {
-                            append(" · ${formatNumber(playlist.clickCount.toLong())} 次浏览")
-                        }
-                        append(" · ${visibility.label}")
-                        append(" · ${sortMode.label}")
-                    },
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-
-                Button(
-                    onClick = { onPlayPlaylist(playableTracks) },
-                    enabled = playableTracks.isNotEmpty(),
+                Row(
                     modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.PlayArrow,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                    Text("播放全部")
-                }
-
-                if (canEdit) {
-                    var showManage by remember { mutableStateOf(false) }
-                    OutlinedButton(
-                        onClick = { showManage = true },
-                        modifier = Modifier.fillMaxWidth(),
+                    Button(
+                        onClick = { onPlayPlaylist(playableTracks) },
+                        enabled = playableTracks.isNotEmpty(),
+                        modifier = Modifier.weight(1f),
                     ) {
                         Icon(
-                            imageVector = Icons.Filled.Edit,
+                            imageVector = Icons.Filled.PlayArrow,
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
                         )
                         Spacer(Modifier.width(6.dp))
-                        Text("管理歌单")
+                        Text("播放全部")
                     }
-                    if (showManage) {
-                        ManagePlaylistSheet(
-                            canAddSongs = canAddSongs,
-                            canDelete = canDelete,
-                            mutating = mutating,
-                            isPublic = visibility == PlaylistVisibility.Public,
-                            isDefault = playlist.isDefault,
-                            onDismiss = { showManage = false },
-                            onAddSongs = { showManage = false; onRequestAddSongs() },
-                            onToggleVisibility = { showManage = false; onToggleVisibility() },
-                            onEditSortMode = { showManage = false; onEditSortMode() },
-                            onEditCover = { showManage = false; onEditCover() },
-                            onDelete = { showManage = false; onDelete() },
-                        )
-                    }
-                    if (playlist.isDefault) {
-                        Text(
-                            text = "默认收藏夹由系统维护，不可删除",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                    if (canEdit) {
+                        OutlinedButton(
+                            onClick = { showManage = true },
+                            contentPadding = PaddingValues(horizontal = 14.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Edit,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(Modifier.width(6.dp))
+                            Text("管理")
+                        }
                     }
                 }
 
                 if (!loggedIn) {
-                    TextButton(onClick = onLogin) {
+                    TextButton(
+                        onClick = onLogin,
+                        contentPadding = PaddingValues(0.dp),
+                    ) {
                         Text("登录后可编辑歌单")
                     }
                 }
             }
-        }
 
-        playlist.owner?.let { owner ->
-            item {
-                OwnerRow(owner = owner, onOpenUser = onOpenUser)
+            if (showManage) {
+                ManagePlaylistSheet(
+                    canAddSongs = canAddSongs,
+                    canDelete = canDelete,
+                    mutating = mutating,
+                    isPublic = visibility == PlaylistVisibility.Public,
+                    isDefault = playlist.isDefault,
+                    onDismiss = { showManage = false },
+                    onAddSongs = { showManage = false; onRequestAddSongs() },
+                    onToggleVisibility = { showManage = false; onToggleVisibility() },
+                    onEditSortMode = { showManage = false; onEditSortMode() },
+                    onEditCover = { showManage = false; onEditCover() },
+                    onDelete = { showManage = false; onDelete() },
+                )
             }
         }
 
@@ -472,49 +504,6 @@ private fun PlaylistDetailContent(
 
         communitySlot?.let { slot ->
             item { slot() }
-        }
-    }
-}
-
-@Composable
-private fun OwnerRow(
-    owner: PlaylistOwnerDto,
-    onOpenUser: (Int) -> Unit,
-) {
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .clickable(enabled = owner.id > 0) { onOpenUser(owner.id) },
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerLow,
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            NetworkImage(
-                url = ownerAvatarUrl(owner.avatar),
-                    fallbackIcon = Icons.Filled.Person,
-                contentDescription = owner.nickname,
-                modifier = Modifier
-                    .size(32.dp)
-                    .clip(CircleShape),
-            )
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = owner.nickname.ifBlank { owner.username },
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = "歌单创建者",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
         }
     }
 }
@@ -632,48 +621,22 @@ private fun PlaylistSongRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp),
+            .padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        Column(
-            modifier = Modifier.width(48.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            if (canMove) {
-                IconButton(
-                    onClick = onMoveUp,
-                    enabled = index > 0,
-                    modifier = Modifier.size(48.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.KeyboardArrowUp,
-                        contentDescription = "上移",
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-                IconButton(
-                    onClick = onMoveDown,
-                    modifier = Modifier.size(48.dp),
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.KeyboardArrowDown,
-                        contentDescription = "下移",
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-            }
-            Text(
-                text = "${index + 1}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        Text(
+            text = "${index + 1}",
+            modifier = Modifier.width(18.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
 
         Row(
             modifier = Modifier
                 .weight(1f)
+                .clip(RoundedCornerShape(10.dp))
                 .clickable(enabled = song != null) {
                     song?.let { onOpenSong(it.id) }
                 },
@@ -684,7 +647,7 @@ private fun PlaylistSongRow(
                 url = song?.coverUrl(),
                 contentDescription = song?.let { songDisplayName(it) },
                 modifier = Modifier
-                    .size(48.dp)
+                    .size(44.dp)
                     .clip(RoundedCornerShape(10.dp)),
             )
             Column(modifier = Modifier.weight(1f)) {
@@ -719,25 +682,56 @@ private fun PlaylistSongRow(
             }
         }
 
+        if (canMove) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                IconButton(
+                    onClick = onMoveUp,
+                    enabled = index > 0,
+                    modifier = Modifier.size(28.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowUp,
+                        contentDescription = "上移",
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+                IconButton(
+                    onClick = onMoveDown,
+                    modifier = Modifier.size(28.dp),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowDown,
+                        contentDescription = "下移",
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
+        }
+
         if (canEdit) {
             IconButton(
                 onClick = onEditNote,
-                modifier = Modifier.size(32.dp),
+                modifier = Modifier.size(30.dp),
             ) {
                 Icon(
                     imageVector = Icons.Filled.Edit,
                     contentDescription = "编辑备注",
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(17.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             IconButton(
                 onClick = onRemove,
-                modifier = Modifier.size(32.dp),
+                modifier = Modifier.size(30.dp),
             ) {
                 Icon(
                     imageVector = Icons.Filled.Delete,
                     contentDescription = "移除歌曲",
-                    modifier = Modifier.size(18.dp),
+                    modifier = Modifier.size(17.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
