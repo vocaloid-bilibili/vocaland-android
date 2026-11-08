@@ -112,10 +112,23 @@ fun NetworkImage(
                     contentScale = contentScale,
                 )
             }
+            // 未显式指定解码宽度时，跟随布局尺寸降采样，减少内存与解码耗时；
+            // 小图关闭 crossfade，避免缩略图闪烁
+            val effectiveSize = requestSize ?: run {
+                if (maxWidth > 0.dp && maxHeight.value.isFinite()) {
+                    Size(
+                        with(density) { maxWidth.toPx().toInt() }.coerceAtLeast(1),
+                        with(density) { maxHeight.toPx().toInt() }.coerceAtLeast(1),
+                    )
+                } else {
+                    null
+                }
+            }
+            val isSmall = maxWidth < 96.dp || maxHeight < 96.dp
             val request = ImageRequest.Builder(LocalContext.current)
                 .data(resolved)
-                .crossfade(true)
-            requestSize?.let { request.size(it) }
+                .crossfade(!isSmall)
+            effectiveSize?.let { request.size(it) }
             AsyncImage(
                 model = request.build(),
                 contentDescription = if (failed) null else contentDescription,

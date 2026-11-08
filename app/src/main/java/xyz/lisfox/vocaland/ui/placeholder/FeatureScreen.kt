@@ -24,11 +24,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import xyz.lisfox.vocaland.ui.components.BrandMark
+import xyz.lisfox.vocaland.ui.navigation.Routes
+
+/** 占位页标题：展示文案与路由 key 解耦，改文案不影响导航。 */
+fun featureTitleForKey(key: String): String = when (key) {
+    Routes.FeatureKey.MILESTONES -> "成就殿堂"
+    Routes.FeatureKey.HERO_SLIDE -> "主视觉详情"
+    Routes.FeatureKey.RATING_DETAIL -> "评分详情"
+    Routes.FeatureKey.COMMENT_DETAIL -> "评论详情"
+    else -> "功能建设中"
+}
 
 @Composable
 fun FeatureScreen(
     title: String,
     modifier: Modifier = Modifier,
+    subtitle: String? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     Column(
@@ -64,6 +75,14 @@ fun FeatureScreen(
                     style = MaterialTheme.typography.headlineSmall,
                     textAlign = TextAlign.Center,
                 )
+                if (!subtitle.isNullOrBlank()) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                    )
+                }
                 Spacer(Modifier.height(8.dp))
                 Text(
                     text = "该页面正在从网页版迁移到 Android，后续版本开放。",

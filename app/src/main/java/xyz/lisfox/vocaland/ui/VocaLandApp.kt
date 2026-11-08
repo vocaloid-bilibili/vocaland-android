@@ -43,6 +43,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -114,6 +115,7 @@ import xyz.lisfox.vocaland.ui.navigation.Routes
 import xyz.lisfox.vocaland.ui.navigation.TOP_LEVEL_DESTINATIONS
 import xyz.lisfox.vocaland.ui.notifications.NotificationsScreen
 import xyz.lisfox.vocaland.ui.placeholder.FeatureScreen
+import xyz.lisfox.vocaland.ui.placeholder.featureTitleForKey
 import xyz.lisfox.vocaland.ui.player.PlayerScreen
 import xyz.lisfox.vocaland.ui.playlist.AddToPlaylistSheet
 import xyz.lisfox.vocaland.ui.playlist.MyPlaylistsScreen
@@ -283,10 +285,12 @@ fun VocaLandApp(
                 exit = fadeOut(animationSpec = tween(MotionDurations.EMPHASIZED)) +
                     slideOutHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { -it / 5 },
             ) {
+                val playerState by container.bgmPlayerController.state.collectAsStateWithLifecycle()
                 CompactBottomBar(
                     currentRoute = currentRoute,
                     onSelect = navigateToTopLevel,
                     enabled = isTopLevel,
+                    playerState = playerState,
                 )
             }
             SharedTransitionLayout { CompositionLocalProvider(
@@ -332,7 +336,7 @@ fun VocaLandApp(
                             }
                     } else {
                         fadeOut(animationSpec = tween(MotionDurations.EMPHASIZED)) +
-                            slideOutHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { -it / 5 }
+                            slideOutHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { -it }
                     }
                 },
                 popEnterTransition = {
@@ -348,7 +352,7 @@ fun VocaLandApp(
                             }
                     } else {
                         fadeIn(animationSpec = tween(MotionDurations.EMPHASIZED)) +
-                            slideInHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { -it / 5 }
+                            slideInHorizontally(animationSpec = tween(MotionDurations.EMPHASIZED)) { -it }
                     }
                 },
                 popExitTransition = {
@@ -368,8 +372,8 @@ fun VocaLandApp(
                     PageScaffold(title = null, sharedElementScope = this) { contentModifier ->
                         HomeScreen(
                             repository = container.homeRepository,
-                            onOpenFeature = { title ->
-                                navController.navigate(Routes.feature(title))
+                            onOpenFeature = { key ->
+                                navController.navigate(Routes.feature(key))
                             },
                             onOpenTarget = openTarget,
                             onOpenSong = { id ->
@@ -973,7 +977,7 @@ fun VocaLandApp(
                                 when {
                                     target != null -> openTarget(target)
                                     commentId != null -> navController.navigate(
-                                        Routes.feature(context.getString(R.string.feature_comment_title, commentId)),
+                                        Routes.feature(Routes.FeatureKey.COMMENT_DETAIL),
                                     )
                                 }
                             },
@@ -1203,10 +1207,11 @@ fun VocaLandApp(
                 composable(
                     route = Routes.FEATURE,
                     arguments = listOf(
-                        navArgument("title") { type = NavType.StringType },
+                        navArgument("key") { type = NavType.StringType },
                     ),
                 ) { entry ->
-                    val title = entry.arguments?.getString("title") ?: stringResource(R.string.feature_default_title)
+                    val key = entry.arguments?.getString("key").orEmpty()
+                    val title = featureTitleForKey(key)
                     PageScaffold(
                         title = title,
                         onBack = { navController.popBackStack() },
@@ -1359,6 +1364,7 @@ private fun CompactBottomBar(
     onSelect: (String) -> Unit,
     enabled: Boolean,
     modifier: Modifier = Modifier,
+    playerState: xyz.lisfox.vocaland.data.player.BgmPlayerState? = null,
 ) {
     val scheme = MaterialTheme.colorScheme
     Surface(
@@ -1411,6 +1417,10 @@ private fun CompactBottomBar(
                         verticalArrangement = Arrangement.Center,
                     ) {
                         if (isPlayer) {
+                            val progress = playerState
+                                ?.takeIf { it.durationMs > 0 && it.tracks.isNotEmpty() }
+                                ?.let { (it.positionMs.toFloat() / it.durationMs).coerceIn(0f, 1f) }
+                            val hasQueue = playerState?.tracks?.isNotEmpty() == true
                             Box(
                                 modifier = Modifier
                                     .size(36.dp)
@@ -1418,10 +1428,21 @@ private fun CompactBottomBar(
                                     .background(playerContainerColor),
                                 contentAlignment = Alignment.Center,
                             ) {
+                                if (hasQueue && progress != null) {
+                                    CircularProgressIndicator(
+                                        progress = { progress },
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .padding(2.dp),
+                                        color = playerContentColor,
+                                        trackColor = playerContentColor.copy(alpha = 0.25f),
+                                        strokeWidth = 2.dp,
+                                    )
+                                }
                                 Icon(
                                     imageVector = destination.icon,
                                     contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
+                                    modifier = Modifier.size(if (hasQueue) 14.dp else 18.dp),
                                     tint = playerContentColor,
                                 )
                             }

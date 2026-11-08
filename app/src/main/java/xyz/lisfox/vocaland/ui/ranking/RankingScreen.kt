@@ -18,9 +18,11 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -67,6 +69,7 @@ import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.PagerRow
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
+import xyz.lisfox.vocaland.ui.components.SegmentedTabs
 import xyz.lisfox.vocaland.ui.components.SongCoverCard
 import xyz.lisfox.vocaland.ui.components.songCoverSharedKey
 import xyz.lisfox.vocaland.util.artistLine
@@ -125,6 +128,16 @@ fun RankingScreen(
                 onPrevious = viewModel::previousIssue,
                 onNext = viewModel::nextIssue,
                 onLatest = viewModel::goToLatestIssue,
+                viewModeAction = if (state.tab.isSongTab) {
+                    {
+                        ViewModeToggle(
+                            viewMode = state.viewMode,
+                            onSelect = viewModel::setViewMode,
+                        )
+                    }
+                } else {
+                    null
+                },
             )
         }
         if (state.tab.isSongTab) {
@@ -132,7 +145,6 @@ fun RankingScreen(
                 SongToolbar(
                     state = state,
                     onSelectOrder = viewModel::selectOrder,
-                    onSelectViewMode = viewModel::setViewMode,
                 )
             }
         }
@@ -351,15 +363,12 @@ private fun BoardSelector(
     selected: RankingBoard,
     onSelect: (RankingBoard) -> Unit,
 ) {
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(RankingBoard.entries, key = { it.key }) { board ->
-            FilterChip(
-                selected = board == selected,
-                onClick = { onSelect(board) },
-                label = { Text(board.label) },
-            )
-        }
-    }
+    SegmentedTabs(
+        options = RankingBoard.entries,
+        selected = selected,
+        label = { it.label },
+        onSelect = onSelect,
+    )
 }
 
 @Composable
@@ -382,27 +391,52 @@ private fun TabSelector(
 private fun SongToolbar(
     state: RankingUiState,
     onSelectOrder: (RankingOrder) -> Unit,
-    onSelectViewMode: (RankingViewMode) -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.Start,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         SortMenu(
             selected = state.order,
             onSelect = onSelectOrder,
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(
-                selected = state.viewMode == RankingViewMode.List,
-                onClick = { onSelectViewMode(RankingViewMode.List) },
-                label = { Text("列表") },
+    }
+}
+
+@Composable
+private fun ViewModeToggle(
+    viewMode: RankingViewMode,
+    onSelect: (RankingViewMode) -> Unit,
+) {
+    val scheme = MaterialTheme.colorScheme
+    Row {
+        IconButton(
+            onClick = { onSelect(RankingViewMode.List) },
+            modifier = Modifier.size(40.dp),
+        ) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ViewList,
+                contentDescription = "列表视图",
+                tint = if (viewMode == RankingViewMode.List) {
+                    scheme.primary
+                } else {
+                    scheme.onSurfaceVariant
+                },
             )
-            FilterChip(
-                selected = state.viewMode == RankingViewMode.Grid,
-                onClick = { onSelectViewMode(RankingViewMode.Grid) },
-                label = { Text("网格") },
+        }
+        IconButton(
+            onClick = { onSelect(RankingViewMode.Grid) },
+            modifier = Modifier.size(40.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.GridView,
+                contentDescription = "网格视图",
+                tint = if (viewMode == RankingViewMode.Grid) {
+                    scheme.primary
+                } else {
+                    scheme.onSurfaceVariant
+                },
             )
         }
     }
@@ -414,6 +448,7 @@ private fun IssueSelector(
     onPrevious: () -> Unit,
     onNext: () -> Unit,
     onLatest: () -> Unit,
+    viewModeAction: (@Composable () -> Unit)? = null,
 ) {
     val issue = state.displayIssue
     val latest = state.latestIssue ?: state.data?.latestIssue
@@ -424,7 +459,7 @@ private fun IssueSelector(
         color = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+            modifier = Modifier.padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(
@@ -439,7 +474,7 @@ private fun IssueSelector(
             ) {
                 Text(
                     text = if (issue == null) "最新一期" else "第 $issue 期",
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                 )
                 val range = state.board.let { board ->
                     issue?.let { rankingIssueDateRange(board, it) }
@@ -454,15 +489,15 @@ private fun IssueSelector(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (issue != null && latest != null && issue < latest) {
-                    TextButton(
-                        onClick = onLatest,
-                        contentPadding = PaddingValues(horizontal = 8.dp),
-                    ) {
-                        Text(
-                            text = "回到最新",
-                            style = MaterialTheme.typography.labelSmall,
-                        )
-                    }
+                    Text(
+                        text = "回到最新",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable(onClick = onLatest)
+                            .padding(horizontal = 8.dp, vertical = 6.dp),
+                    )
                 }
             }
             IconButton(
@@ -470,6 +505,9 @@ private fun IssueSelector(
                 enabled = issue != null && latest != null && issue < latest,
             ) {
                 Icon(Icons.Filled.ChevronRight, contentDescription = "下一期")
+            }
+            if (viewModeAction != null) {
+                viewModeAction()
             }
         }
     }
@@ -785,7 +823,7 @@ private fun ArtistSongPanel(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         ),
     ) {
         Column(modifier = Modifier.padding(12.dp)) {

@@ -31,6 +31,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -45,6 +49,7 @@ import xyz.lisfox.vocaland.data.model.VotingEntryUi
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.SectionHeader
+import xyz.lisfox.vocaland.ui.components.SegmentedTabs
 import xyz.lisfox.vocaland.util.compactParts
 import xyz.lisfox.vocaland.util.formatNumber
 import xyz.lisfox.vocaland.util.formatShortDate
@@ -57,32 +62,16 @@ fun StatsCard(
     stats: SiteStatsDto?,
     modifier: Modifier = Modifier,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ),
+    if (stats == null) return
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly,
     ) {
-        if (stats == null) {
-            Text(
-                text = "暂无统计数据",
-                modifier = Modifier.padding(20.dp),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        } else {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 18.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-            ) {
-                StatItem(value = stats.songCount, label = "首收录歌曲")
-                StatItem(value = stats.snapshotCount, label = "条数据快照")
-                StatItem(value = stats.userCount, label = "位注册用户")
-            }
-        }
+        StatItem(value = stats.songCount, label = "首收录歌曲")
+        StatItem(value = stats.snapshotCount, label = "条数据快照")
+        StatItem(value = stats.userCount, label = "位注册用户")
     }
 }
 
@@ -314,6 +303,49 @@ private fun MilestoneCard(
 }
 
 @Composable
+fun RecentActivitySection(
+    ratings: List<RatingDto>,
+    comments: List<CommentDto>,
+    onOpenRating: (RatingDto) -> Unit,
+    onOpenComment: (CommentDto) -> Unit,
+    onOpenUser: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var tab by rememberSaveable { mutableStateOf(ActivityTab.Comments.name) }
+    val selected = ActivityTab.entries.firstOrNull { it.name == tab } ?: ActivityTab.Comments
+
+    Column(modifier = modifier.fillMaxWidth()) {
+        SectionHeader(title = "最近动态")
+        Spacer(Modifier.height(10.dp))
+        SegmentedTabs(
+            options = ActivityTab.entries,
+            selected = selected,
+            label = { it.label },
+            onSelect = { tab = it.name },
+        )
+        Spacer(Modifier.height(10.dp))
+        when (selected) {
+            ActivityTab.Ratings -> RatingsContent(
+                ratings = ratings,
+                onOpen = onOpenRating,
+                onOpenUser = onOpenUser,
+            )
+
+            ActivityTab.Comments -> CommentsContent(
+                comments = comments,
+                onOpen = onOpenComment,
+                onOpenUser = onOpenUser,
+            )
+        }
+    }
+}
+
+private enum class ActivityTab(val label: String) {
+    Comments("评论"),
+    Ratings("评分"),
+}
+
+@Composable
 fun RatingsSection(
     ratings: List<RatingDto>,
     onOpen: (RatingDto) -> Unit,
@@ -323,18 +355,26 @@ fun RatingsSection(
     Column(modifier = modifier.fillMaxWidth()) {
         SectionHeader(title = "最近评分")
         Spacer(Modifier.height(12.dp))
+        RatingsContent(ratings = ratings, onOpen = onOpen, onOpenUser = onOpenUser)
+    }
+}
 
-        if (ratings.isEmpty()) {
-            EmptyHint("暂时还没有评分")
-        } else {
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                items(ratings, key = { it.id }) { item ->
-                    RatingCard(
-                        item = item,
-                        onClick = { onOpen(item) },
-                        onOpenUser = onOpenUser,
-                    )
-                }
+@Composable
+private fun RatingsContent(
+    ratings: List<RatingDto>,
+    onOpen: (RatingDto) -> Unit,
+    onOpenUser: (Int) -> Unit,
+) {
+    if (ratings.isEmpty()) {
+        EmptyHint("暂时还没有评分")
+    } else {
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(ratings, key = { it.id }) { item ->
+                RatingCard(
+                    item = item,
+                    onClick = { onOpen(item) },
+                    onOpenUser = onOpenUser,
+                )
             }
         }
     }
@@ -450,18 +490,26 @@ fun CommentsSection(
     Column(modifier = modifier.fillMaxWidth()) {
         SectionHeader(title = "最近评论")
         Spacer(Modifier.height(8.dp))
+        CommentsContent(comments = comments, onOpen = onOpen, onOpenUser = onOpenUser)
+    }
+}
 
-        if (comments.isEmpty()) {
-            EmptyHint("暂时还没有评论")
-        } else {
-            Column {
-                comments.forEach { comment ->
-                    CommentRow(
-                        comment = comment,
-                        onClick = { onOpen(comment) },
-                        onOpenUser = onOpenUser,
-                    )
-                }
+@Composable
+private fun CommentsContent(
+    comments: List<CommentDto>,
+    onOpen: (CommentDto) -> Unit,
+    onOpenUser: (Int) -> Unit,
+) {
+    if (comments.isEmpty()) {
+        EmptyHint("暂时还没有评论")
+    } else {
+        Column {
+            comments.forEach { comment ->
+                CommentRow(
+                    comment = comment,
+                    onClick = { onOpen(comment) },
+                    onOpenUser = onOpenUser,
+                )
             }
         }
     }

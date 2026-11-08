@@ -33,11 +33,11 @@ import xyz.lisfox.vocaland.data.repository.HomeRepository
 import xyz.lisfox.vocaland.ui.components.InlineLoading
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
+import xyz.lisfox.vocaland.ui.navigation.Routes
 import xyz.lisfox.vocaland.ui.playlist.PlaylistPreviewSection
 import xyz.lisfox.vocaland.util.SiteTarget
 import xyz.lisfox.vocaland.util.parseSitePath
 import xyz.lisfox.vocaland.util.parseTargetKey
-import xyz.lisfox.vocaland.util.targetLabel
 
 @Composable
 fun HomeScreen(
@@ -124,16 +124,16 @@ private fun HomeContentList(
     LazyColumn(
         modifier = Modifier.fillMaxWidth(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 28.dp),
-        verticalArrangement = Arrangement.spacedBy(26.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
         if (refreshing) {
-            item {
+            item(contentType = "inline-loading") {
                 InlineLoading()
             }
         }
 
         if (!error.isNullOrBlank()) {
-            item {
+            item(contentType = "error") {
                 ScreenMessage(
                     title = "刷新失败",
                     message = error,
@@ -144,7 +144,7 @@ private fun HomeContentList(
         }
 
         if (content.failedSections.isNotEmpty()) {
-            item {
+            item(contentType = "failed-notice") {
                 Surface(
                     shape = MaterialTheme.shapes.large,
                     color = MaterialTheme.colorScheme.errorContainer,
@@ -177,7 +177,7 @@ private fun HomeContentList(
             }
         }
 
-        item {
+        item(contentType = "hero") {
             HeroCarousel(
                 slides = content.heroSlides,
                 onClick = { slide ->
@@ -185,17 +185,17 @@ private fun HomeContentList(
                     if (target != null) {
                         onOpenTarget(target)
                     } else {
-                        onOpenFeature(slide.caption.ifBlank { "主视觉详情" })
+                        onOpenFeature(Routes.FeatureKey.HERO_SLIDE)
                     }
                 },
             )
         }
 
-        item {
+        item(contentType = "stats") {
             StatsCard(stats = content.stats)
         }
 
-        item {
+        item(contentType = "playlists") {
             PlaylistPreviewSection(
                 playlists = content.playlists,
                 onOpenPlaylist = onOpenPlaylist,
@@ -203,7 +203,7 @@ private fun HomeContentList(
             )
         }
 
-        item {
+        item(contentType = "voting") {
             VotingCard(
                 entries = content.votingEntries,
                 summary = content.votingSummary,
@@ -212,18 +212,18 @@ private fun HomeContentList(
             )
         }
 
-        item {
+        item(contentType = "milestones") {
             MilestonesSection(
                 milestones = content.milestones,
                 onOpen = {
                     val songId = it.song.id.takeIf { id -> id > 0 } ?: it.songId
                     if (songId > 0) onOpenSong(songId)
                 },
-                onOpenAll = { onOpenFeature("成就殿堂") },
+                onOpenAll = { onOpenFeature(Routes.FeatureKey.MILESTONES) },
             )
         }
 
-        item {
+        item(contentType = "top-songs") {
             TopSongsSection(
                 selectedStat = selectedStat,
                 items = topSongs,
@@ -234,7 +234,7 @@ private fun HomeContentList(
             )
         }
 
-        item {
+        item(contentType = "on-this-day") {
             OnThisDaySection(
                 month = content.todayMonth,
                 day = content.todayDay,
@@ -243,46 +243,38 @@ private fun HomeContentList(
             )
         }
 
-        item {
-            RatingsSection(
+        item(contentType = "recent-activity") {
+            RecentActivitySection(
                 ratings = content.ratings,
-                onOpen = { rating ->
+                comments = content.comments,
+                onOpenRating = { rating ->
                     val target = parseTargetKey(rating.targetKey)
                     if (target != null) {
                         onOpenTarget(target)
                     } else {
-                        onOpenFeature(
-                            "评分：${targetLabel(rating.targetKey, rating.targetName)}",
-                        )
+                        onOpenFeature(Routes.FeatureKey.RATING_DETAIL)
+                    }
+                },
+                onOpenComment = { comment ->
+                    val target = parseTargetKey(comment.targetKey)
+                    if (target != null) {
+                        onOpenTarget(target)
+                    } else {
+                        onOpenFeature(Routes.FeatureKey.COMMENT_DETAIL)
                     }
                 },
                 onOpenUser = onOpenUser,
             )
         }
 
-        item {
+        item(contentType = "latest-songs") {
             LatestSongsSection(
                 songs = content.latestSongs,
                 onOpenSong = onOpenSong,
             )
         }
 
-        item {
-            CommentsSection(
-                comments = content.comments,
-                onOpen = { comment ->
-                    val target = parseTargetKey(comment.targetKey)
-                    if (target != null) {
-                        onOpenTarget(target)
-                    } else {
-                        onOpenFeature("评论：${targetLabel(comment.targetKey)}")
-                    }
-                },
-                onOpenUser = onOpenUser,
-            )
-        }
-
-        item {
+        item(contentType = "footer") {
             Text(
                 text = "VocaLand · 术力口数据库",
                 modifier = Modifier

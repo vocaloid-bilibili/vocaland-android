@@ -322,7 +322,7 @@ private fun PlayerHero(track: BgmTrack?) {
                 .fillMaxWidth(0.72f)
                 .aspectRatio(1f)
                 .clip(RoundedCornerShape(24.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh),
             contentAlignment = Alignment.Center,
         ) {
             if (track?.cover.isNullOrBlank()) {

@@ -1,6 +1,5 @@
 package xyz.lisfox.vocaland.ui.navigation
 
-import android.net.Uri
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -21,7 +20,16 @@ object Routes {
     const val SEARCH = "search"
     const val PROFILE = "profile"
     const val LOGIN = "login"
-    const val FEATURE = "feature/{title}"
+    const val FEATURE = "feature/{key}"
+
+    /** 占位页 key → 展示文案在 FeatureScreen 内解析，避免把 UI 文案塞进路由。 */
+    object FeatureKey {
+        const val MILESTONES = "milestones"
+        const val HERO_SLIDE = "hero-slide"
+        const val RATING_DETAIL = "rating-detail"
+        const val COMMENT_DETAIL = "comment-detail"
+        const val UNKNOWN = "unknown"
+    }
     const val SONG = "song/{songId}"
     const val ARTIST = "artist/{kind}/{artistId}"
     const val TAG = "tag/{tagId}"
@@ -46,7 +54,7 @@ object Routes {
     const val COLLECTION_SHARE_MANUAL = "share/collection/manual/{collectionId}"
     const val COLLECTION_SHARE_DERIVED = "share/collection/{kind}/{sourceId}/{entityType}"
 
-    fun feature(title: String): String = "feature/${Uri.encode(title)}"
+    fun feature(key: String): String = "feature/$key"
 
     fun song(id: Int): String = "song/$id"
 

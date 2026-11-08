@@ -25,6 +25,8 @@ data class VotingHubUiState(
     val edHistoryLoading: Boolean = false,
     val edHistoryError: String? = null,
     val edHistoryBoard: String = "vocaloid-weekly",
+    val edHistoryExpanded: Boolean = false,
+    val trendingHistoryExpanded: Boolean = false,
 )
 
 class VotingHubViewModel(
@@ -43,8 +45,24 @@ class VotingHubViewModel(
 
     fun refresh() {
         loadHub()
-        loadTrendingHistory(1)
-        loadEdHistory(_state.value.edHistoryBoard, 1)
+        if (_state.value.trendingHistoryExpanded) loadTrendingHistory(1)
+        if (_state.value.edHistoryExpanded) loadEdHistory(_state.value.edHistoryBoard, 1)
+    }
+
+    fun toggleEdHistoryExpanded() {
+        val next = !_state.value.edHistoryExpanded
+        _state.update { it.copy(edHistoryExpanded = next) }
+        if (next && _state.value.edHistory == null && _state.value.edHistoryError == null) {
+            loadEdHistory(_state.value.edHistoryBoard, 1)
+        }
+    }
+
+    fun toggleTrendingHistoryExpanded() {
+        val next = !_state.value.trendingHistoryExpanded
+        _state.update { it.copy(trendingHistoryExpanded = next) }
+        if (next && _state.value.trendingHistory == null && _state.value.trendingHistoryError == null) {
+            loadTrendingHistory(1)
+        }
     }
 
     private fun loadHub() {

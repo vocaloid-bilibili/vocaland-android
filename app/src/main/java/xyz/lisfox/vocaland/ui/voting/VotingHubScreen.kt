@@ -18,11 +18,14 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,6 +34,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -95,6 +99,8 @@ fun VotingHubScreen(
                 onNextTrendingHistory = viewModel::nextTrendingHistoryPage,
                 onPreviousEdHistory = viewModel::previousEdHistoryPage,
                 onNextEdHistory = viewModel::nextEdHistoryPage,
+                onToggleEdHistory = viewModel::toggleEdHistoryExpanded,
+                onToggleTrendingHistory = viewModel::toggleTrendingHistoryExpanded,
                 modifier = modifier,
             )
         }
@@ -112,6 +118,8 @@ private fun VotingHubContent(
     onNextTrendingHistory: () -> Unit,
     onPreviousEdHistory: () -> Unit,
     onNextEdHistory: () -> Unit,
+    onToggleEdHistory: () -> Unit,
+    onToggleTrendingHistory: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val data = state.data ?: return
@@ -160,11 +168,13 @@ private fun VotingHubContent(
 
                 item {
                     Spacer(Modifier.height(6.dp))
-                    Text(
-                        text = "往期结果",
-                        style = MaterialTheme.typography.titleLarge,
+                    HistorySectionHeader(
+                        title = "往期结果",
+                        expanded = state.edHistoryExpanded,
+                        onToggle = onToggleEdHistory,
                     )
                 }
+                if (state.edHistoryExpanded) {
                 item {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -207,6 +217,7 @@ private fun VotingHubContent(
                 } else if (!state.edHistoryLoading && state.edHistoryError.isNullOrBlank()) {
                     item { EmptyHint(text = "暂无 ED 往期结果") }
                 }
+                }
             }
 
             VotingKind.Trending -> {
@@ -223,11 +234,13 @@ private fun VotingHubContent(
 
                 item {
                     Spacer(Modifier.height(6.dp))
-                    Text(
-                        text = "往期结果",
-                        style = MaterialTheme.typography.titleLarge,
+                    HistorySectionHeader(
+                        title = "往期结果",
+                        expanded = state.trendingHistoryExpanded,
+                        onToggle = onToggleTrendingHistory,
                     )
                 }
+                if (state.trendingHistoryExpanded) {
                 if (state.trendingHistoryLoading) {
                     item { InlineLoading() }
                 }
@@ -260,7 +273,44 @@ private fun VotingHubContent(
                 } else if (!state.trendingHistoryLoading && state.trendingHistoryError.isNullOrBlank()) {
                     item { EmptyHint(text = "暂无人气投票往期结果") }
                 }
+                }
             }
+        }
+    }
+}
+
+@Composable
+private fun HistorySectionHeader(
+    title: String,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .clickable(onClick = onToggle),
+        shape = RoundedCornerShape(14.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = title,
+                modifier = Modifier.weight(1f),
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Icon(
+                imageVector = if (expanded) {
+                    Icons.Filled.KeyboardArrowUp
+                } else {
+                    Icons.Filled.KeyboardArrowDown
+                },
+                contentDescription = if (expanded) "收起" else "展开",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
