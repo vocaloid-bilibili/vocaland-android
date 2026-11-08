@@ -19,12 +19,18 @@ sealed interface SiteTarget {
     data object Ranking : SiteTarget
 }
 
+/**
+ * target_key 解析后的展示名。
+ *
+ * 评论接口只给 `target_key`（如 `song:61118`），不带实体名，所以这里退回「类型 #ID」，
+ * 与网站首页「最近评论」的兜底文案一致；评分接口带 `target_name` 时优先用真名。
+ */
 fun SiteTarget.displayLabel(): String = when (this) {
-    is SiteTarget.Song -> "歌曲"
-    is SiteTarget.Artist -> kind.label
-    is SiteTarget.Tag -> "标签"
-    is SiteTarget.User -> "用户"
-    is SiteTarget.Playlist -> "歌单"
+    is SiteTarget.Song -> "歌曲 #$id"
+    is SiteTarget.Artist -> "${kind.label} #$id"
+    is SiteTarget.Tag -> "标签 #$id"
+    is SiteTarget.User -> "用户 #$id"
+    is SiteTarget.Playlist -> "歌单 #$id"
     is SiteTarget.Voting -> kind.label
     SiteTarget.Ranking -> "排行榜"
 }
