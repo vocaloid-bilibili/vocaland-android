@@ -74,8 +74,7 @@ fun ArtistDetailScreen(
     onOpenArtist: (ArtistKind, Int) -> Unit = { _, _ -> },
     onOpenTag: (Int) -> Unit = {},
     onShare: ((ArtistDetailDto) -> Unit)? = null,
-    rating: (@Composable () -> Unit)? = null,
-    comments: (@Composable () -> Unit)? = null,
+    community: (@Composable () -> Unit)? = null,
 ) {
     val viewModel: ArtistDetailViewModel = viewModel(
         key = "artist-${kind.apiType}-$artistId",
@@ -229,11 +228,7 @@ fun ArtistDetailScreen(
                     }
                 }
 
-                rating?.let { slot ->
-                    item { slot() }
-                }
-
-                comments?.let { slot ->
+                community?.let { slot ->
                     item { slot() }
                 }
             }

@@ -23,8 +23,6 @@
     <string name="page_user">用户</string>
     <string name="page_playlists">歌单广场</string>
     <string name="page_playlist">歌单</string>
-    <string name="page_ratings">评分</string>
-    <string name="page_comments">评论</string>
     <string name="page_tag">标签</string>
     <string name="page_votings">投票</string>
     <string name="page_register">注册</string>

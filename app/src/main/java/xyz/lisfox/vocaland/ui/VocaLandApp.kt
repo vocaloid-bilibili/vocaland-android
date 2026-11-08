@@ -750,7 +750,7 @@ fun VocaLandApp(
                                         launchSingleTop = true
                                     }
                                 },
-                                rating = {
+                                community = {
                                     CommunityPanel(
                                         repository = container.communityRepository,
                                         targetKey = CommunityTargets.artist(kind, artistId),
@@ -761,23 +761,6 @@ fun VocaLandApp(
                                                 launchSingleTop = true
                                             }
                                         },
-                                        showComments = false,
-                                        title = stringResource(R.string.page_ratings),
-                                    )
-                                },
-                                comments = {
-                                    CommunityPanel(
-                                        repository = container.communityRepository,
-                                        targetKey = CommunityTargets.artist(kind, artistId),
-                                        session = container.session,
-                                        onLogin = { navController.navigate(Routes.LOGIN) },
-                                        onOpenUser = { id ->
-                                            navController.navigate(Routes.user(id)) {
-                                                launchSingleTop = true
-                                            }
-                                        },
-                                        showRatings = false,
-                                        title = stringResource(R.string.page_comments),
                                     )
                                 },
                                 modifier = contentModifier,
