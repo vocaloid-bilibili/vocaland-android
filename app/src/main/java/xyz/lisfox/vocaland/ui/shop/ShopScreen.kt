@@ -142,24 +142,29 @@ fun ShopScreen(
                             tint = MaterialTheme.colorScheme.onPrimaryContainer,
                         )
                         Spacer(Modifier.size(10.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "票券与道具",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                            )
-                            Text(
-                                text = stringResource(R.string.shop_subtitle),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
+                        Text(
+                            text = stringResource(R.string.shop_subtitle),
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
                         IconButton(onClick = { viewModel.load(includeWallet = isLoggedIn) }) {
                             Icon(Icons.Filled.Refresh, contentDescription = stringResource(R.string.action_refresh))
                         }
                     }
 
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .then(
+                                if (onOpenWallet != null) {
+                                    Modifier.clickable(onClick = onOpenWallet)
+                                } else {
+                                    Modifier
+                                },
+                            ),
+                    ) {
                         Icon(
                             imageVector = Icons.Filled.Star,
                             contentDescription = null,
@@ -203,20 +208,14 @@ fun ShopScreen(
                                 )
                             }
                         }
-                    }
-
-                    if (onOpenWallet != null) {
-                        OutlinedButton(
-                            onClick = onOpenWallet,
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
+                        if (onOpenWallet != null && isLoggedIn) {
+                            Spacer(Modifier.size(4.dp))
                             Icon(
                                 imageVector = Icons.Filled.Wallet,
-                                contentDescription = null,
+                                contentDescription = stringResource(R.string.shop_action_open_wallet),
                                 modifier = Modifier.size(18.dp),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
-                            Spacer(Modifier.size(8.dp))
-                            Text(stringResource(R.string.shop_action_open_wallet))
                         }
                     }
                 }

@@ -117,10 +117,22 @@ fun RankingScreen(
             )
         }
         item {
-            TabSelector(
-                state = state,
-                onSelect = viewModel::selectTab,
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TabSelector(
+                    state = state,
+                    onSelect = viewModel::selectTab,
+                    modifier = Modifier.weight(1f),
+                )
+                if (state.tab.isSongTab) {
+                    SortMenu(
+                        selected = state.order,
+                        onSelect = viewModel::selectOrder,
+                    )
+                }
+            }
         }
         item {
             IssueSelector(
@@ -139,14 +151,6 @@ fun RankingScreen(
                     null
                 },
             )
-        }
-        if (state.tab.isSongTab) {
-            item {
-                SongToolbar(
-                    state = state,
-                    onSelectOrder = viewModel::selectOrder,
-                )
-            }
         }
 
         if (state.loading || state.tabLoading) {
@@ -375,8 +379,12 @@ private fun BoardSelector(
 private fun TabSelector(
     state: RankingUiState,
     onSelect: (RankingTab) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    LazyRow(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         items(state.tabs, key = { it.key }) { tab ->
             FilterChip(
                 selected = state.tab == tab,
@@ -384,23 +392,6 @@ private fun TabSelector(
                 label = { Text(tab.label) },
             )
         }
-    }
-}
-
-@Composable
-private fun SongToolbar(
-    state: RankingUiState,
-    onSelectOrder: (RankingOrder) -> Unit,
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Start,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        SortMenu(
-            selected = state.order,
-            onSelect = onSelectOrder,
-        )
     }
 }
 
@@ -521,18 +512,20 @@ private fun SortMenu(
     val expanded = remember { mutableStateOf(false) }
 
     Box {
-        OutlinedButton(
+        TextButton(
             onClick = { expanded.value = true },
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+            contentPadding = PaddingValues(horizontal = 8.dp),
         ) {
             Text(
-                text = "排序：${selected.label}",
+                text = selected.label,
                 style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
             )
             Icon(
                 imageVector = Icons.Filled.ArrowDropDown,
                 contentDescription = null,
                 modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.primary,
             )
         }
         DropdownMenu(

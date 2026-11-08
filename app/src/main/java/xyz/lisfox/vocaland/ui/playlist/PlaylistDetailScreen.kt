@@ -32,6 +32,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -362,40 +363,33 @@ private fun PlaylistDetailContent(
                 }
 
                 if (canEdit) {
-                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        if (canAddSongs) {
-                            TextButton(onClick = onRequestAddSongs) {
-                                Icon(
-                                    imageVector = Icons.Filled.Add,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                                Text("添加歌曲")
-                            }
-                        }
-                        TextButton(onClick = onToggleVisibility) {
-                            Text(
-                                if (visibility == PlaylistVisibility.Public) {
-                                    "设为私有"
-                                } else {
-                                    "设为公开"
-                                },
-                            )
-                        }
-                        TextButton(onClick = onEditSortMode) {
-                            Text("排序方式")
-                        }
-                        TextButton(onClick = onEditCover) {
-                            Text("设置封面")
-                        }
-                        if (canDelete) {
-                            TextButton(
-                                onClick = onDelete,
-                                enabled = !mutating,
-                            ) {
-                                Text("删除歌单")
-                            }
-                        }
+                    var showManage by remember { mutableStateOf(false) }
+                    OutlinedButton(
+                        onClick = { showManage = true },
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(6.dp))
+                        Text("管理歌单")
+                    }
+                    if (showManage) {
+                        ManagePlaylistSheet(
+                            canAddSongs = canAddSongs,
+                            canDelete = canDelete,
+                            mutating = mutating,
+                            isPublic = visibility == PlaylistVisibility.Public,
+                            isDefault = playlist.isDefault,
+                            onDismiss = { showManage = false },
+                            onAddSongs = { showManage = false; onRequestAddSongs() },
+                            onToggleVisibility = { showManage = false; onToggleVisibility() },
+                            onEditSortMode = { showManage = false; onEditSortMode() },
+                            onEditCover = { showManage = false; onEditCover() },
+                            onDelete = { showManage = false; onDelete() },
+                        )
                     }
                     if (playlist.isDefault) {
                         Text(
@@ -532,6 +526,92 @@ private fun ownerAvatarUrl(avatar: String?): String? {
         value
     } else {
         "https://api.vocabili.top/v2/static/avatars/$value"
+    }
+}
+
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+@Composable
+private fun ManagePlaylistSheet(
+    canAddSongs: Boolean,
+    canDelete: Boolean,
+    mutating: Boolean,
+    isPublic: Boolean,
+    isDefault: Boolean,
+    onDismiss: () -> Unit,
+    onAddSongs: () -> Unit,
+    onToggleVisibility: () -> Unit,
+    onEditSortMode: () -> Unit,
+    onEditCover: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    androidx.compose.material3.ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = "管理歌单",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.height(8.dp))
+            if (canAddSongs) {
+                ManageActionRow(label = "添加歌曲", onClick = onAddSongs)
+            }
+            ManageActionRow(
+                label = if (isPublic) "设为私有" else "设为公开",
+                onClick = onToggleVisibility,
+            )
+            ManageActionRow(label = "排序方式", onClick = onEditSortMode)
+            ManageActionRow(label = "设置封面", onClick = onEditCover)
+            if (canDelete) {
+                ManageActionRow(
+                    label = "删除歌单",
+                    onClick = onDelete,
+                    enabled = !mutating,
+                    isDestructive = true,
+                )
+            }
+            if (isDefault) {
+                Text(
+                    text = "默认收藏夹由系统维护，不可删除",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 8.dp),
+                )
+            }
+            Spacer(Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun ManageActionRow(
+    label: String,
+    onClick: () -> Unit,
+    enabled: Boolean = true,
+    isDestructive: Boolean = false,
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .clickable(enabled = enabled, onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 14.dp),
+            style = MaterialTheme.typography.bodyLarge,
+            color = when {
+                !enabled -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
+                isDestructive -> MaterialTheme.colorScheme.error
+                else -> MaterialTheme.colorScheme.onSurface
+            },
+        )
     }
 }
 

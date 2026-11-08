@@ -93,14 +93,11 @@ fun CustomRankingScreen(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item {
-            Column {
-                Text("自定义排行榜", style = MaterialTheme.typography.headlineSmall)
-                Text(
-                    text = "自定义数据项权重与筛选条件，按公式实时算分排名",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            Text(
+                text = "自定义数据项权重与筛选条件，按公式实时算分排名",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
 
         if (!state.canUse) {

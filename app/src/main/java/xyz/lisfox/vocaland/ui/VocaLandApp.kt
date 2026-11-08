@@ -42,6 +42,7 @@ import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -1417,6 +1418,7 @@ private fun CompactBottomBar(
                         verticalArrangement = Arrangement.Center,
                     ) {
                         if (isPlayer) {
+                            val isPlaying = playerState?.playing == true
                             val progress = playerState
                                 ?.takeIf { it.durationMs > 0 && it.tracks.isNotEmpty() }
                                 ?.let { (it.positionMs.toFloat() / it.durationMs).coerceIn(0f, 1f) }
@@ -1440,7 +1442,11 @@ private fun CompactBottomBar(
                                     )
                                 }
                                 Icon(
-                                    imageVector = destination.icon,
+                                    imageVector = if (isPlaying) {
+                                        Icons.Filled.Pause
+                                    } else {
+                                        destination.icon
+                                    },
                                     contentDescription = null,
                                     modifier = Modifier.size(if (hasQueue) 14.dp else 18.dp),
                                     tint = playerContentColor,

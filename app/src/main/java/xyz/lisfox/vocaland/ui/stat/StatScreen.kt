@@ -127,17 +127,11 @@ private fun StatContent(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item {
-            Column {
-                Text(
-                    text = "数据统计",
-                    style = MaterialTheme.typography.headlineSmall,
-                )
-                Text(
-                    text = "按数据项排序、筛选全站歌曲",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            Text(
+                text = "按数据项排序、筛选全站歌曲",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
 
         item {

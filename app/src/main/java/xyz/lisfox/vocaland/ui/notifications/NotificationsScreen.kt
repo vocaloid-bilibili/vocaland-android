@@ -56,6 +56,7 @@ import xyz.lisfox.vocaland.ui.components.PagerRow
 import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
 import xyz.lisfox.vocaland.ui.components.SectionHeader
+import xyz.lisfox.vocaland.ui.components.SegmentedTabs
 import xyz.lisfox.vocaland.util.timeAgo
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -139,26 +140,23 @@ fun NotificationsScreen(
         }
 
         item {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(
-                    selected = state.tab == NotificationTab.Unread,
-                    onClick = { viewModel.setTab(NotificationTab.Unread) },
-                    label = {
-                        Text(
-                            if (state.unread > 0) {
-                                stringResource(R.string.notifications_tab_unread_format, state.unread)
-                            } else {
-                                stringResource(R.string.notifications_tab_unread)
-                            },
-                        )
-                    },
-                )
-                FilterChip(
-                    selected = state.tab == NotificationTab.All,
-                    onClick = { viewModel.setTab(NotificationTab.All) },
-                    label = { Text(stringResource(R.string.notifications_tab_all)) },
-                )
+            val unreadLabel = if (state.unread > 0) {
+                stringResource(R.string.notifications_tab_unread_format, state.unread)
+            } else {
+                stringResource(R.string.notifications_tab_unread)
             }
+            val allLabel = stringResource(R.string.notifications_tab_all)
+            SegmentedTabs(
+                options = NotificationTab.entries,
+                selected = state.tab,
+                label = { tab ->
+                    when (tab) {
+                        NotificationTab.Unread -> unreadLabel
+                        NotificationTab.All -> allLabel
+                    }
+                },
+                onSelect = viewModel::setTab,
+            )
         }
 
         when {
