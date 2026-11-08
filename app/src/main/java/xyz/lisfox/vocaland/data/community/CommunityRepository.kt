@@ -11,6 +11,7 @@ import xyz.lisfox.vocaland.data.model.RatingSummaryDto
 import xyz.lisfox.vocaland.data.model.WalletDto
 import xyz.lisfox.vocaland.data.remote.AppJson
 import xyz.lisfox.vocaland.data.remote.CommunityApi
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.ceil
 
 data class CommunityRatingPage(
@@ -31,6 +32,19 @@ class CommunityRepository(
     private val v2: CommunityApi,
     private val extras: CommunityExtrasApi,
 ) {
+    // 封面引用解析结果按 query 长缓存：同一条评论可能在多处出现，避免重复请求
+    private val imageRefCache = ConcurrentHashMap<String, CommentImageRefDto>()
+
+    suspend fun resolveCommentImageRef(query: String): CommentImageRefDto? {
+        val normalized = query.trim()
+        if (normalized.isEmpty()) return null
+        imageRefCache[normalized]?.let { return it }
+        return runCatching { extras.commentImageRef(normalized) }
+            .getOrNull()
+            ?.takeIf { it.url.isNotBlank() }
+            ?.also { imageRefCache[normalized] = it }
+    }
+
     suspend fun loadRatingSummary(targetKey: String): Result<RatingSummaryDto?> = runCatching {
         v2.ratingSummaries(targetKey).data.firstOrNull()
     }

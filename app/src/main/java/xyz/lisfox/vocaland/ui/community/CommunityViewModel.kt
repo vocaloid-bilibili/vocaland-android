@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import xyz.lisfox.vocaland.data.community.CommentImageRefDto
 import xyz.lisfox.vocaland.data.community.CommunityCommentDto
 import xyz.lisfox.vocaland.data.community.CommunityRepository
 import xyz.lisfox.vocaland.data.model.RatingDto
@@ -121,6 +122,10 @@ class CommunityViewModel(
         if (current.ratingsPage >= current.ratingsTotalPages || current.ratingsLoading) return
         loadRatings(current.ratingsPage + 1)
     }
+
+    /** 评论正文里的 `[[image:…]]` 封面引用，解析结果由仓库缓存。 */
+    suspend fun resolveImageRef(query: String): CommentImageRefDto? =
+        repository.resolveCommentImageRef(query)
 
     fun retryComments() {
         if (!includeComments || !_state.value.isLoggedIn) return

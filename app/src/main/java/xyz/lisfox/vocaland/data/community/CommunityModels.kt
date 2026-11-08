@@ -18,7 +18,32 @@ data class CommunityCommentDto(
     val isLiked: Boolean = false,
     val replyCount: Int = 0,
     val createdAt: String = "",
+    val mentions: List<CommentMentionDto> = emptyList(),
     val replies: List<CommunityCommentDto> = emptyList(),
+)
+
+/**
+ * 正文里的 @提及，区间由服务端给出（UTF-16 下标记，与 Kotlin String 下标一致）。
+ * kind 为 "all" 时是 @全体成员，没有可跳转的用户。
+ */
+@Serializable
+data class CommentMentionDto(
+    val kind: String = "user",
+    val userId: Int = 0,
+    val start: Int = 0,
+    val end: Int = 0,
+    val display: String = "",
+)
+
+/** `[[image:某首歌]]` 封面引用解析结果。 */
+@Serializable
+data class CommentImageRefDto(
+    val kind: String = "",
+    val key: String = "",
+    val markup: String = "",
+    val url: String = "",
+    val alt: String = "",
+    val href: String = "",
 )
 
 @Serializable

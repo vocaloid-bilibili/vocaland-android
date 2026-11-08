@@ -45,10 +45,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import xyz.lisfox.vocaland.R
+import xyz.lisfox.vocaland.data.community.CommentImageRefDto
 import xyz.lisfox.vocaland.data.community.CommunityCommentDto
 import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.StatusPill
+import xyz.lisfox.vocaland.util.SiteTarget
 import xyz.lisfox.vocaland.util.timeAgo
 
 private data class ReplyTarget(
@@ -62,6 +64,7 @@ internal fun CommunityCommentSection(
     viewModel: CommunityViewModel,
     onLogin: () -> Unit,
     onOpenUser: ((Int) -> Unit)?,
+    onOpenTarget: ((SiteTarget) -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
     if (!state.isLoggedIn) {
@@ -143,6 +146,8 @@ internal fun CommunityCommentSection(
                             replyTarget = replyTarget,
                             state = state,
                             onOpenUser = onOpenUser,
+                            onOpenTarget = onOpenTarget,
+                            resolveImageRef = viewModel::resolveImageRef,
                             onReply = { rootId, replyToId ->
                                 replyTarget = ReplyTarget(rootId, replyToId)
                             },
@@ -179,6 +184,8 @@ private fun CommentThread(
     replyTarget: ReplyTarget?,
     state: CommunityUiState,
     onOpenUser: ((Int) -> Unit)?,
+    onOpenTarget: ((SiteTarget) -> Unit)?,
+    resolveImageRef: suspend (String) -> CommentImageRefDto?,
     onReply: (Int, Int) -> Unit,
     onCancelReply: () -> Unit,
     onPostReply: (String, ReplyTarget) -> Unit,
@@ -199,6 +206,8 @@ private fun CommentThread(
                 replyTarget = replyTarget,
                 state = state,
                 onOpenUser = onOpenUser,
+                onOpenTarget = onOpenTarget,
+                resolveImageRef = resolveImageRef,
                 onReply = onReply,
                 onCancelReply = onCancelReply,
                 onPostReply = onPostReply,
@@ -231,6 +240,8 @@ private fun CommentThread(
                             replyTarget = replyTarget,
                             state = state,
                             onOpenUser = onOpenUser,
+                            onOpenTarget = onOpenTarget,
+                            resolveImageRef = resolveImageRef,
                             onReply = onReply,
                             onCancelReply = onCancelReply,
                             onPostReply = onPostReply,
@@ -252,6 +263,8 @@ private fun CommentItem(
     replyTarget: ReplyTarget?,
     state: CommunityUiState,
     onOpenUser: ((Int) -> Unit)?,
+    onOpenTarget: ((SiteTarget) -> Unit)?,
+    resolveImageRef: suspend (String) -> CommentImageRefDto?,
     onReply: (Int, Int) -> Unit,
     onCancelReply: () -> Unit,
     onPostReply: (String, ReplyTarget) -> Unit,
@@ -338,10 +351,12 @@ private fun CommentItem(
                     color = scheme.onSurfaceVariant,
                 )
             } else {
-                Text(
-                    text = comment.content,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = scheme.onSurface,
+                CommentContent(
+                    content = comment.content,
+                    mentions = comment.mentions,
+                    onOpenUser = onOpenUser,
+                    onOpenTarget = onOpenTarget,
+                    resolveImageRef = resolveImageRef,
                 )
 
                 Row(

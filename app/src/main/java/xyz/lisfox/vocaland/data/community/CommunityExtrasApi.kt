@@ -26,6 +26,9 @@ interface CommunityExtrasApi {
     @DELETE("comments/{id}")
     suspend fun deleteComment(@Path("id") id: Int)
 
+    @GET("comments/image-ref")
+    suspend fun commentImageRef(@Query("query") query: String): CommentImageRefDto
+
     @POST("comments/{id}/like")
     suspend fun toggleCommentLike(
         @Path("id") id: Int,

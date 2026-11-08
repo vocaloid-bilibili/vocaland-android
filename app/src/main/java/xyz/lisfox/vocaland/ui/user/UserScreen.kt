@@ -56,6 +56,7 @@ import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
 import xyz.lisfox.vocaland.ui.components.SectionHeader
 import xyz.lisfox.vocaland.ui.components.StatusPill
+import xyz.lisfox.vocaland.util.SiteTarget
 import xyz.lisfox.vocaland.util.targetLabel
 import xyz.lisfox.vocaland.util.timeAgo
 
@@ -70,6 +71,7 @@ fun UserScreen(
     communityRepository: CommunityRepository? = null,
     onLogin: () -> Unit = {},
     onOpenUser: (Int) -> Unit = {},
+    onOpenTarget: ((SiteTarget) -> Unit)? = null,
     onOpenSettings: () -> Unit = {},
     onOpenWallet: (() -> Unit)? = null,
 ) {
@@ -208,6 +210,7 @@ fun UserScreen(
                             session = session,
                             onLogin = onLogin,
                             onOpenUser = onOpenUser,
+                            onOpenTarget = onOpenTarget,
                             initialTab = CommunityTab.Comments,
                             showRatings = false,
                             title = "评论",

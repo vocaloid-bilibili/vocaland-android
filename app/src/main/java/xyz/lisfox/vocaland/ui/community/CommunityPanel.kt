@@ -33,6 +33,7 @@ import xyz.lisfox.vocaland.ui.components.LocalSnackbarHostState
 import xyz.lisfox.vocaland.ui.components.PagerRow
 import xyz.lisfox.vocaland.ui.components.SectionHeader
 import xyz.lisfox.vocaland.ui.components.SegmentedTabs
+import xyz.lisfox.vocaland.util.SiteTarget
 
 enum class CommunityTab(val label: String) {
     Ratings("评分"),
@@ -47,6 +48,7 @@ fun CommunityPanel(
     onLogin: () -> Unit,
     modifier: Modifier = Modifier,
     onOpenUser: ((Int) -> Unit)? = null,
+    onOpenTarget: ((SiteTarget) -> Unit)? = null,
     initialTab: CommunityTab = CommunityTab.Ratings,
     showRatings: Boolean = true,
     showComments: Boolean = true,
@@ -124,6 +126,7 @@ fun CommunityPanel(
                 viewModel = viewModel,
                 onLogin = onLogin,
                 onOpenUser = onOpenUser,
+                onOpenTarget = onOpenTarget,
             )
         }
     }

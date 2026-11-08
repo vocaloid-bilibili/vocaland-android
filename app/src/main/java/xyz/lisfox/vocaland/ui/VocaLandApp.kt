@@ -575,6 +575,7 @@ fun VocaLandApp(
                                                 launchSingleTop = true
                                             }
                                         },
+                                        onOpenTarget = openTarget,
                                     )
                                 },
                                 modifier = contentModifier,
@@ -618,6 +619,7 @@ fun VocaLandApp(
                                 },
                                 onOpenSettings = { navController.navigate(Routes.SETTINGS) },
                                 onOpenWallet = { navController.navigate(Routes.WALLET) },
+                                onOpenTarget = openTarget,
                                 modifier = contentModifier,
                             )
                         }
@@ -701,6 +703,7 @@ fun VocaLandApp(
                                                 launchSingleTop = true
                                             }
                                         },
+                                        onOpenTarget = openTarget,
                                     )
                                 },
                                 modifier = contentModifier,
@@ -761,6 +764,7 @@ fun VocaLandApp(
                                                 launchSingleTop = true
                                             }
                                         },
+                                        onOpenTarget = openTarget,
                                     )
                                 },
                                 modifier = contentModifier,
@@ -809,6 +813,7 @@ fun VocaLandApp(
                                                 launchSingleTop = true
                                             }
                                         },
+                                        onOpenTarget = openTarget,
                                     )
                                 },
                                 modifier = contentModifier,
