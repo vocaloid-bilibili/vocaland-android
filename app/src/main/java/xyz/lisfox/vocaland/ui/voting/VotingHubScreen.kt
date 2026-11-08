@@ -26,6 +26,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -43,6 +46,7 @@ import xyz.lisfox.vocaland.ui.components.EmptyHint
 import xyz.lisfox.vocaland.ui.components.LoadingPane
 import xyz.lisfox.vocaland.ui.components.PagerRow
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
+import xyz.lisfox.vocaland.ui.components.SegmentedTabs
 import xyz.lisfox.vocaland.ui.components.StatusPill
 import xyz.lisfox.vocaland.util.boardLabel
 import xyz.lisfox.vocaland.util.deadlineText
@@ -123,134 +127,140 @@ private fun VotingHubContent(
                 .thenByDescending { it.id },
         )
 
+    // 顶部用分段按钮在 ED 投票 / 人气投票之间切换，两类活动各自只展示自己那一块
+    var modeKey by rememberSaveable { mutableStateOf(VotingKind.Ed.name) }
+    val mode = VotingKind.entries.firstOrNull { it.name == modeKey } ?: VotingKind.Ed
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 28.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         item {
-            Text(
-                text = "ED 投票",
-                style = MaterialTheme.typography.titleLarge,
+            SegmentedTabs(
+                options = VotingKind.entries,
+                selected = mode,
+                label = { it.label },
+                onSelect = { modeKey = it.name },
             )
-        }
-        if (ed.isEmpty()) {
-            item { EmptyHint(text = "暂无 ED 投票活动") }
-        } else {
-            items(ed, key = { "ed-${it.id}" }) { campaign ->
-                EdCampaignRow(
-                    campaign = campaign,
-                    onClick = { onOpenVoting(VotingKind.Ed, campaign.id) },
-                )
-            }
         }
 
-        item {
-            Spacer(Modifier.height(14.dp))
-            Text(
-                text = "人气投票",
-                style = MaterialTheme.typography.titleLarge,
-            )
-        }
-        if (trending.isEmpty()) {
-            item { EmptyHint(text = "暂无人气投票活动") }
-        } else {
-            items(trending, key = { "trending-${it.id}" }) { campaign ->
-                TrendingCampaignRow(
-                    campaign = campaign,
-                    onClick = { onOpenVoting(VotingKind.Trending, campaign.id) },
-                )
-            }
-        }
+        when (mode) {
+            VotingKind.Ed -> {
+                if (ed.isEmpty()) {
+                    item { EmptyHint(text = "暂无 ED 投票活动") }
+                } else {
+                    items(ed, key = { "ed-${it.id}" }) { campaign ->
+                        EdCampaignRow(
+                            campaign = campaign,
+                            onClick = { onOpenVoting(VotingKind.Ed, campaign.id) },
+                        )
+                    }
+                }
 
-        item {
-            Spacer(Modifier.height(14.dp))
-            Text(
-                text = "ED 往期结果",
-                style = MaterialTheme.typography.titleLarge,
-            )
-        }
-        item {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                listOf("vocaloid-weekly", "vocaloid-monthly", "vocaloid-daily").forEach { board ->
-                    FilterChip(
-                        selected = state.edHistoryBoard == board,
-                        onClick = { onSelectEdHistoryBoard(board) },
-                        label = { Text(boardLabel(board)) },
+                item {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = "往期结果",
+                        style = MaterialTheme.typography.titleLarge,
                     )
                 }
+                item {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        listOf("vocaloid-weekly", "vocaloid-monthly", "vocaloid-daily").forEach { board ->
+                            FilterChip(
+                                selected = state.edHistoryBoard == board,
+                                onClick = { onSelectEdHistoryBoard(board) },
+                                label = { Text(boardLabel(board)) },
+                            )
+                        }
+                    }
+                }
+                if (state.edHistoryLoading) {
+                    item { InlineLoading() }
+                }
+                state.edHistoryError?.takeIf { it.isNotBlank() }?.let { error ->
+                    item { EmptyHint(text = error, maxLines = Int.MAX_VALUE) }
+                }
+                val edHistory = state.edHistory
+                if (edHistory != null && edHistory.items.isNotEmpty()) {
+                    items(edHistory.items, key = { "ed-history-${it.id}" }) { history ->
+                        EdHistoryRow(
+                            history = history,
+                            onOpenSong = onOpenSong,
+                        )
+                    }
+                    item {
+                        PagerRow(
+                            page = edHistory.page,
+                            totalPages = edHistory.totalPages,
+                            total = edHistory.total,
+                            loading = state.edHistoryLoading,
+                            onPrevious = onPreviousEdHistory,
+                            onNext = onNextEdHistory,
+                            unit = "条",
+                        )
+                    }
+                } else if (!state.edHistoryLoading && state.edHistoryError.isNullOrBlank()) {
+                    item { EmptyHint(text = "暂无 ED 往期结果") }
+                }
             }
-        }
-        if (state.edHistoryLoading) {
-            item { InlineLoading() }
-        }
-        state.edHistoryError?.takeIf { it.isNotBlank() }?.let { error ->
-            item { EmptyHint(text = error, maxLines = Int.MAX_VALUE) }
-        }
-        val edHistory = state.edHistory
-        if (edHistory != null && edHistory.items.isNotEmpty()) {
-            items(edHistory.items, key = { "ed-history-${it.id}" }) { history ->
-                EdHistoryRow(
-                    history = history,
-                    onOpenSong = onOpenSong,
-                )
-            }
-            item {
-                PagerRow(
-                    page = edHistory.page,
-                    totalPages = edHistory.totalPages,
-                    total = edHistory.total,
-                    loading = state.edHistoryLoading,
-                    onPrevious = onPreviousEdHistory,
-                    onNext = onNextEdHistory,
-                    unit = "条",
-                )
-            }
-        } else if (!state.edHistoryLoading && state.edHistoryError.isNullOrBlank()) {
-            item { EmptyHint(text = "暂无 ED 往期结果") }
-        }
 
-        item {
-            Spacer(Modifier.height(14.dp))
-            Text(
-                text = "人气投票往期结果",
-                style = MaterialTheme.typography.titleLarge,
-            )
-        }
-        if (state.trendingHistoryLoading) {
-            item { InlineLoading() }
-        }
-        state.trendingHistoryError?.takeIf { it.isNotBlank() }?.let { error ->
-            item { EmptyHint(text = error, maxLines = Int.MAX_VALUE) }
-        }
-        val trendingHistory = state.trendingHistory
-        if (trendingHistory != null && trendingHistory.items.isNotEmpty()) {
-            items(
-                trendingHistory.items,
-                key = { "trending-history-${trendingHistory.page}-${it.rank}-${it.candidate.id}" },
-            ) { result ->
-                TrendingResultItem(
-                    result = result,
-                    onOpenSong = onOpenSong,
-                    onOpenArtist = onOpenArtist,
-                )
+            VotingKind.Trending -> {
+                if (trending.isEmpty()) {
+                    item { EmptyHint(text = "暂无人气投票活动") }
+                } else {
+                    items(trending, key = { "trending-${it.id}" }) { campaign ->
+                        TrendingCampaignRow(
+                            campaign = campaign,
+                            onClick = { onOpenVoting(VotingKind.Trending, campaign.id) },
+                        )
+                    }
+                }
+
+                item {
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = "往期结果",
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                }
+                if (state.trendingHistoryLoading) {
+                    item { InlineLoading() }
+                }
+                state.trendingHistoryError?.takeIf { it.isNotBlank() }?.let { error ->
+                    item { EmptyHint(text = error, maxLines = Int.MAX_VALUE) }
+                }
+                val trendingHistory = state.trendingHistory
+                if (trendingHistory != null && trendingHistory.items.isNotEmpty()) {
+                    items(
+                        trendingHistory.items,
+                        key = { "trending-history-${trendingHistory.page}-${it.rank}-${it.candidate.id}" },
+                    ) { result ->
+                        TrendingResultItem(
+                            result = result,
+                            onOpenSong = onOpenSong,
+                            onOpenArtist = onOpenArtist,
+                        )
+                    }
+                    item {
+                        PagerRow(
+                            page = trendingHistory.page,
+                            totalPages = trendingHistory.totalPages,
+                            total = trendingHistory.total,
+                            loading = state.trendingHistoryLoading,
+                            onPrevious = onPreviousTrendingHistory,
+                            onNext = onNextTrendingHistory,
+                            unit = "条",
+                        )
+                    }
+                } else if (!state.trendingHistoryLoading && state.trendingHistoryError.isNullOrBlank()) {
+                    item { EmptyHint(text = "暂无人气投票往期结果") }
+                }
             }
-            item {
-                PagerRow(
-                    page = trendingHistory.page,
-                    totalPages = trendingHistory.totalPages,
-                    total = trendingHistory.total,
-                    loading = state.trendingHistoryLoading,
-                    onPrevious = onPreviousTrendingHistory,
-                    onNext = onNextTrendingHistory,
-                    unit = "条",
-                )
-            }
-        } else if (!state.trendingHistoryLoading && state.trendingHistoryError.isNullOrBlank()) {
-            item { EmptyHint(text = "暂无人气投票往期结果") }
         }
     }
 }

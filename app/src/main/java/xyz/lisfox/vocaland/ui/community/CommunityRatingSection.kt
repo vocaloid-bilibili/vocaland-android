@@ -456,6 +456,32 @@ private fun MyRatingEditor(
 }
 
 @Composable
+private fun ScoreBadge(score: Int) {
+    Surface(
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.Bottom,
+        ) {
+            Text(
+                text = score.toString(),
+                modifier = Modifier.alignByBaseline(),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                text = "/10",
+                modifier = Modifier.alignByBaseline(),
+                style = MaterialTheme.typography.labelSmall,
+            )
+        }
+    }
+}
+
+@Composable
 private fun RatingRow(
     rating: RatingDto,
     onOpenUser: ((Int) -> Unit)?,
@@ -481,7 +507,7 @@ private fun RatingRow(
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Row(
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 NetworkImage(
@@ -500,22 +526,21 @@ private fun RatingRow(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
+                    Text(
+                        text = displayName,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .clickable(enabled = canOpenUser) {
+                                if (canOpenUser) onOpenUser?.invoke(rating.user.id)
+                            },
+                        style = MaterialTheme.typography.titleSmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                     ) {
-                        Text(
-                            text = displayName,
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(RoundedCornerShape(6.dp))
-                                .clickable(enabled = canOpenUser) {
-                                    if (canOpenUser) onOpenUser?.invoke(rating.user.id)
-                                },
-                            style = MaterialTheme.typography.titleSmall,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
                         if (!masked) {
                             StatusPill(text = "Lv.${rating.user.level}")
                         }
@@ -526,36 +551,18 @@ private fun RatingRow(
                                 contentColor = scheme.onTertiaryContainer,
                             )
                         }
-                    }
-                    timeAgo(time).takeIf { it.isNotBlank() }?.let { label ->
-                        Text(
-                            text = label,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = scheme.onSurfaceVariant,
-                        )
+                        timeAgo(time).takeIf { it.isNotBlank() }?.let { label ->
+                            Text(
+                                text = label,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = scheme.onSurfaceVariant,
+                                maxLines = 1,
+                            )
+                        }
                     }
                 }
 
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = scheme.primaryContainer,
-                    contentColor = scheme.onPrimaryContainer,
-                ) {
-                    Column(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Text(
-                            text = rating.score.toString(),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                        )
-                        Text(
-                            text = "/ 10",
-                            style = MaterialTheme.typography.labelSmall,
-                        )
-                    }
-                }
+                ScoreBadge(score = rating.score)
             }
 
             Text(

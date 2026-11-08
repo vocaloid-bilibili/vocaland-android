@@ -17,6 +17,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -40,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import java.util.Locale
@@ -49,10 +51,13 @@ import xyz.lisfox.vocaland.data.model.EdCandidateDto
 import xyz.lisfox.vocaland.data.model.EdHistoryDto
 import xyz.lisfox.vocaland.data.model.EdMechanismConfigDto
 import xyz.lisfox.vocaland.data.model.EdResultDto
+import xyz.lisfox.vocaland.data.model.EdVoteSnapshotDto
 import xyz.lisfox.vocaland.data.model.EdVotingCandidateDto
 import xyz.lisfox.vocaland.data.model.SearchEntityDto
 import xyz.lisfox.vocaland.data.model.TrendingCandidateDto
 import xyz.lisfox.vocaland.data.model.TrendingResultRowDto
+import xyz.lisfox.vocaland.ui.components.MetricGrid
+import xyz.lisfox.vocaland.ui.components.MetricItem
 import xyz.lisfox.vocaland.ui.components.NetworkImage
 import xyz.lisfox.vocaland.ui.components.ScreenMessage
 import xyz.lisfox.vocaland.ui.components.StatusPill
@@ -600,16 +605,22 @@ fun TrendingCandidateRow(
             }
             Spacer(Modifier.width(8.dp))
             Column(horizontalAlignment = Alignment.End) {
-                Text(
-                    text = voteCount.toString(),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                )
-                Text(
-                    text = "票",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Row(verticalAlignment = Alignment.Bottom) {
+                    Text(
+                        text = voteCount.toString(),
+                        modifier = Modifier.alignByBaseline(),
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Spacer(Modifier.width(2.dp))
+                    Text(
+                        text = "票",
+                        modifier = Modifier.alignByBaseline(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 if (canVote) {
                     Spacer(Modifier.height(2.dp))
                     FilterChip(
@@ -811,59 +822,133 @@ private fun EdResultDetails(
     val bonusCount = bonusEntries.sumOf { it.bonusCount }
     val rawTotal = snapshots.sumOf { it.actualWeight }
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(14.dp),
         color = MaterialTheme.colorScheme.surfaceContainer,
     ) {
         Column(
-            modifier = Modifier.padding(10.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Text(
-                text = "赞成 $positive · 反对 $negative · 附加 ${bonusEntries.size} 人 / $bonusCount 张 · 实际票权合计 ${formatDecimal(rawTotal, 2)} · 最终 ${formatDecimal(result.score, 2)}",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            MetricGrid(
+                items = buildList {
+                    add(MetricItem(label = "赞成", value = positive.toString()))
+                    add(MetricItem(label = "反对", value = negative.toString()))
+                    add(
+                        MetricItem(
+                            label = "附加",
+                            value = "$bonusCount 张",
+                            subtitle = "${bonusEntries.size} 人",
+                        ),
+                    )
+                    add(MetricItem(label = "实际票权", value = formatDecimal(rawTotal, 2)))
+                    add(MetricItem(label = "最终得分", value = formatDecimal(result.score, 2)))
+                },
+                columns = 3,
             )
             if (result.songPenaltyPct > 0) {
                 Text(
-                    text = "提名者折分：× ${formatDecimal(100 - result.songPenaltyPct, 1)}%",
+                    text = "提名者折分 × ${formatDecimal(100 - result.songPenaltyPct, 1)}%",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.error,
                 )
             }
             snapshots.forEach { snapshot ->
-                val kind = when {
-                    snapshot.isBonus -> "附加×${snapshot.bonusCount}"
-                    snapshot.isNegative -> "反对"
-                    else -> "赞成"
-                }
-                val user = snapshot.user?.nickname?.takeIf { it.isNotBlank() }
-                    ?: "用户 ${snapshot.userId}"
-                val role = snapshot.user?.role?.takeIf { it.isNotBlank() }
-                val bonusPct = snapshot.roleBonusPct
-                val penaltyPct = snapshot.votePenaltyPct
-                val detail = buildString {
-                    append("$user · $kind")
-                    role?.let { append(" · $it") }
-                    if (bonusPct > 100) append(" · 角色加成 ${formatDecimal(bonusPct, 0)}%")
-                    if (penaltyPct > 0) append(" · 投票惩罚 ${formatDecimal(penaltyPct, 1)}%")
-                    append(" · 权重 ${formatDecimal(snapshot.rawWeight, 2)} → ${formatDecimal(snapshot.actualWeight, 2)}")
-                }
-                Text(
-                    text = detail,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                VoteSnapshotRow(snapshot = snapshot)
             }
             if (negative > 0) {
                 Text(
-                    text = "反对票权重系数：${formatDecimal(negativeWeight * 100, 0)}%",
+                    text = "反对票权重系数 ${formatDecimal(negativeWeight * 100, 0)}%",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
+    }
+}
+
+/**
+ * 单张选票的权重明细：昵称 + 角色 / 票型 / 调整项，右侧是「原权重 → 实际权重」。
+ */
+@Composable
+private fun VoteSnapshotRow(
+    snapshot: EdVoteSnapshotDto,
+) {
+    val scheme = MaterialTheme.colorScheme
+    val user = snapshot.user
+    val name = user?.nickname?.takeIf { it.isNotBlank() } ?: "用户 ${snapshot.userId}"
+    val role = user?.role?.takeIf { it.isNotBlank() }
+    val kindLabel = when {
+        snapshot.isBonus -> "附加 ×${snapshot.bonusCount}"
+        snapshot.isNegative -> "反对"
+        else -> "赞成"
+    }
+    val kindColor = when {
+        snapshot.isBonus -> scheme.tertiary
+        snapshot.isNegative -> scheme.error
+        else -> scheme.primary
+    }
+    val adjustments = buildList {
+        if (snapshot.roleBonusPct > 100) {
+            add("角色加成 ${formatDecimal(snapshot.roleBonusPct, 0)}%")
+        }
+        if (snapshot.votePenaltyPct > 0) {
+            add("惩罚 ${formatDecimal(snapshot.votePenaltyPct, 1)}%")
+        }
+    }
+    val rawText = formatDecimal(snapshot.rawWeight, 2)
+    val actualText = formatDecimal(snapshot.actualWeight, 2)
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        NetworkImage(
+            url = user?.avatar,
+            contentDescription = null,
+            modifier = Modifier
+                .size(24.dp)
+                .clip(CircleShape),
+            fallbackIcon = Icons.Filled.Person,
+        )
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(1.dp),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(
+                    text = name,
+                    modifier = Modifier.weight(1f, fill = false),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = listOfNotNull(kindLabel, role).joinToString(" · "),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = kindColor,
+                    maxLines = 1,
+                )
+            }
+            if (adjustments.isNotEmpty()) {
+                Text(
+                    text = adjustments.joinToString(" · "),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = scheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+        Text(
+            text = if (rawText == actualText) actualText else "$rawText → $actualText",
+            style = MaterialTheme.typography.labelMedium,
+            color = if (snapshot.isNegative) scheme.error else scheme.onSurface,
+            maxLines = 1,
+        )
     }
 }
 
