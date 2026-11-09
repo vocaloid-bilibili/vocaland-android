@@ -123,6 +123,7 @@ import xyz.lisfox.vocaland.ui.playlist.MyPlaylistsScreen
 import xyz.lisfox.vocaland.ui.playlist.PlaylistDetailScreen
 import xyz.lisfox.vocaland.ui.playlist.PlaylistScreen
 import xyz.lisfox.vocaland.ui.profile.ProfileScreen
+import xyz.lisfox.vocaland.ui.ranking.RankingRequest
 import xyz.lisfox.vocaland.ui.ranking.RankingScreen
 import xyz.lisfox.vocaland.ui.search.SearchScreen
 import xyz.lisfox.vocaland.ui.settings.SettingsScreen
@@ -226,6 +227,7 @@ fun VocaLandApp(
         val currentRoute = backStackEntry?.destination?.route
         val loggedIn = sessionState.user != null
         var addToPlaylistSongId by remember { mutableStateOf<Int?>(null) }
+        var rankingRequest by remember { mutableStateOf<RankingRequest?>(null) }
         val isTopLevel = currentRoute == null ||
             TOP_LEVEL_DESTINATIONS.any { it.route == currentRoute }
         val navigateToTopLevel: (String) -> Unit = { route ->
@@ -261,13 +263,24 @@ fun VocaLandApp(
                     launchSingleTop = true
                 }
 
+                SiteTarget.PlaylistSquare -> navController.navigate(Routes.PLAYLISTS) {
+                    launchSingleTop = true
+                }
+
                 is SiteTarget.Voting -> navController.navigate(
                     Routes.voting(target.kind, target.campaignId),
                 ) {
                     launchSingleTop = true
                 }
 
-                SiteTarget.Ranking -> navigateToTopLevel(Routes.RANKING)
+                is SiteTarget.Ranking -> {
+                    rankingRequest = RankingRequest(target.board, target.issue)
+                    navigateToTopLevel(Routes.RANKING)
+                }
+
+                SiteTarget.CustomRanking -> navController.navigate(Routes.CUSTOM_RANKING) {
+                    launchSingleTop = true
+                }
             }
         }
 
@@ -426,6 +439,8 @@ fun VocaLandApp(
                                 }
                             },
                             session = container.session,
+                            request = rankingRequest,
+                            onRequestConsumed = { rankingRequest = null },
                             modifier = contentModifier,
                         )
                     }

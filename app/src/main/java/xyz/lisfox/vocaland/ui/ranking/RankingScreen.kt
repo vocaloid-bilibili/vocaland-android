@@ -78,6 +78,12 @@ import xyz.lisfox.vocaland.util.formatNumber
 import xyz.lisfox.vocaland.util.songDisplayName
 import kotlin.math.roundToLong
 
+/** 从评论 / 通知 / 链接跳转到指定榜单与期号的一次性请求 */
+data class RankingRequest(
+    val board: RankingBoard? = null,
+    val issue: Int? = null,
+)
+
 @Composable
 fun RankingScreen(
     repository: RankingRepository,
@@ -85,6 +91,8 @@ fun RankingScreen(
     modifier: Modifier = Modifier,
     onOpenArtist: (ArtistKind, Int) -> Unit = { _, _ -> },
     session: AuthSession? = null,
+    request: RankingRequest? = null,
+    onRequestConsumed: () -> Unit = {},
 ) {
     val viewModel: RankingViewModel = viewModel(
         factory = viewModelFactory {
@@ -103,6 +111,12 @@ fun RankingScreen(
             DiscoveryAuth.bindSession(session)
         }
         viewModel.setRole(sessionState?.user?.role ?: "guest")
+    }
+
+    LaunchedEffect(request) {
+        val pending = request ?: return@LaunchedEffect
+        viewModel.openRanking(pending.board, pending.issue)
+        onRequestConsumed()
     }
 
     LazyColumn(

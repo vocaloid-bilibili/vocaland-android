@@ -125,7 +125,13 @@ fun SearchScreen(
                             false
                         }
                     },
-                placeholder = { Text("搜索歌曲、P主、歌手…") },
+                placeholder = {
+                    Text(
+                        text = "搜索歌曲、P主、歌手…",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                },
                 leadingIcon = {
                     Icon(Icons.Filled.Search, contentDescription = null)
                 },

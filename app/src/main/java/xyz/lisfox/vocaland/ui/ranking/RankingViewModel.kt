@@ -86,6 +86,43 @@ class RankingViewModel(
         loadCurrent()
     }
 
+    /** 从外部（评论、通知、链接）跳到指定榜单/期号；board 为空表示当前榜单。 */
+    fun openRanking(board: RankingBoard?, issue: Int?) {
+        val current = _state.value
+        val targetBoard = board ?: current.board
+        if (targetBoard == current.board && issue == null && current.issue == null) return
+
+        val nextTab = if (availableRankingTabs(targetBoard).contains(current.tab)) {
+            current.tab
+        } else {
+            RankingTab.Main
+        }
+
+        _state.update {
+            it.copy(
+                board = targetBoard,
+                tab = nextTab,
+                issue = issue,
+                page = 1,
+                oldestIssue = null,
+                data = null,
+                error = null,
+                issueNotice = null,
+                artistPage = 1,
+                artistData = null,
+                selectedArtist = null,
+                artistSongs = null,
+                artistSongsPage = 1,
+                milestonePage = 1,
+                milestoneData = null,
+                tabLoading = false,
+                tabError = null,
+                permissionHint = null,
+            )
+        }
+        loadCurrent()
+    }
+
     fun selectBoard(board: RankingBoard) {
         val current = _state.value
         if (current.board == board) return
